@@ -40,3 +40,11 @@ gify('video.mp4', 'out.gif', function(err){
 	  if (err) throw err;
 });
 ```
+
+## Notice
+
+Using the Google Slides API to create thumbnails is expensive and has limits.
+
+See [limits](https://developers.google.com/slides/limits).
+- 500 per project per 100 seconds
+- 100 per user per 100 seconds
