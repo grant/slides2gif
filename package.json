@@ -1,0 +1,19 @@
+{
+  "name": "slides2gif",
+  "version": "1.0.0",
+  "description": "Create a GIF from Google Slides",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grant/slides2gif.git"
+  },
+  "author": "Grant Timmerman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/grant/slides2gif/issues"
+  },
+  "homepage": "https://github.com/grant/slides2gif#readme"
+}
