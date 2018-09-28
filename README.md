@@ -48,3 +48,14 @@ Using the Google Slides API to create thumbnails is expensive and has limits.
 See [limits](https://developers.google.com/slides/limits).
 - 500 per project per 100 seconds
 - 100 per user per 100 seconds
+
+## Build
+
+```
+npm run build
+npm i -g .
+```
+
+## Notes
+
+Global CLI setup via https://ourcodeworld.com/articles/read/393/how-to-create-a-global-module-for-node-js-properly
