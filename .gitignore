@@ -68,3 +68,5 @@ images/
 # Keys
 token.json
 credentials.json
+
+*.js
