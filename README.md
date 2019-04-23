@@ -4,10 +4,20 @@ Converts a Google Slide presentation to a gif.
 
 ## Requirements
 
+To start this project, you need to install some dependencies.
+
 ```
 brew install ffmpeg graphicsmagick
-yarn add gify fluent-ffmpeg
+npm i gify fluent-ffmpeg
 ```
+
+Then **Create Credentials > Create an OAuth Client**. Download. Name `credentials.json`.
+- https://console.cloud.google.com/apis/credentials
+
+Move these credentials to `~/.slides2gif.json`.
+
+Enable the **Slides API**:
+- https://console.cloud.google.com/apis/api/slides.googleapis.com/overview
 
 ## Test
 

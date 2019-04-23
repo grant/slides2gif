@@ -35,130 +35,71 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs_1 = require("fs");
 var google_auth_library_1 = require("google-auth-library");
 var googleapis_1 = require("googleapis");
+var auth_1 = require("./auth");
 var download = require('download-file');
 var readline = require('readline');
 var oauth2ClientSettings = {
-    clientId: '1072944905499-vm2v2i5dvn0a0d2o4ca36i1vge8cvbn0.apps.googleusercontent.com',
-    clientSecret: 'v6V3fKV_zWU7iw1DrpO1rknX',
+    clientId: '833834422750-hr0a48ds7l0ofvvvdhnk6k4n3o2a51kp.apps.googleusercontent.com',
+    clientSecret: 'gA_p1p_0y_qywHX0IYnz0X2b',
     redirectUri: 'http://localhost',
 };
 var globalOauth2Client = new google_auth_library_1.OAuth2Client(oauth2ClientSettings);
 var slides = googleapis_1.google.slides({ version: 'v1', auth: globalOauth2Client });
 // If modifying these scopes, delete token.json.
 var SCOPES = ['https://www.googleapis.com/auth/presentations.readonly'];
-var TOKEN_PATH = 'token.json';
-// Load client secrets from a local file.
-fs_1.readFile('credentials.json', function (err, content) {
-    if (err)
-        return console.log('Error loading client secret file:', err);
-    // Authorize a client with credentials, then call the Google Slides API.
-    authorize(JSON.parse(content.toString()), listSlides);
-});
-/**
- * Create an OAuth2 client with the given credentials, and then execute the
- * given callback function.
- * @param {Object} credentials The authorization client credentials.
- * @param {function} callback The callback to call with the authorized client.
- */
-function authorize(credentials, callback) {
-    // const {client_secret, client_id, redirect_uris} = credentials.installed;
-    // globalOauth2Client = new google.auth.OAuth2(
-    //     client_id, client_secret, redirect_uris[0]);
-    // Check if we have previously stored a token.
-    fs_1.readFile(TOKEN_PATH, function (err, token) {
-        if (err)
-            return getNewToken(globalOauth2Client, callback);
-        globalOauth2Client.setCredentials(JSON.parse(token.toString()));
-        callback(globalOauth2Client);
-    });
-}
-/**
- * Get and store new token after prompting for user authorization, and then
- * execute the given callback with the authorized OAuth2 client.
- * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
- * @param {getEventsCallback} callback The callback for the authorized client.
- */
-function getNewToken(oAuth2Client, callback) {
-    var authUrl = oAuth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: SCOPES,
-    });
-    console.log('Authorize this app by visiting this url:', authUrl);
-    var rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-    rl.question('Enter the code from that page here: ', function (code) {
-        rl.close();
-        oAuth2Client.getToken(code, function (err, token) {
-            if (err)
-                return console.error('Error retrieving access token', err);
-            oAuth2Client.setCredentials(token);
-            // Store the token to disk for later program executions
-            fs_1.writeFile(TOKEN_PATH, JSON.stringify(token), function (err) {
-                if (err)
-                    console.error(err);
-                console.log('Token stored to', TOKEN_PATH);
-            });
-            callback(oAuth2Client);
-        });
-    });
-}
-function listSlides() {
-    return __awaiter(this, void 0, void 0, function () {
-        var slidesId, p, presoSlides, i, _i, presoSlides_1, slide, thumbnail, _a, contentUrl, height, width, options;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    slidesId = '1TOZawYQsYFzqd_gf1ZZyuhlXycio3Ylh-HAF_qz_5qU';
-                    return [4 /*yield*/, slides.presentations.get({
-                            presentationId: slidesId,
-                        })];
-                case 1:
-                    p = _b.sent();
-                    if (p.data.slides) {
-                        console.log(p.data.slides.length + " slides.");
-                    }
-                    presoSlides = p.data.slides;
-                    if (!presoSlides)
-                        return [2 /*return*/];
-                    i = 0;
-                    _i = 0, presoSlides_1 = presoSlides;
-                    _b.label = 2;
-                case 2:
-                    if (!(_i < presoSlides_1.length)) return [3 /*break*/, 5];
-                    slide = presoSlides_1[_i];
-                    return [4 /*yield*/, slides.presentations.pages.getThumbnail({
-                            presentationId: slidesId,
-                            pageObjectId: slide.objectId,
-                        })];
-                case 3:
-                    thumbnail = _b.sent();
-                    _a = thumbnail.data, contentUrl = _a.contentUrl, height = _a.height, width = _a.width;
-                    console.log(contentUrl + " (" + width + "x" + height + ")");
-                    options = {
-                        directory: "./images/",
-                        filename: i + ".png"
-                    };
-                    // Test image:
-                    // var contentUrl = "http://i.imgur.com/G9bDaPH.jpg"
-                    download(contentUrl, options, function (err) {
-                        if (err)
-                            throw err;
-                    });
-                    ++i;
-                    _b.label = 4;
-                case 4:
-                    _i++;
-                    return [3 /*break*/, 2];
-                case 5:
-                    console.log('good5');
+auth_1.loadCredentials(function () { return __awaiter(_this, void 0, void 0, function () {
+    var slidesId, p, presoSlides, i, _i, presoSlides_1, slide, thumbnail, _a, contentUrl, height, width, options;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                slidesId = '1TOZawYQsYFzqd_gf1ZZyuhlXycio3Ylh-HAF_qz_5qU';
+                return [4 /*yield*/, slides.presentations.get({
+                        presentationId: slidesId,
+                    })];
+            case 1:
+                p = _b.sent();
+                if (p.data.slides) {
+                    console.log(p.data.slides.length + " slides.");
+                }
+                presoSlides = p.data.slides;
+                if (!presoSlides)
                     return [2 /*return*/];
-            }
-        });
+                i = 0;
+                _i = 0, presoSlides_1 = presoSlides;
+                _b.label = 2;
+            case 2:
+                if (!(_i < presoSlides_1.length)) return [3 /*break*/, 5];
+                slide = presoSlides_1[_i];
+                return [4 /*yield*/, slides.presentations.pages.getThumbnail({
+                        presentationId: slidesId,
+                        pageObjectId: slide.objectId,
+                    })];
+            case 3:
+                thumbnail = _b.sent();
+                _a = thumbnail.data, contentUrl = _a.contentUrl, height = _a.height, width = _a.width;
+                console.log(contentUrl + " (" + width + "x" + height + ")");
+                options = {
+                    directory: "./images/",
+                    filename: i + ".png"
+                };
+                // Test image:
+                // var contentUrl = "http://i.imgur.com/G9bDaPH.jpg"
+                download(contentUrl, options, function (err) {
+                    if (err)
+                        throw err;
+                });
+                ++i;
+                _b.label = 4;
+            case 4:
+                _i++;
+                return [3 /*break*/, 2];
+            case 5:
+                console.log('good5');
+                return [2 /*return*/];
+        }
     });
-}
+}); });
