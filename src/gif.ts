@@ -1,5 +1,4 @@
 const GIFEncoder = require('gifencoder');
-const encoder = new GIFEncoder(854, 480);
 const pngFileStream = require('png-file-stream');
 import * as fs from 'fs';
 
@@ -13,7 +12,8 @@ interface GIFOptions {
  * Creates a gif given a list of frames,
  */
 export const createGif = async ({
-  inputFrameGlobString = 'test/**/frame?.png',
+  inputFrameGlobString = 'downloads/**?.png',
+  // inputFrameGlobString = 'test/frame**?.png',
   gifOptions = {repeat: 0, delay: 500, quality: 10},
   outputGifFilename = 'myanimated.gif',
 }: {
@@ -21,6 +21,10 @@ export const createGif = async ({
   gifOptions?: GIFOptions;
   outputGifFilename?: string;
 }) => {
+  // TODO SIZE
+  // const encoder = new GIFEncoder(854, 480);
+  const encoder = new GIFEncoder(800, 450);
+
   const stream = pngFileStream(inputFrameGlobString)
     .pipe(encoder.createWriteStream(gifOptions))
     .pipe(fs.createWriteStream(outputGifFilename));

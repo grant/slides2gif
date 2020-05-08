@@ -2,7 +2,6 @@ import {google} from 'googleapis';
 import {slides_v1} from 'googleapis/build/src/apis/slides/v1';
 import {getAuthClientWithCreds} from './auth';
 import {downloadImage} from './download';
-const process = require('process');
 
 let slidesClient: slides_v1.Slides | null = null;
 
@@ -39,15 +38,16 @@ export const downloadSlides = async (presentationId: string) => {
   );
   // Download each thumbnail locally
   const downloadPromises = thumbnailData.map(async (thumbnail, i) => {
+    // image name matters as it orders the gif frames
+    const imageName = (i + '').padStart(3, '0');
     return await downloadImage({
       url: thumbnail.contentUrl || '',
       folder: 'downloads',
-      filename: `${i}.png`,
+      filename: `${imageName}.png`,
     });
   });
   const done = await Promise.all(downloadPromises);
-  console.log('done');
-  return process.exit(); // for some reason the process hangs.
+  return done;
 };
 
 /**
@@ -83,6 +83,8 @@ const getThumbnailData = async (
     const thumbnail = await slides.presentations.pages.getThumbnail({
       presentationId: presentationId,
       pageObjectId: page.objectId + '',
+      // https://developers.google.com/slides/reference/rest/v1/presentations.pages/getThumbnail#thumbnailsize
+      'thumbnailProperties.thumbnailSize': 'MEDIUM',
     });
     // Add data such as: contentUrl, height, width
     thumbnails.push(thumbnail.data);
