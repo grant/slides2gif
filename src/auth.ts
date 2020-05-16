@@ -19,7 +19,10 @@ const googleOAuthClient = new google.auth.OAuth2({
 // Client auth
 const TOKEN_PATH = 'token.json';
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/presentations.readonly'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/presentations.readonly',
+  'https://www.googleapis.com/auth/drive.activity.readonly',
+];
 
 /**
  * Loads credentials.
