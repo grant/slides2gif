@@ -2,7 +2,7 @@
   "name": "slides2gif",
   "version": "1.0.0",
   "description": "Create a GIF from Google Slides",
-  "main": ".",
+  "main": "index.js",
   "bin": {
     "slides2gif": "."
   },
@@ -15,7 +15,7 @@
     "fix": "gts fix",
     "postinstall": "npm run build",
     "test": "node .",
-    "start": "FUNCTION_TARGET=serve ./node_modules/@google-cloud/functions-framework/build/src/index.js"
+    "start": "./node_modules/@google-cloud/functions-framework/build/src/index.js"
   },
   "repository": {
     "type": "git",
@@ -39,9 +39,6 @@
   "engines": {
     "node": "^10.17.0"
   },
-  "files": [
-    "src", "index.js"
-  ],
   "dependencies": {
     "@google-cloud/functions-framework": "^1.5.1",
     "download": "^8.0.0",

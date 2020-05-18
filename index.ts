@@ -3,6 +3,6 @@ import {Request, Response} from 'express';
 /**
  * Global API endpoint.
  */
-exports.serve = (req: Request, res: Response) => {
-  res.send('Hello, W');
+exports.function = (req: Request, res: Response) => {
+  res.send('Hello, World, this is Grant.');
 };
