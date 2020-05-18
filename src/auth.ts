@@ -107,3 +107,11 @@ async function authorizeWithLocalhost(): Promise<object> {
   server.close();
   return (await client.getToken(authCode)).tokens;
 }
+
+// TODO store refresh token in HTTP cookie. Remember login.
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
+// https://www.whoishostingthis.com/resources/cookies-guide/
+// https://community.auth0.com/t/storing-refresh-token-in-cookie/7029
+// https://medium.com/@sadnub/simple-and-secure-api-authentication-for-spas-e46bcea592ad
+// Server sets a cookie to the UA. Sample:
+// Set-Cookie: id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly

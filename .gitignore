@@ -65,9 +65,6 @@ typings/
 # next.js build output
 .next
 
-# Data
-images/
-
 # Keys
 token.json
 credentials.json

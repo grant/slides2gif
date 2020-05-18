@@ -1,5 +1,9 @@
 {
     "extends": "./node_modules/gts/",
-    "ignorePatterns": ["*.js"],
-    "env": {"node": true}
+    "ignorePatterns": ["*.js", "*.d.ts"],
+    "env": {"node": true},
+    "rules": {
+        "node/no-unpublished-import": 0,
+        "@typescript-eslint/no-var-requires": 0
+    }
 }

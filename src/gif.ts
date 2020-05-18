@@ -14,7 +14,11 @@ interface GIFOptions {
 export const createGif = async ({
   inputFrameGlobString = 'downloads/**?.png',
   // inputFrameGlobString = 'test/frame**?.png',
-  gifOptions = {repeat: 0, delay: 500, quality: 10},
+  gifOptions = {
+    repeat: 0,
+    delay: 500, // time in ms.
+    quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
+  },
   outputGifFilename = 'myanimated.gif',
 }: {
   inputFrameGlobString?: string;

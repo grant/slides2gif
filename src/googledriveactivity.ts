@@ -22,7 +22,7 @@ const getDriveActivityClient = async () => {
 /**
  * Gets the Drive IDs of recently modified presentations.
  */
-export const getRecentPresentations = async () => {
+export const getRecentPresentations: () => Promise<string[]> = async () => {
   // Get Drive activity within the last week.
   // https://developers.google.com/drive/activity/v2/reference/rest/v2/activity/query
   const driveactivity = await getDriveActivityClient();
@@ -47,12 +47,13 @@ export const getRecentPresentations = async () => {
   // Map Slides activities to Drive IDs.
   const ids = slidesActivities.map(slideActivity => {
     const target = slideActivity.targets && slideActivity.targets[0];
-    if (!target) return false;
+    if (!target) return '';
     // Remove 'items/' prefix from ID.
     return (target.driveItem?.name || '').split('items/')[1];
   });
+  const nonNullIds = ids.filter(id => !!id);
 
   // Remove duplicate IDs.
-  const uniqueIds = [...new Set(ids)];
+  const uniqueIds = [...new Set(nonNullIds)];
   return uniqueIds;
 };
