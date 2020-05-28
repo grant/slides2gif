@@ -13,7 +13,7 @@ const googleOAuthClient = new google.auth.OAuth2({
   clientId:
     '392236462496-qmtv90s0k7ha15li7ej07d146c32vhdj.apps.googleusercontent.com',
   clientSecret: 'PmtzackdT4U1XoucheLq_mZw',
-  redirectUri: 'http://localhost:5432',
+  redirectUri: 'http://localhost:8080/oauth2callback', // todo: don't hardcode
 });
 
 // Client auth
@@ -75,6 +75,14 @@ const getNewCreds = async () => {
   const token = await authorizeWithLocalhost();
   return token;
 };
+
+export function getAuthURL(): string {
+  const authUrl = googleOAuthClient.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+  });
+  return authUrl;
+}
 
 /**
  * Authorize the app

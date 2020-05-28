@@ -6,7 +6,7 @@ import {Request, Response} from 'express';
 import web from './src/route/web';
 import oauth2callback from './src/route/oauth2callback';
 import getGif from './src/route/getGif';
-import createGif from './src/route/createGif';
+import createGifRequest from './src/route/createGifRequest';
 
 /**
  * Entry point into the Functions Framework.
@@ -16,8 +16,8 @@ exports.function = (req: Request, res: Response) => {
   const paths = {
     '/web': web,
     '/oauth2callback': oauth2callback,
-    '/getGif': getGif,
-    '/createGif': createGif,
+    '/getGIF': getGif,
+    '/createGIF': createGifRequest,
     // Default route (at the end)
     '/': () => res.send(Object.keys(paths)),
   };

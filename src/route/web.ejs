@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>slides2gif</title>
+</head>
+<body>
+  <h2><a href="<%= authURL %>">Login</a></h2>
+  <h2>Generate GIF from Slides:</h2>
+  <form action="/createGIFrequest" method="post">
+    <label for="presentationurl">Presentation URL:</label>
+    <input type="url" id="presentationurl" name="presentationurl"><br>
+    <input type="hidden" id="token" name="token">
+    <input type="submit" value="Submit">
+  </form>
+  <script>
+    document.getElementById('token').value = window.localStorage.getItem('code');
+  </script>
+  <!-- https://docs.google.com/presentation/d/15bn0X9EKYO0gXxeDRYn3xoCB0im7jYFOOsnV7v5Htec/edit#slide=id.p -->
+  <h2>Storing:</h2>
+</body>
+</html>

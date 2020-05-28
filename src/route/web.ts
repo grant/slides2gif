@@ -1,8 +1,17 @@
 import {Request, Response} from 'express';
+import {getAuthURL} from '../auth';
+const ejs = require('ejs');
+const path = require('path');
 
 /**
- * Global API endpoint.
+ * Web API endpoint.
  */
-export default (req: Request, res: Response) => {
-  res.send('Hello, World, this is Grant.');
+export default async (req: Request, res: Response) => {
+  const authURL = getAuthURL();
+  const data = {
+    authURL,
+  };
+  const htmlPath = path.join(__dirname + '/web.ejs');
+  const html = await ejs.renderFile(htmlPath, data);
+  res.send(html);
 };
