@@ -1,7 +1,7 @@
 import {google} from 'googleapis';
 import {slides_v1} from 'googleapis/build/src/apis/slides/v1';
-import {getAuthClientWithCreds} from './auth';
-import {downloadImage} from './download';
+// import {getAuthClientWithCreds} from './auth';
+import {downloadImage} from '../gif/download';
 
 let slidesClient: slides_v1.Slides | null = null;
 
@@ -11,7 +11,7 @@ const getSlidesClient = async () => {
   // Create and memoize client
   const slides = google.slides({
     version: 'v1',
-    auth: await getAuthClientWithCreds(),
+    // auth: await getAuthClientWithCreds(),
   }) as slides_v1.Slides;
   slidesClient = slides;
 

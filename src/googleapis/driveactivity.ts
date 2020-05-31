@@ -1,6 +1,6 @@
 import {google} from 'googleapis';
 import {driveactivity_v2} from 'googleapis/build/src/apis/driveactivity/v2';
-import {getAuthClientWithCreds} from './auth';
+// import {getAuthClientWithCreds} from './auth';
 
 let driveactivityClient: driveactivity_v2.Driveactivity | null = null;
 
@@ -12,7 +12,7 @@ const getDriveActivityClient = async () => {
   // Create and memoize client
   const driveactivity = google.driveactivity({
     version: 'v2',
-    auth: await getAuthClientWithCreds(),
+    // auth: await getAuthClientWithCreds(),
   }) as driveactivity_v2.Driveactivity;
   driveactivityClient = driveactivity;
 

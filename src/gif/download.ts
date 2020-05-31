@@ -5,12 +5,12 @@ const download = require('download');
  */
 export const downloadImage = async ({
   url = 'http://i.imgur.com/G9bDaPH.jpg',
-  folder = 'dest',
+  folder = 'downloads',
   filename = 'myfile.png',
 }: {
-  url: string;
-  folder: string;
-  filename: string;
+  url?: string;
+  folder?: string;
+  filename?: string;
 }) => {
   return await download(url, folder, {
     filename,

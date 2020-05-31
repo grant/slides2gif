@@ -2,14 +2,13 @@
 /**
  * slides2gif – Converts Google Slides to a gif.
  */
-import {downloadSlides} from './googleslides.js';
-import {getRecentPresentations} from './googledriveactivity';
+import {downloadSlides} from '../googleapis/slides.js';
+import {getRecentPresentations} from '../googleapis/driveactivity';
 import {createGif} from './gif';
 
 (async () => {
   // const presentationId = '1TOZawYQsYFzqd_gf1ZZyuhlXycio3Ylh-HAF_qz_5qU';
   const presentationId = '107QhovazwhLe3AfjF-kVymwRHRpAHXyMcsYZumi2Bmk';
-
   toGif(presentationId);
 
   // for some reason the process hangs.

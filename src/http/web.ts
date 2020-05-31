@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import {getAuthURL} from '../auth';
+import {getAuthURL} from '../googleapis/auth';
 const ejs = require('ejs');
 const path = require('path');
 

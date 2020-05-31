@@ -3,36 +3,43 @@
  */
 import {Request, Response} from 'express';
 
-import web from './src/route/web';
-import oauth2callback from './src/route/oauth2callback';
-import getGif from './src/route/getGif';
-import createGifRequest from './src/route/createGifRequest';
+import web from './src/http/web';
+import oauth2callback from './src/http/oauth2callback';
+import getGif from './src/http/getGif';
+import requestGIF from './src/http/requestGif';
 
-/**
- * Entry point into the Functions Framework.
- * @see https://github.com/GoogleCloudPlatform/functions-framework-nodejs
- */
-exports.function = (req: Request, res: Response) => {
-  const paths = {
-    '/web': web,
-    '/oauth2callback': oauth2callback,
-    '/getGIF': getGif,
-    '/createGIF': createGifRequest,
-    // Default route (at the end)
-    '/': () => res.send(Object.keys(paths)),
-  };
-  // Find the first route that matches
-  for (const [path, route] of Object.entries(paths)) {
-    if (req.path.startsWith(path)) {
-      return route(req, res);
-    }
-  }
+import * as express from 'express';
+const app = express();
 
-  // Allow CORS
+// Express session
+import {getFirestoreSession} from './src/db/firestore';
+const session = require('express-session');
+app.use(session(getFirestoreSession()));
+
+// Allow CORS
+app.use((req: Request, res: Response, next) => {
+  // console.log()
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept'
   );
-  res.send('No path found');
-};
+  next();
+});
+app.use('/web', web);
+// @ts-ignore
+app.use('/oauth2callback', oauth2callback);
+app.use('/getGIF', getGif);
+app.use('/requestGIF', requestGIF);
+
+app.get('/views', (req: any, res: Response) => {
+  if (!req.session.views) {
+    req.session.views = 0;
+  }
+  const views = req.session.views++;
+  res.send(`Views ${views}`);
+});
+app.use('/', (req, res) => res.send('hi there'));
+
+// Export Express app to Functions Framework.
+exports.function = app;

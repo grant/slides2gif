@@ -19,6 +19,20 @@ Move these credentials to `~/.slides2gif.json`.
 Enable the **Slides API**:
 - https://console.cloud.google.com/apis/api/slides.googleapis.com/overview
 
+Enable **Cloud Firestore** in _native mode_:
+- https://firebase.google.com/docs/firestore/quickstart#node.js
+- https://console.firebase.google.com/project/serverless-com-demo/database/firestore/data~2Fcredentials
+
+Create **Cloud Pub/Sub** topic:
+- `slides2gif`
+
+Create a service account in the root of the dir. [Follow these instructions](https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account).
+- `creds.json`
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
+```
+
 ## Test
 
 Convert png to mp4 using [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg):
