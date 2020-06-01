@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import {getAuthURL} from '../googleapis/auth';
+import {Auth} from '../googleapis/auth';
 const ejs = require('ejs');
 const path = require('path');
 
@@ -7,7 +7,7 @@ const path = require('path');
  * Web API endpoint.
  */
 export default async (req: Request, res: Response) => {
-  const authURL = getAuthURL();
+  const authURL = Auth.getAuthURL();
   const data = {
     authURL,
   };

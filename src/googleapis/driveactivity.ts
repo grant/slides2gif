@@ -24,7 +24,7 @@ export class DriveActivity {
   /**
    * Gets the Drive IDs of recently modified presentations.
    */
-  private async getRecentPresentations() {
+  async getRecentPresentations() {
     // Get Drive activity within the last week.
     // https://developers.google.com/drive/activity/v2/reference/rest/v2/activity/query
     const minimumDate = +new Date().setDate(new Date().getDate() - 7);

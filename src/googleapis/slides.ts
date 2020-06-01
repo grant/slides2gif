@@ -1,6 +1,5 @@
 import {google} from 'googleapis';
 import {slides_v1} from 'googleapis/build/src/apis/slides/v1';
-// import {getAuthClientWithCreds} from './auth';
 import {downloadImage} from '../gif/download';
 import {OAuth2Client} from 'google-auth-library';
 

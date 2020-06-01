@@ -1,7 +1,6 @@
 import {Credentials} from 'googleapis/node_modules/google-auth-library/build/src/auth/credentials';
 import {Response} from 'express';
-import {exchangeAuthCodeForTokens} from '../googleapis/auth';
-import {getUserInfo} from '../googleapis/auth';
+import {Auth} from '../googleapis/auth';
 import DB from '../db/firestore';
 const ejs = require('ejs');
 const path = require('path');
@@ -30,14 +29,15 @@ export default async (req: Request, res: Response) => {
    *   expiry_date: 1590858402413
    * }
    */
-  const authTokens: Credentials = await exchangeAuthCodeForTokens(
+  const authTokens: Credentials = await Auth.exchangeAuthCodeForTokens(
     req.query.code + ''
   );
 
   /**
    * Get the Google User ID used to store credentials under.
    */
-  const userinfo = await getUserInfo(authTokens);
+  const userID = await Auth.getUserIDFromCredentials(authTokens);
+  const userinfo = {userID, credentials: authTokens};
   console.log(userinfo);
 
   /**
