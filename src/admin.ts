@@ -39,6 +39,7 @@ class Admin {
 
   static async createGIF() {
     await createGif({});
+    console.log('created gif');
   }
 
   static async listUsers() {
@@ -46,8 +47,9 @@ class Admin {
     console.log(users);
   }
 
-  static async getCredentials() {
-    // const creds = await DB.getUserInfo();
+  static async getUserCredentials() {
+    const userinfo = await DB.getUserInfo('107961566580437023389');
+    console.log(userinfo);
   }
 }
 
@@ -60,6 +62,6 @@ if (require.main === module) {
   // Admin.getSummary();
   // Admin.requestGIF();
   // Admin.downloadImage();
-  Admin.createGIF();
+  // Admin.createGIF();
   // Admin.listUsers();
 }
