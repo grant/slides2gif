@@ -2,6 +2,8 @@
 
 Converts a Google Slide presentation to a gif.
 
+TODO: Just use GCS
+
 ## Requirements
 
 To start this project, you need to install some dependencies.
@@ -11,27 +13,44 @@ brew install ffmpeg graphicsmagick
 npm i gify fluent-ffmpeg
 ```
 
-Then **Create Credentials > Create an OAuth Client**. Download. Name `credentials.json`.
-- https://console.cloud.google.com/apis/credentials
+## Run Setup Script
 
-Move these credentials to `~/.slides2gif.json`.
+```sh
+gcloud config set project "my-project"
+PROJECT=$(gcloud config get-value core/project 2> /dev/null)
 
-Enable the **Slides API**:
-- https://console.cloud.google.com/apis/api/slides.googleapis.com/overview
+# Enable APIs
+gcloud services enable slides.googleapis.com
+gcloud services enable run.googleapis.com
+# gcloud services enable firebase.googleapis.com
+gcloud services enable firestore.googleapis.com
 
-Enable **Cloud Firestore** in _native mode_:
+# Create a service account for using the Firebase Database.
+# See: https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys
+## Create service account
+gcloud iam service-accounts create my-service-account
+## Create creds for service account
+gcloud iam service-accounts keys create creds.json \
+--iam-account my-service-account@${PROJECT}.iam.gserviceaccount.com
+export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
+
+# Create a Pub/Sub topic
+gcloud pubsub topics create topic_new_presentation
+```
+
+### Create OAuth 2.0 Client ID
+
+A OAuth credential authorizes usage of Google Slides
+
+https://console.cloud.google.com/apis/credentials
+
+### Create a Cloud Firestore database
+
+Enable **Cloud Firestore** in _native mode_, not Datastore Mode:
 - https://firebase.google.com/docs/firestore/quickstart#node.js
 - https://console.firebase.google.com/project/serverless-com-demo/database/firestore/data~2Fcredentials
 
-Create **Cloud Pub/Sub** topic:
-- `slides2gif`
-
-Create a service account in the root of the dir. [Follow these instructions](https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account).
-- `creds.json`
-
-```sh
-export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
-```
+https://firebase.google.com/docs/firestore/quickstart#create
 
 ## Test
 

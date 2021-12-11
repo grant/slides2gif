@@ -59,7 +59,7 @@ class Admin {
  */
 if (require.main === module) {
   console.log('SLIDES2GIF ADMIN TEST:');
-  // Admin.getSummary();
+  Admin.getSummary();
   // Admin.requestGIF();
   // Admin.downloadImage();
   // Admin.createGIF();

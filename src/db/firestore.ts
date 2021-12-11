@@ -21,8 +21,7 @@ const {FirestoreStore} = require('@google-cloud/connect-firestore');
  */
 import * as admin from 'firebase-admin';
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  databaseURL: 'https://serverless-com-demo.firebaseio.com',
+  credential: admin.credential.applicationDefault(), // uses GOOGLE_APPLICATION_CREDENTIALS
 });
 const db = admin.firestore();
 
@@ -72,14 +71,18 @@ export default class DB {
    * Prints a summary of the database.
    */
   static async printSummary() {
-    const collections = await db.listCollections();
-    console.log('--- START');
-    console.log('# Collections:');
-    for (const collection of collections) {
-      const size = (await db.collection(collection.id).select().get()).size;
-      console.log(`- ${collection.id} (${size})`);
+    try {
+      // const collections = await db.listCollections();
+      // console.log('--- START');
+      // console.log('# Collections:');
+      // for (const collection of collections) {
+      //   const size = (await db.collection(collection.id).select().get()).size;
+      //   console.log(`- ${collection.id} (${size})`);
+      // }
+      // console.log('--- END');
+    } catch (e) {
+      console.error(e);
     }
-    console.log('--- END');
   }
 }
 

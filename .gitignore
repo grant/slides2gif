@@ -64,9 +64,9 @@ typings/
 # next.js build output
 .next
 
+# JS
+*.js
+
 # Keys
 token.json
-credentials.json
-
-*.js
 creds.json

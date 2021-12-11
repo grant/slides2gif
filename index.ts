@@ -13,13 +13,14 @@ import * as express from 'express';
 const app = express();
 
 // Express session
+
+// TODO: Store with https://cloud.google.com/nodejs/getting-started/session-handling-with-firestore
 import {getFirestoreSession} from './src/db/firestore';
 const session = require('express-session');
 app.use(session(getFirestoreSession()));
 
 // Allow CORS
 app.use((req: Request, res: Response, next) => {
-  // console.log()
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
@@ -43,4 +44,5 @@ app.get('/views', (req: any, res: Response) => {
 app.use('/', (req, res) => res.send('hi there'));
 
 // Export Express app to Functions Framework.
+console.log('STARTING APP');
 exports.function = app;
