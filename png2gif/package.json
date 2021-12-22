@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Converts a set of PNGs to a GIF",
   "main": "index.js",
+  "engines": {
+    "node": "^14.0.0"
+  },
   "scripts": {
     "compile": "tsc",
     "watch": "tsc --watch",
