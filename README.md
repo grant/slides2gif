@@ -13,6 +13,8 @@ brew install ffmpeg graphicsmagick
 npm i gify fluent-ffmpeg
 ```
 
+See: https://www.npmjs.com/package/canvas
+
 ## Run Setup Script
 
 ```sh

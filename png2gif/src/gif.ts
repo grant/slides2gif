@@ -55,8 +55,8 @@ export const createGif = async ({
     path: string;
   }
   const arr: Array<GS> = await toArray(gs(inputFrameGlobString));
-  type ImgSize = {height: number; width: number; type: string};
-  const imgSizes: ImgSize[] = arr.map(img => {
+  type ImgSize = { height: number; width: number; type: string };
+  const imgSizes: ImgSize[] = arr.map((img) => {
     return sizeOf(img.path);
   });
 
