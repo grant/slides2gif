@@ -31,6 +31,7 @@
     "gifencoder": "^2.0.1",
     "gts": "^3.1.0",
     "image-size": "^1.0.0",
+    "merge-deep": "^3.0.3",
     "png-file-stream": "^1.0.1",
     "stream-to-array": "^2.3.0"
   }

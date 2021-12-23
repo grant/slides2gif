@@ -3,6 +3,7 @@ const pngFileStream = require('png-file-stream');
 const sizeOf = require('image-size');
 const gs = require('glob-stream');
 const toArray = require('stream-to-array');
+const mergeDeep = require('merge-deep');
 import * as fs from 'fs';
 
 /**
@@ -11,9 +12,9 @@ import * as fs from 'fs';
 export interface CreateGIFRequestOptions {
   inputFrameGlobString?: string;
   gifOptions?: {
-    repeat: number;
-    delay: number;
-    quality: number;
+    repeat?: number;
+    delay?: number;
+    quality?: number;
   };
   outputGifFilename?: string;
 }
@@ -32,15 +33,19 @@ export interface CreateGIFResponse {
  * Note: To change between jpg to png:
  * `sips -s format png file.jpg --out file.png`
  */
-export const createGif = async ({
-  inputFrameGlobString = 'downloads/**?.png',
-  gifOptions = {
-    repeat: 0,
-    delay: 500, // time in ms.
-    quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
-  },
-  outputGifFilename = 'myanimated.gif',
-}: CreateGIFRequestOptions): Promise<CreateGIFResponse> => {
+export const createGif = async (options: CreateGIFRequestOptions): Promise<CreateGIFResponse> => {
+  const createGifOptions = mergeDeep({
+    inputFrameGlobString: 'downloads/**?.png',
+    gifOptions: {
+      repeat: 0,
+      delay: 500, // time in ms.
+      quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
+    },
+    outputGifFilename: 'myanimated.gif',
+  }, options);
+
+  console.log('CREATING GIF');
+  console.log(createGifOptions);
   // Order of operations:
   // - Verify all images are the same size
   // - Create a GIF with images.
@@ -54,7 +59,7 @@ export const createGif = async ({
     base: string;
     path: string;
   }
-  const arr: Array<GS> = await toArray(gs(inputFrameGlobString));
+  const arr: Array<GS> = await toArray(gs(createGifOptions.inputFrameGlobString));
   type ImgSize = { height: number; width: number; type: string };
   const imgSizes: ImgSize[] = arr.map((img) => {
     return sizeOf(img.path);
@@ -74,9 +79,9 @@ export const createGif = async ({
    */
   const gifSize = size0;
   const encoder = new GIFEncoder(gifSize.width, gifSize.height);
-  const stream = pngFileStream(inputFrameGlobString)
-    .pipe(encoder.createWriteStream(gifOptions))
-    .pipe(fs.createWriteStream(outputGifFilename));
+  const stream = pngFileStream(createGifOptions.inputFrameGlobString)
+    .pipe(encoder.createWriteStream(createGifOptions.gifOptions))
+    .pipe(fs.createWriteStream(createGifOptions.outputGifFilename));
   try {
     // Wait for stream. (Doesn't return anything useful)
     await new Promise((resolve, reject) => {
@@ -85,7 +90,7 @@ export const createGif = async ({
     });
     return {
       success: true,
-      outputGifFilename,
+      outputGifFilename: createGifOptions.outputGifFilename,
     };
   } catch (e) {
     console.error(e);
