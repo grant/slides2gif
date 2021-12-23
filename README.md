@@ -36,6 +36,12 @@ export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
 
 # Create a Pub/Sub topic
 gcloud pubsub topics create topic_new_presentation
+
+# Create a bucket
+gsutil mb gs://slides2gif-upload-test
+
+# Login with ADC
+gcloud auth application-default login
 ```
 
 ### Create OAuth 2.0 Client ID

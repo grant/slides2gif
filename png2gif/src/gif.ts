@@ -40,7 +40,7 @@ export const createGif = async ({
     quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
   },
   outputGifFilename = 'myanimated.gif',
-}: CreateGIFRequestOptions) => {
+}: CreateGIFRequestOptions): Promise<CreateGIFResponse> => {
   // Order of operations:
   // - Verify all images are the same size
   // - Create a GIF with images.
@@ -91,7 +91,7 @@ export const createGif = async ({
     console.error(e);
     return {
       success: false,
-      error: e,
+      error: <undefined>e,
     };
   }
 };
