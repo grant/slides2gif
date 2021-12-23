@@ -1,13 +1,12 @@
 import { createGif } from './gif';
-
-console.log('finally');
+import * as fs from 'fs';
 
 (async () => {
-  await createGif({
-  });
+  await createGif({});
 
-  const fs = require('fs');
-  const res = fs.readFileSync('myanimated.gif');
-
-  console.log(res);
+  if (fs.existsSync('myanimated.gif')) {
+    console.log('Created gif!');
+  } else {
+    console.log('gif doesn\'t exist');
+  }
 })();

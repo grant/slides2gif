@@ -2,10 +2,6 @@
 
 Converts a Google Slide presentation to a gif.
 
-TODO: Just use GCS
-
-IMPORTANT: Use Node 14 (not 16) for `gifencoder`.
-
 ## Requirements
 
 To start this project, you need to install some dependencies.
