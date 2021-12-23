@@ -1,6 +1,13 @@
-import {createGif} from './gif';
+import { createGif } from './gif';
 
-console.log('hi');
+console.log('finally');
 
-createGif({
-});
+(async () => {
+  await createGif({
+  });
+
+  const fs = require('fs');
+  const res = fs.readFileSync('myanimated.gif');
+
+  console.log(res);
+})();
