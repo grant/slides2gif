@@ -1,7 +1,8 @@
+import {http} from '@google-cloud/functions-framework';
 import { createGif } from './gif';
 import * as fs from 'fs';
 
-(async () => {
+http('createGif', async (req, res) => {
   await createGif({});
 
   if (fs.existsSync('myanimated.gif')) {
@@ -9,4 +10,5 @@ import * as fs from 'fs';
   } else {
     console.log('gif doesn\'t exist');
   }
-})();
+  res.send('hi');
+});
