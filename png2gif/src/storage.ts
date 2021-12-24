@@ -16,7 +16,7 @@ export async function uploadFile(localFilepath: string, gcsFilename: string) {
     .upload(localFilepath, {
       destination: gcsFilename,
     });
-  console.log(`- Uploaded: ${getGCSPath(file.name)}`);
+  return file;
 }
 
 /**
