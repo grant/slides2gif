@@ -1,6 +1,7 @@
 import {Storage, File} from '@google-cloud/storage';
+import {Metadata} from '@google-cloud/common';
 
-const BUCKET_NAME = 'slides2gif-upload-test'
+const BUCKET_NAME = 'slides2gif-upload-test';
 
 /**
  * Uploads a file to Cloud Storage
@@ -9,9 +10,10 @@ const BUCKET_NAME = 'slides2gif-upload-test'
  */
 export async function uploadFile(localFilepath: string, gcsFilename: string) {
   const storage = new Storage();
-
-  const [file]: [File, any] = await storage.bucket(BUCKET_NAME).upload(localFilepath, {
-    destination: gcsFilename,
-  });
+  const [file]: [File, Metadata] = await storage
+    .bucket(BUCKET_NAME)
+    .upload(localFilepath, {
+      destination: gcsFilename,
+    });
   console.log(`File uploaded: ${file.id}`);
 }

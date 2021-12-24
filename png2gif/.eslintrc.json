@@ -4,6 +4,7 @@
     "env": {"node": true},
     "rules": {
         "node/no-unpublished-import": 0,
-        "@typescript-eslint/no-var-requires": 0
+        "@typescript-eslint/no-var-requires": 0,
+        "quotes": ["error", "single"]
     }
 }

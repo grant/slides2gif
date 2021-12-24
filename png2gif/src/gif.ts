@@ -33,16 +33,21 @@ export interface CreateGIFResponse {
  * Note: To change between jpg to png:
  * `sips -s format png file.jpg --out file.png`
  */
-export const createGif = async (options: CreateGIFRequestOptions): Promise<CreateGIFResponse> => {
-  const createGifOptions = mergeDeep({
-    inputFrameGlobString: 'downloads/**?.png',
-    gifOptions: {
-      repeat: 0,
-      delay: 500, // time in ms.
-      quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
+export const createGif = async (
+  options: CreateGIFRequestOptions
+): Promise<CreateGIFResponse> => {
+  const createGifOptions = mergeDeep(
+    {
+      inputFrameGlobString: 'downloads/**?.png',
+      gifOptions: {
+        repeat: 0,
+        delay: 500, // time in ms.
+        quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
+      },
+      outputGifFilename: 'myanimated.gif',
     },
-    outputGifFilename: 'myanimated.gif',
-  }, options);
+    options
+  );
 
   console.log('CREATING GIF');
   console.log(createGifOptions);
@@ -59,9 +64,11 @@ export const createGif = async (options: CreateGIFRequestOptions): Promise<Creat
     base: string;
     path: string;
   }
-  const arr: Array<GS> = await toArray(gs(createGifOptions.inputFrameGlobString));
-  type ImgSize = { height: number; width: number; type: string };
-  const imgSizes: ImgSize[] = arr.map((img) => {
+  const arr: Array<GS> = await toArray(
+    gs(createGifOptions.inputFrameGlobString)
+  );
+  type ImgSize = {height: number; width: number; type: string};
+  const imgSizes: ImgSize[] = arr.map(img => {
     return sizeOf(img.path);
   });
 
