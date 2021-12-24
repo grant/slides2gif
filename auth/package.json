@@ -6,7 +6,7 @@
     "scripts": {
         "compile": "tsc",
         "watch": "tsc --watch",
-        "start": "npx @google-cloud/functions-framework --source src/index.js --target oauth2-authorize",
+        "start": "npx @google-cloud/functions-framework --source src/index.js --target oauth2",
         "deploy": "./deploy.sh",
         "lint": "gts lint",
         "clean": "gts clean",

@@ -4,6 +4,8 @@ import { OAuth2Client, Credentials } from 'google-auth-library';
  * Utility methods for Google OAuth authorization.
  */
 export class Auth {
+  static OAUTH2_URL: string = 'oauth2';
+  static OAUTH2_URL_CALLBACK: string = 'oauth2callback';
   static #googleOAuthClient: OAuth2Client;
 
   public static setup(baseurl: string) {
@@ -12,7 +14,7 @@ export class Auth {
       clientId:
         '392236462496-qmtv90s0k7ha15li7ej07d146c32vhdj.apps.googleusercontent.com',
       clientSecret: 'PmtzackdT4U1XoucheLq_mZw',
-      redirectUri: `${baseurl}/oauth2callback`,
+      redirectUri: `${baseurl}/${this.OAUTH2_URL_CALLBACK}`,
     });
   }
 
@@ -63,7 +65,7 @@ export class Auth {
     const tokenInfo = await this.getOAuthClient().getTokenInfo(
       credentials.access_token || ''
     );
-    const userID = tokenInfo.sub || '';
+    const userID = tokenInfo.sub;
     return userID;
-  }
+  }  
 }
