@@ -53,9 +53,13 @@ export class Auth {
    */
   public static async exchangeAuthCodeForTokens(
     authCode: string
-  ): Promise<Credentials> {
-    const tokens = (await this.getOAuthClient().getToken(authCode)).tokens;
-    return tokens;
+  ): Promise<Credentials | null> {
+    try {
+      const tokens = (await this.getOAuthClient().getToken(authCode)).tokens;
+      return tokens;
+    } catch (e) {
+      return null;
+    }
   }
 
   /**
@@ -70,5 +74,5 @@ export class Auth {
     );
     const userID = tokenInfo.sub;
     return userID;
-  }  
+  }
 }

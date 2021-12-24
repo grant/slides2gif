@@ -19,18 +19,25 @@ http(Auth.OAUTH2_URL, async (req, res) => {
 
   // Auth and callback handlers
   if (req.path === '/') {
-    return res.send(Auth.getAuthURL());
+    return res.send({
+      url: Auth.getAuthURL(),
+    });
   } else if (req.path === `/${Auth.OAUTH2_URL_CALLBACK}`) {
     if (!req.query || !req.query.code) {
       return res.status(400).send('Invalid response code');
     }
     const code = req.query.code as string;
-    const tokens: Credentials = await Auth.exchangeAuthCodeForTokens(code);
+    const tokens: Credentials | null = await Auth.exchangeAuthCodeForTokens(code);
+    if (!tokens) {
+      return res.send({
+        error: 'Failed to create token. This access token is already used. Try creating a new one.',
+      });
+    }
 
     // Send the tokens to the user
     return res.send({
       ...tokens,
-      user_id: await Auth.getUserIDFromCredentials(tokens),
+      user_id: await Auth.getUserIDFromCredentials(tokens as Credentials),
     });
   } else {
     return res.sendStatus(404).send('Bad URL');
