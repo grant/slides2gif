@@ -30,7 +30,7 @@ http(Auth.OAUTH2_URL, async (req, res) => {
     const tokens: Credentials | null = await Auth.exchangeAuthCodeForTokens(code);
     if (!tokens) {
       return res.send({
-        error: 'Failed to create token. This access token is already used. Try creating a new one.',
+        error: 'Failed to create access token. This auth token is already used. Try creating a new one.',
       });
     }
 
