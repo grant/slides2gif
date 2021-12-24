@@ -122,6 +122,19 @@ npm run build
 npm i -g .
 ```
 
+## Auth
+
+Requires OAuth creds
+
+See: https://console.cloud.google.com/apis/credentials/consent
+- OAuth consent screen: User Type: External
+- App name: slides2gif
+
+Create a Client ID for Web App:
+- Authorized redirect URIs:
+  - https://slides2gif-*.run.app/oauth2callback
+  - https://localhost:8080/oauth2callback
+
 ## Notes
 
 Global CLI setup via https://ourcodeworld.com/articles/read/393/how-to-create-a-global-module-for-node-js-properly

@@ -70,3 +70,4 @@ typings/
 # Keys
 token.json
 creds.json
+.env

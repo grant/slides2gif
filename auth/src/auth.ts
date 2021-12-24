@@ -9,11 +9,14 @@ export class Auth {
   static #googleOAuthClient: OAuth2Client;
 
   public static setup(baseurl: string) {
-    // TODO: Remove Client secret
+    const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
+    const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+      throw new Error('Client ID / Secret missing!!!');
+    }
     Auth.#googleOAuthClient = new OAuth2Client({
-      clientId:
-        '392236462496-qmtv90s0k7ha15li7ej07d146c32vhdj.apps.googleusercontent.com',
-      clientSecret: 'PmtzackdT4U1XoucheLq_mZw',
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
       redirectUri: `${baseurl}/${this.OAUTH2_URL_CALLBACK}`,
     });
   }
