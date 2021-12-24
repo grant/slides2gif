@@ -13,6 +13,8 @@ OAUTH_CLIENT_SECRET=zzz-fffffffffffffff
 
 ## Credentials
 
+> Important: Use `http://`, not `https://` for localhost redirect URLs.
+
 ### Setup OAuth Consent Screen
 
 To publish an OAuth app, you must setup a user-facing OAuth consent screen:
@@ -23,7 +25,7 @@ To publish an OAuth app, you must setup a user-facing OAuth consent screen:
 1. Set **User type**: External
 1. Set **Authorized domains**:
   - https://slides2gif-*.run.app/oauth2callback
-  - https://localhost:8080/oauth2callback
+  - http://localhost:8080/oauth2callback
 1. Use defaults for everything else and save.
 1. Save.
 
@@ -37,5 +39,5 @@ A OAuth credential authorizes usage of Google Slides and other Google Workspace 
 1. **Name**: slides2gif-oauth
 1. **Authorized redirect URIs**:
   - https://slides2gif-*.run.app/oauth2callback
-  - https://localhost:8080/oauth2callback
+  - http://localhost:8080/oauth2callback
 1. Save.

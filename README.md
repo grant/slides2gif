@@ -109,17 +109,7 @@ See [limits](https://developers.google.com/slides/limits).
 - 500 per project per 100 seconds
 - 100 per user per 100 seconds
 
-## Build
-
-```
-npm run build
-npm i -g .
-```
-
 ## Notes
-
-Global CLI setup via https://ourcodeworld.com/articles/read/393/how-to-create-a-global-module-for-node-js-properly
-
 
 https://stackoverflow.com/questions/57650692/where-to-store-the-refresh-token-on-the-client
 https://stackoverflow.com/questions/44324080/how-to-store-access-token-oauth-2-auth-code-flow
