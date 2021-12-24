@@ -6,21 +6,22 @@ import { OAuth2Client, Credentials } from 'google-auth-library';
 export class Auth {
   static #googleOAuthClient: OAuth2Client;
 
+  public static setup(baseurl: string) {
+    // TODO: Remove Client secret
+    Auth.#googleOAuthClient = new OAuth2Client({
+      clientId:
+        '392236462496-qmtv90s0k7ha15li7ej07d146c32vhdj.apps.googleusercontent.com',
+      clientSecret: 'PmtzackdT4U1XoucheLq_mZw',
+      redirectUri: `${baseurl}/oauth2callback`,
+    });
+  }
+
   /**
    * Gets the Google OAuth client
    * @param baseurl The base URL, i.e. "http://localhost:8080"
    * @returns the Google OAuth client
    */
-  static getOAuthClient(baseurl: string): OAuth2Client {
-    // TODO: Remove Client secret
-    if (this.#googleOAuthClient !== null) {
-      this.#googleOAuthClient = new OAuth2Client({
-        clientId:
-          '392236462496-qmtv90s0k7ha15li7ej07d146c32vhdj.apps.googleusercontent.com',
-        clientSecret: 'PmtzackdT4U1XoucheLq_mZw',
-        redirectUri: `${baseurl}/oauth2callback`,
-      });
-    }
+  private static getOAuthClient(): OAuth2Client {
     return this.#googleOAuthClient;
   }
 
@@ -28,7 +29,7 @@ export class Auth {
    * Generates an OAuth URL for the user to start an OAuth flow.
    * @returns {string} An OAuth URL.
    */
-  static getAuthURL(): string {
+  public static getAuthURL(): string {
     const SCOPES = [
       'https://www.googleapis.com/auth/userinfo.profile', // User info for storing tokens
       'https://www.googleapis.com/auth/presentations.readonly', // Get Slides
@@ -45,7 +46,7 @@ export class Auth {
    * @param {string} authCode The users authorization code.
    * @returns {Credentials} Google credentials (refresh/access tokens).
    */
-  static async exchangeAuthCodeForTokens(
+  public static async exchangeAuthCodeForTokens(
     authCode: string
   ): Promise<Credentials> {
     const tokens = (await this.getOAuthClient().getToken(authCode)).tokens;
@@ -58,7 +59,7 @@ export class Auth {
    * @see https://developers.google.com/identity/protocols/oauth2/openid-connect
    * @returns {string} The user ID.
    */
-  static async getUserIDFromCredentials(credentials: Credentials) {
+  public static async getUserIDFromCredentials(credentials: Credentials) {
     const tokenInfo = await this.getOAuthClient().getTokenInfo(
       credentials.access_token || ''
     );
