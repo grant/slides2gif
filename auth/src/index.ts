@@ -2,6 +2,11 @@ import { http } from '@google-cloud/functions-framework';
 import { Credentials } from 'google-auth-library';
 import { Auth } from './auth';
 
+// Load env vars (.env)
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../.env')
+});
+
 /**
  * Request for OAuth2 authorization.
  * 2 routes

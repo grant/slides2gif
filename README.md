@@ -61,12 +61,6 @@ gsutil mb gs://slides2gif-upload-test
 gcloud auth application-default login
 ```
 
-### Create OAuth 2.0 Client ID
-
-A OAuth credential authorizes usage of Google Slides
-
-https://console.cloud.google.com/apis/credentials
-
 ### Create a Cloud Firestore database
 
 Enable **Cloud Firestore** in _native mode_, not Datastore Mode:
@@ -121,19 +115,6 @@ See [limits](https://developers.google.com/slides/limits).
 npm run build
 npm i -g .
 ```
-
-## Auth
-
-Requires OAuth creds
-
-See: https://console.cloud.google.com/apis/credentials/consent
-- OAuth consent screen: User Type: External
-- App name: slides2gif
-
-Create a Client ID for Web App:
-- Authorized redirect URIs:
-  - https://slides2gif-*.run.app/oauth2callback
-  - https://localhost:8080/oauth2callback
 
 ## Notes
 
