@@ -24,7 +24,12 @@ http('createGif', async (req, res) => {
 
   if (fs.existsSync(filename)) {
     console.log('Created gif! File: ' + filename);
-    uploadFile(filename);
+
+    // Upload then delete file
+    await uploadFile(filename, 'online-file.gif');
+    fs.rmSync(filename);
+
+    console.log('Uploaded and deleted local file');
   } else {
     console.log('error: gif doesn\'t exist');
   }
