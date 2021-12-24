@@ -14,15 +14,20 @@ http(Auth.OAUTH2_URL, async (req, res) => {
 
   // Auth and callback handlers
   if (req.path === '/') {
-    res.send(Auth.getAuthURL());
+    return res.send(Auth.getAuthURL());
   } else if (req.path === `/${Auth.OAUTH2_URL_CALLBACK}`) {
+    if (!req.query || !req.query.code) {
+      return res.status(400).send('Invalid response code');
+    }
     const code = req.query.code as string;
     const tokens: Credentials = await Auth.exchangeAuthCodeForTokens(code);
 
     // Send the tokens to the user
-    res.send({
+    return res.send({
       ...tokens,
       user_id: await Auth.getUserIDFromCredentials(tokens),
     });
+  } else {
+    return res.sendStatus(404).send('Bad URL');
   }
 });
