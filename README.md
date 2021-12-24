@@ -2,6 +2,23 @@
 
 Converts a Google Slide presentation to a gif.
 
+## Services
+
+- `auth`: A service that can request a auth token
+- `png2gif`: A service that can download PNGs from Cloud Storage, generate a GIF, and upload the GIF to Cloud Storage
+
+## User flow
+
+- User goes to website
+- Click "Get Slides"
+- OAuth flow
+  - Store refresh token on client
+- View all Slides from user
+- User clicks slide
+  - Get frames from slide
+  - Create GIF
+  - Show GIF
+
 ## Requirements
 
 To start this project, you need to install some dependencies.
