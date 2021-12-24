@@ -1,11 +1,11 @@
-import { OAuth2Client, Credentials } from 'google-auth-library';
+import {OAuth2Client, Credentials} from 'google-auth-library';
 
 /**
  * Utility methods for Google OAuth authorization.
  */
 export class Auth {
-  static OAUTH2_URL: string = 'oauth2';
-  static OAUTH2_URL_CALLBACK: string = 'oauth2callback';
+  static OAUTH2_URL = 'oauth2';
+  static OAUTH2_URL_CALLBACK = 'oauth2callback';
   static #googleOAuthClient: OAuth2Client;
 
   public static setup(baseurl: string) {

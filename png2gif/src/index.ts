@@ -33,7 +33,7 @@ http('createGif', async (req, res) => {
 
     console.log('Uploaded and deleted local file');
   } else {
-    console.log('error: gif doesn\'t exist');
+    console.log('error: gif does not exist');
   }
   res.send('created gif...' + filename);
 });

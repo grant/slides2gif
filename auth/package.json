@@ -1,5 +1,5 @@
 {
-    "name": "auth",
+    "name": "slides2gif-auth",
     "version": "1.0.0",
     "description": "Service that can request an auth token",
     "main": "index.js",

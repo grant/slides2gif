@@ -1,4 +1,5 @@
 import {Storage, File} from '@google-cloud/storage';
+// eslint-disable-next-line node/no-extraneous-import
 import {Metadata} from '@google-cloud/common';
 
 const BUCKET_NAME = 'slides2gif-upload-test';

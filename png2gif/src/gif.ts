@@ -1,6 +1,7 @@
 const GIFEncoder = require('gifencoder');
 const pngFileStream = require('png-file-stream');
 const sizeOf = require('image-size');
+// eslint-disable-next-line node/no-extraneous-require
 const gs = require('glob-stream');
 const toArray = require('stream-to-array');
 const mergeDeep = require('merge-deep');

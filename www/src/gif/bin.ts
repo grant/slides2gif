@@ -2,10 +2,10 @@
 /**
  * slides2gif – Converts Google Slides to a gif.
  */
-import {Auth} from '../googleapis/auth';
-import {Slides} from '../googleapis/slides';
-import {DriveActivity} from '../googleapis/driveactivity';
-import {createGif} from './gif';
+// import {Auth} from '../googleapis/auth';
+// import {Slides} from '../googleapis/slides';
+// import {DriveActivity} from '../googleapis/driveactivity';
+// import {createGif} from './gif';
 
 // (async () => {
 //   // const presentationId = '1TOZawYQsYFzqd_gf1ZZyuhlXycio3Ylh-HAF_qz_5qU';

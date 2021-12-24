@@ -1,10 +1,10 @@
-import { http } from '@google-cloud/functions-framework';
-import { Credentials } from 'google-auth-library';
-import { Auth } from './auth';
+import {http} from '@google-cloud/functions-framework';
+import {Credentials} from 'google-auth-library';
+import {Auth} from './auth';
 
 // Load env vars (.env)
 require('dotenv').config({
-  path: require('path').resolve(__dirname, '../.env')
+  path: require('path').resolve(__dirname, '../.env'),
 });
 
 /**
@@ -14,7 +14,7 @@ require('dotenv').config({
  * - /callback - Get the access / refresh tokens after auth
  */
 http(Auth.OAUTH2_URL, async (req, res) => {
-  const baseURL = req.protocol + '://' + req.get('host')
+  const baseURL = req.protocol + '://' + req.get('host');
   Auth.setup(baseURL);
 
   // Auth and callback handlers
@@ -27,10 +27,13 @@ http(Auth.OAUTH2_URL, async (req, res) => {
       return res.status(400).send('Invalid response code');
     }
     const code = req.query.code as string;
-    const tokens: Credentials | null = await Auth.exchangeAuthCodeForTokens(code);
+    const tokens: Credentials | null = await Auth.exchangeAuthCodeForTokens(
+      code
+    );
     if (!tokens) {
       return res.send({
-        error: 'Failed to create access token. This auth token is already used. Try creating a new one.',
+        error:
+          'Failed to create access token. This auth token is already used. Try creating a new one.',
       });
     }
 
