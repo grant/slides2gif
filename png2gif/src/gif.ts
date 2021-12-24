@@ -11,7 +11,7 @@ import * as fs from 'fs';
  */
 export interface CreateGIFRequestOptions {
   inputFrameGlobString?: string;
-  gifOptions?: {
+  gifOptions: {
     repeat?: number;
     delay?: number;
     quality?: number;
