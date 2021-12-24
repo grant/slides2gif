@@ -1,4 +1,4 @@
-# auth
+# slides2gif auth
 
 A simple service that handles Google OAuth.
 

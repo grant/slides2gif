@@ -1,11 +1,13 @@
-# slides2gif
+# slides2gif www
 
-Converts a Google Slide presentation to a gif.
+A web service that interacts with auth and png2gif Converts a Google Slide presentation to a gif.
 
 ## Services
 
-- `auth`: A service that can request a auth token
+- `auth`: A service that can get Google OAuth tokens
+- `googleapis` A service that can call various Google APIs using a Google OAuth token
 - `png2gif`: A service that can download PNGs from Cloud Storage, generate a GIF, and upload the GIF to Cloud Storage
+- `www`: A service that provides a web interface for interacting with all of these services
 
 ## User flow
 
