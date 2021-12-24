@@ -16,5 +16,14 @@ export async function uploadFile(localFilepath: string, gcsFilename: string) {
     .upload(localFilepath, {
       destination: gcsFilename,
     });
-  console.log(`File uploaded: ${file.id}`);
+  console.log(`- Uploaded: ${getGCSPath(file.name)}`);
+}
+
+/**
+ * Gets the Cloud Storage full URL from a file name.
+ * @param gcsFilename The file
+ * @returns The gs:// filename
+ */
+export function getGCSPath(gcsFilename: string) {
+  return `gs://${BUCKET_NAME}/${gcsFilename}`;
 }

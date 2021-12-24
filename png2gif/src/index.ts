@@ -1,7 +1,8 @@
-import {http} from '@google-cloud/functions-framework';
+import {http, Request, Response} from '@google-cloud/functions-framework';
 import {createGif, CreateGIFRequestOptions} from './gif';
-import {uploadFile} from './storage';
+import {uploadFile, getGCSPath} from './storage';
 import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Creates a gif.
@@ -10,13 +11,14 @@ import * as fs from 'fs';
  * - quality?: The GIF quality
  * - repeat?: The GIF repeat
  */
-http('createGif', async (req, res) => {
-  const filename = 'goo.gif'; // TODO
+http('createGif', async (req: Request, res: Response) => {
+  const localFilename = `${uuidv4()}.gif`;
+  const gcsFilename = localFilename;
   const gifReq: CreateGIFRequestOptions = {
-    outputGifFilename: filename,
+    outputGifFilename: localFilename,
     gifOptions: {},
   };
-  // Add options if defined.
+  // Create GIF. Add options if defined.
   if (req.query.delay !== undefined) gifReq.gifOptions.delay = +req.query.delay;
   if (req.query.quality !== undefined)
     gifReq.gifOptions.quality = +req.query.quality;
@@ -24,16 +26,25 @@ http('createGif', async (req, res) => {
     gifReq.gifOptions.repeat = +req.query.repeat;
   await createGif(gifReq);
 
-  if (fs.existsSync(filename)) {
-    console.log('Created gif! File: ' + filename);
+  // Upload GIF to GCS.
+  const gcsPath = getGCSPath(localFilename);
+  if (fs.existsSync(localFilename)) {
+    console.log('Created gif locally!');
 
     // Upload then delete file
-    await uploadFile(filename, 'online-file.gif');
-    fs.rmSync(filename);
+    await uploadFile(localFilename, gcsFilename);
+    fs.rmSync(localFilename);
 
-    console.log('Uploaded and deleted local file');
+    console.log(`Uploaded: ${gcsPath}`);
+    res.send({
+      result: 'SUCCESS',
+      file: gcsPath,
+    });
   } else {
     console.log('error: gif does not exist');
+    res.send({
+      result: 'FAILURE',
+      file: gcsPath,
+    });
   }
-  res.send('created gif...' + filename);
 });
