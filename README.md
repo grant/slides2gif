@@ -5,17 +5,17 @@ A web service that interacts with auth and png2gif Converts a Google Slide prese
 ## Services
 
 - `auth`: A service that can get Google OAuth tokens
-- `googleapis` A service that can call various Google APIs using a Google OAuth token
+- `googleapis` A service that can call various Google APIs using an authorized Google OAuth token
 - `png2gif`: A service that can download PNGs from Cloud Storage, generate a GIF, and upload the GIF to Cloud Storage
 - `www`: A service that provides a web interface for interacting with all of these services
 
 ## User flow
 
 - User goes to website
-- Click "Get Slides"
-- OAuth flow
+- (If unauth'd) Click "Get Slides"
+- (If unauth'd) OAuth flow
   - Store refresh token on client
-- View all Slides from user
+- View all presentations from user
 - User clicks slide
   - Get frames from slide
   - Create GIF

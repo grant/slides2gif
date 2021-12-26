@@ -7,8 +7,10 @@ import {OAuth2Client, Credentials} from 'google-auth-library';
  * The Result of downloading slides.
  */
 export type DownloadSlidesResult = Promise<{
+  // True if the result is done (successfully)
   done: boolean;
-  numSlides: number;
+  // A list of local file paths to the images.
+  images: string[];
 }>;
 
 /**
@@ -44,14 +46,14 @@ export class Slides {
    */
   async downloadSlides({
     presentationId,
-    downloadLocation = 'downloads/',
+    downloadLocation = 'downloads',
     slideQuery = '', // TODO
   }: {
     presentationId: string;
     downloadLocation?: string;
     slideQuery?: string;
   }): DownloadSlidesResult {
-    console.log('START: ' + presentationId);
+    console.log('- START downloadSlides: ' + presentationId);
 
     // Get Slides
     const slide: slides_v1.Schema$Page[] = await this.getSlides(presentationId);
@@ -64,17 +66,18 @@ export class Slides {
     const downloadPromises = thumbnailData.map(async (thumbnail, i) => {
       // image name matters as it orders the gif frames
       // i.e. `000.png`, `001.png`
-      const imageName = (i + '').padStart(3, '0');
+      const imageName = `${(i + '').padStart(3, '0')}.png`;
       await downloadImage({
         url: thumbnail.contentUrl || '',
         folder: downloadLocation,
-        filename: `${imageName}.png`,
+        filename: imageName,
       });
+      return `${downloadLocation}${imageName}`;
     });
-    await Promise.all(downloadPromises);
+    const imageNames = await Promise.all(downloadPromises);
     return {
       done: true,
-      numSlides: downloadPromises.length,
+      images: imageNames,
     };
   }
 
@@ -86,7 +89,7 @@ export class Slides {
       presentationId,
     });
     if (p.data.slides) {
-      console.log(`${p.data.slides.length} slides.`);
+      console.log(`Presentation: ${presentationId} has ${p.data.slides.length} slides.`);
     }
     const presoSlides: slides_v1.Schema$Page[] | undefined = p.data.slides;
     if (!presoSlides) return [];
@@ -106,7 +109,11 @@ export class Slides {
         presentationId: presentationId,
         pageObjectId: page.objectId + '',
         // https://developers.google.com/slides/reference/rest/v1/presentations.pages/getThumbnail#thumbnailsize
-        'thumbnailProperties.thumbnailSize': 'MEDIUM',
+        // TODO: Parameterize
+        // SMALL: 200×112
+        // MEDIUM: 800x450
+        // LARGE: 1600×900
+        'thumbnailProperties.thumbnailSize': 'SMALL',
       });
       // Add data such as: contentUrl, height, width
       thumbnails.push(thumbnail.data);

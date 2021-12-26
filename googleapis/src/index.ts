@@ -1,9 +1,12 @@
 import {http, Request, Response} from '@google-cloud/functions-framework';
 import {Slides} from './slides';
+import {uploadFile} from './storage';
 
 interface DownloadSlideImagesReq {
-  // The authorized OAuth token
-  token: string;
+  // The authorized OAuth access token
+  accessToken: string;
+  // The authorized OAuth refresh token
+  refreshToken: string;
   // The Google Slide presentation ID
   presentationId: string;
   // The slides query. i.e. "1,2,3" or "3,5,9"
@@ -25,10 +28,11 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
 
 /**
  * Downloads Google Slide images from a presentation.
- * Puts the slides in a Cloud Storage bucket for further use.
+ * Then uploads the images into a Cloud Storage bucket for further use.
  *
  * URL parameters:
- * - token: The access token
+ * - accessToken: The access token
+ * - refreshToken?: The refresh token – will refresh the access token if expired
  * - presentationId: The Google Slide presentation ID
  * - slideQuery?: The slides to get. i.e. "1,2,3" or "3,5,9"
  */
@@ -36,17 +40,24 @@ http('downloadSlideImages', async (req: Request, res: Response) => {
   console.log('downloadSlideImages');
   // Create request
   const imageReq: DownloadSlideImagesReq = {
-    token: req.query.token as string,
+    accessToken: req.query.accessToken as string,
+    refreshToken: req.query.refreshToken as string,
     presentationId: req.query.presentationId as string,
     slideQuery: req.query.slideQuery as string,
   };
-  if (!imageReq.token) return res.status(400).send('Missing query: `token`');
-  if (!imageReq.presentationId)
+  if (!imageReq.accessToken) return res.status(400).send('Missing query: `accessToken`');
+  if (!imageReq.refreshToken) return res.status(400).send('Missing query: `refreshToken`');
+  if (!imageReq.presentationId) {
     return res.status(400).send('Missing query: `presentationId`');
+  }
 
   // Execute request
   // Download images in downloads
-  const slides = new Slides({access_token: imageReq.token});
+  // i.e. downloads/${presentationId}/000.png
+  const slides = new Slides({
+    access_token: imageReq.accessToken,
+    refresh_token: imageReq.refreshToken,
+  });
   const downloadLocation = `downloads/${imageReq.presentationId}/`;
   const downloadRes = await slides.downloadSlides({
     presentationId: imageReq.presentationId,
@@ -56,8 +67,11 @@ http('downloadSlideImages', async (req: Request, res: Response) => {
 
   // Upload slides to GCS
   // For all slides in downloads, upload to GCS
-  if (!downloadRes.done)
+  if (!downloadRes.done) {
     return res.status(400).send('Error downloading slides');
+  }
+  console.log('Uploading slides to GCS...');
+  console.log(downloadRes.images);
 
   const imageRes: DownloadSlideImagesRes = {
     foo: 'bar',
