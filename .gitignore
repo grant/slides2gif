@@ -71,3 +71,6 @@ typings/
 token.json
 creds.json
 .env
+
+# Ignore downloads
+downloads/

@@ -1,88 +1,116 @@
-// import {google} from 'googleapis';
-// import {slides_v1} from 'googleapis/build/src/apis/slides/v1';
-// import {downloadImage} from '../gif/download';
-// import {OAuth2Client} from 'google-auth-library';
+import {google} from 'googleapis';
+import {slides_v1} from 'googleapis/build/src/apis/slides/v1';
+import {downloadImage} from './download';
+import {OAuth2Client, Credentials} from 'google-auth-library';
 
-// /**
-//  * A Google Slides client.
-//  */
-// export class Slides {
-//   #slides: slides_v1.Slides;
+/**
+ * The Result of downloading slides.
+ */
+export type DownloadSlidesResult = Promise<{
+  done: boolean;
+  numSlides: number;
+}>;
 
-//   /**
-//    * Creates a Slides client.
-//    * @param {OAuth2Client} auth The auth client for this library.
-//    */
-//   constructor(auth: OAuth2Client) {
-//     this.#slides = google.slides({
-//       version: 'v1',
-//       auth,
-//     }) as slides_v1.Slides;
-//   }
+/**
+ * A Google Slides client.
+ */
+export class Slides {
+  #slides: slides_v1.Slides;
 
-//   /**
-//    * Downloads slide thumbnails given a presentation.
-//    */
-//   async downloadSlides(presentationId: string) {
-//     console.log('START');
-//     console.log(presentationId);
-//     // Load creds
-//     console.log('LOAD CREDS');
+  /**
+   * Creates a Slides client.
+   */
+  constructor(creds: Credentials) {
+    const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
+    const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
 
-//     // Get Slides
-//     const slide: slides_v1.Schema$Page[] = await this.getSlides(presentationId);
-//     if (!slide) return console.error('bad slides');
+    // Set credentials
+    const auth = new OAuth2Client({
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
+    });
+    auth.setCredentials(creds);
 
-//     // Get thumbnail data per slide
-//     const thumbnailData: Array<slides_v1.Schema$Thumbnail> =
-//       await this.getThumbnailData(presentationId, slide);
-//     // Download each thumbnail locally
-//     const downloadPromises = thumbnailData.map(async (thumbnail, i) => {
-//       // image name matters as it orders the gif frames
-//       const imageName = (i + '').padStart(3, '0');
-//       return await downloadImage({
-//         url: thumbnail.contentUrl || '',
-//         folder: 'downloads',
-//         filename: `${imageName}.png`,
-//       });
-//     });
-//     const done = await Promise.all(downloadPromises);
-//     return done;
-//   }
+    this.#slides = google.slides({
+      version: 'v1',
+      auth,
+    }) as slides_v1.Slides;
+  }
 
-//   /**
-//    * Gets a list of slides given a presentation
-//    */
-//   private async getSlides(presentationId: string) {
-//     const p = await this.#slides.presentations.get({
-//       presentationId,
-//     });
-//     if (p.data.slides) {
-//       console.log(`${p.data.slides.length} slides.`);
-//     }
-//     const presoSlides: slides_v1.Schema$Page[] | undefined = p.data.slides;
-//     if (!presoSlides) return [];
-//     return presoSlides;
-//   }
+  /**
+   * Downloads all slide thumbnails given a presentation.
+   * @param {string} presentationId The Google Slide presentation ID, i.e. "1RiBBZiBLH8XOxmc7oK8FJttZwMnk-dyRh0K67FVfvYo"
+   * @param {string} downloadLocation The local download location for these files. Relative to the `package.json` file.
+   */
+  async downloadSlides({
+    presentationId,
+    downloadLocation = 'downloads/',
+    slideQuery = '', // TODO
+  }: {
+    presentationId: string;
+    downloadLocation?: string;
+    slideQuery?: string;
+  }): DownloadSlidesResult {
+    console.log('START: ' + presentationId);
 
-//   /**
-//    * Gets an array of thumbnails from an array of pages.
-//    */
-//   private async getThumbnailData(
-//     presentationId: string,
-//     pages: slides_v1.Schema$Page[]
-//   ) {
-//     const thumbnails: slides_v1.Schema$Thumbnail[] = [];
-//     for (const page of pages) {
-//       const thumbnail = await this.#slides.presentations.pages.getThumbnail({
-//         presentationId: presentationId,
-//         pageObjectId: page.objectId + '',
-//         // https://developers.google.com/slides/reference/rest/v1/presentations.pages/getThumbnail#thumbnailsize
-//         'thumbnailProperties.thumbnailSize': 'MEDIUM',
-//       });
-//       // Add data such as: contentUrl, height, width
-//       thumbnails.push(thumbnail.data);
-//     }
-//     return thumbnails;
-//   }
-// }
+    // Get Slides
+    const slide: slides_v1.Schema$Page[] = await this.getSlides(presentationId);
+    if (!slide) return Promise.reject('bad slides');
+
+    // Get thumbnail data per slide
+    const thumbnailData: Array<slides_v1.Schema$Thumbnail> =
+      await this.getThumbnailData(presentationId, slide);
+    // Download each thumbnail locally
+    const downloadPromises = thumbnailData.map(async (thumbnail, i) => {
+      // image name matters as it orders the gif frames
+      // i.e. `000.png`, `001.png`
+      const imageName = (i + '').padStart(3, '0');
+      await downloadImage({
+        url: thumbnail.contentUrl || '',
+        folder: downloadLocation,
+        filename: `${imageName}.png`,
+      });
+    });
+    await Promise.all(downloadPromises);
+    return {
+      done: true,
+      numSlides: downloadPromises.length,
+    };
+  }
+
+  /**
+   * Gets a list of slides given a presentation
+   */
+  private async getSlides(presentationId: string) {
+    const p = await this.#slides.presentations.get({
+      presentationId,
+    });
+    if (p.data.slides) {
+      console.log(`${p.data.slides.length} slides.`);
+    }
+    const presoSlides: slides_v1.Schema$Page[] | undefined = p.data.slides;
+    if (!presoSlides) return [];
+    return presoSlides;
+  }
+
+  /**
+   * Gets an array of thumbnails from an array of pages.
+   */
+  private async getThumbnailData(
+    presentationId: string,
+    pages: slides_v1.Schema$Page[]
+  ) {
+    const thumbnails: slides_v1.Schema$Thumbnail[] = [];
+    for (const page of pages) {
+      const thumbnail = await this.#slides.presentations.pages.getThumbnail({
+        presentationId: presentationId,
+        pageObjectId: page.objectId + '',
+        // https://developers.google.com/slides/reference/rest/v1/presentations.pages/getThumbnail#thumbnailsize
+        'thumbnailProperties.thumbnailSize': 'MEDIUM',
+      });
+      // Add data such as: contentUrl, height, width
+      thumbnails.push(thumbnail.data);
+    }
+    return thumbnails;
+  }
+}

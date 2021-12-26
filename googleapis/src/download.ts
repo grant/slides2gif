@@ -11,7 +11,7 @@ export const downloadImage = async ({
   url?: string;
   folder?: string;
   filename?: string;
-}) => {
+}): Promise<Buffer> => {
   return await download(url, folder, {
     filename,
   });

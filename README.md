@@ -116,5 +116,5 @@ See [limits](https://developers.google.com/slides/limits).
 https://stackoverflow.com/questions/57650692/where-to-store-the-refresh-token-on-the-client
 https://stackoverflow.com/questions/44324080/how-to-store-access-token-oauth-2-auth-code-flow
 https://www.baeldung.com/spring-security-oauth2-remember-me
-
 https://auth0.com/docs/login/spa/authenticate-with-cookies#dealing-with-invalid-or-missing-cookies
+https://developers.google.com/slides/api/limits
