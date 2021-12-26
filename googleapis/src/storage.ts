@@ -2,6 +2,8 @@ import {Storage, File} from '@google-cloud/storage';
 // eslint-disable-next-line node/no-extraneous-import
 import {Metadata} from '@google-cloud/common';
 
+export const BUCKET_NAME = 'slides2gif-upload-test';
+
 /**
  * Uploads a file to Cloud Storage.
  * In Cloud Storage, there are no folders, but files can have a folder prefix.
@@ -12,11 +14,11 @@ import {Metadata} from '@google-cloud/common';
 export async function uploadFile({
   localFilepath,
   gcsFilename,
-  gcsBucket,
+  gcsBucket = BUCKET_NAME,
 }: {
   localFilepath: string;
   gcsFilename: string;
-  gcsBucket: string;
+  gcsBucket?: string;
 }) {
   const storage = new Storage();
   const [file]: [File, Metadata] = await storage

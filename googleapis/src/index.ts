@@ -13,6 +13,8 @@ interface DownloadSlideImagesReq {
   slideQuery: string;
 }
 
+const LOCAL_DOWNLOAD_FOLDER = 'downloads';
+
 // TODO
 interface DownloadSlideImagesRes {}
 
@@ -51,30 +53,39 @@ http('downloadSlideImages', async (req: Request, res: Response) => {
     return res.status(400).send('Missing query: `presentationId`');
   }
 
-  // Execute request
-  // Download images in downloads
+  // Download Google Slide images in downloads
   // i.e. downloads/${presentationId}/000.png
   const slides = new Slides({
     access_token: imageReq.accessToken,
     refresh_token: imageReq.refreshToken,
   });
-  const downloadLocation = `downloads/${imageReq.presentationId}/`;
+  const downloadLocation = `${LOCAL_DOWNLOAD_FOLDER}/${imageReq.presentationId}/`;
   const downloadRes = await slides.downloadSlides({
     presentationId: imageReq.presentationId,
     downloadLocation,
     slideQuery: imageReq.slideQuery,
   });
-
-  // Upload slides to GCS
-  // For all slides in downloads, upload to GCS
   if (!downloadRes.done) {
     return res.status(400).send('Error downloading slides');
+  } else {
+    console.log(`Download ${downloadRes.images.length} images.`);
   }
+
+  // Upload slide images to GCS
   console.log('Uploading slides to GCS...');
-  console.log(downloadRes.images);
+  console.log('Slides:', imageReq.presentationId, downloadRes.images);
+
+  for (let imagePath of downloadRes.images) {
+    // TODO Await all promises
+    await uploadFile({
+      gcsFilename: imagePath,
+      localFilepath: `${LOCAL_DOWNLOAD_FOLDER}/${imageReq.presentationId}/${imagePath}`,
+    });
+  }
+  console.log('Done!');
 
   const imageRes: DownloadSlideImagesRes = {
-    foo: 'bar',
+    images: downloadRes.images
   };
   return res.send(imageRes);
 });

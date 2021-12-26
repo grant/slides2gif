@@ -72,7 +72,7 @@ export class Slides {
         folder: downloadLocation,
         filename: imageName,
       });
-      return `${downloadLocation}${imageName}`;
+      return imageName;
     });
     const imageNames = await Promise.all(downloadPromises);
     return {

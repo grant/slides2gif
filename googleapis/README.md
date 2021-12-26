@@ -9,8 +9,10 @@ A simple service that handles general Google API requests.
     - `presentationId`: The Google Slide presentation ID
     - `slideQuery?`: The slides to get. i.e. "1,2,3" or "3,5,9"
 
+## Run
 
-## Setup
+```
+npm start
+```
 
-
-
+Create a `.env` file in this directory with contents like the other env file.
