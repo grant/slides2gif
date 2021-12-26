@@ -39,7 +39,6 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
  * - slideQuery?: The slides to get. i.e. "1,2,3" or "3,5,9"
  */
 http('downloadSlideImages', async (req: Request, res: Response) => {
-  console.log('downloadSlideImages');
   // Create request
   const imageReq: DownloadSlideImagesReq = {
     accessToken: req.query.accessToken as string,
@@ -68,24 +67,24 @@ http('downloadSlideImages', async (req: Request, res: Response) => {
   if (!downloadRes.done) {
     return res.status(400).send('Error downloading slides');
   } else {
-    console.log(`Download ${downloadRes.images.length} images.`);
+    console.log(`- Downloaded ${downloadRes.images.length} images.`);
   }
 
   // Upload slide images to GCS
-  console.log('Uploading slides to GCS...');
-  console.log('Slides:', imageReq.presentationId, downloadRes.images);
+  console.log('- Uploading slides to GCS...');
+  console.log('  - Slides:', imageReq.presentationId, downloadRes.images);
 
   for (let imagePath of downloadRes.images) {
-    // TODO Await all promises
+    // TODO Await all promises at once
     await uploadFile({
-      gcsFilename: imagePath,
+      gcsFilename: `${imageReq.presentationId}/${imagePath}`,
       localFilepath: `${LOCAL_DOWNLOAD_FOLDER}/${imageReq.presentationId}/${imagePath}`,
     });
   }
   console.log('Done!');
 
   const imageRes: DownloadSlideImagesRes = {
-    images: downloadRes.images
+    images: downloadRes.images.map(i => `${imageReq.presentationId}/${i}`),
   };
   return res.send(imageRes);
 });

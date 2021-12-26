@@ -89,7 +89,7 @@ export class Slides {
       presentationId,
     });
     if (p.data.slides) {
-      console.log(`Presentation: ${presentationId} has ${p.data.slides.length} slides.`);
+      console.log(`- Presentation: ${presentationId} has ${p.data.slides.length} slides.`);
     }
     const presoSlides: slides_v1.Schema$Page[] | undefined = p.data.slides;
     if (!presoSlides) return [];
@@ -113,7 +113,7 @@ export class Slides {
         // SMALL: 200×112
         // MEDIUM: 800x450
         // LARGE: 1600×900
-        'thumbnailProperties.thumbnailSize': 'SMALL',
+        'thumbnailProperties.thumbnailSize': 'MEDIUM',
       });
       // Add data such as: contentUrl, height, width
       thumbnails.push(thumbnail.data);
