@@ -9,9 +9,9 @@ const BUCKET_NAME = 'slides2gif-upload-test';
  * Options for downloading slides from GCS.
  */
 export interface DownloadImagesRequestOptions {
-  presentationId: string;
-  slideList: string;
-  downloadLocation: string;
+  presentationId: string; // The presentation ID.
+  slideList: string; // The slides query. i.e. "1,2,3" or "3,5,9"
+  downloadLocation: string; // ?The local relative folder name for the downloads.
 }
 
 /**
@@ -42,29 +42,35 @@ export function getGCSPath(gcsFilename: string) {
  * Downloads images from GCS.
  * @param downloadImagesReq The image download request.
  */
-export async function downloadFiles(downloadImagesReq: DownloadImagesRequestOptions) {
+export async function downloadFiles({
+  downloadLocation,
+  presentationId,
+  slideList,
+}: DownloadImagesRequestOptions) {
   console.log('DOWNLOADING FILES');
 
   // Validate arguments
-  if (!downloadImagesReq.slideList) {
+  if (!slideList) {
     return { error: 'Missing argument: slideList' };
   }
   const storage = new Storage();
   const [fileList] = await storage.bucket(BUCKET_NAME).getFiles({
-    prefix: downloadImagesReq.presentationId,
+    prefix: presentationId,
   });
+  console.log(`FOUND ${fileList.length} FILES.`);
 
   // Download all files in bucket
   const res: {
     files: string[];
   } = {files: []};
-  mkdirp(`downloads/${downloadImagesReq.presentationId}`);
+  mkdirp(`${downloadLocation}/${presentationId}`);
   for (let i = 0; i < fileList.length; ++i) {
     const f = fileList[i];
-    f.download({
-      destination: `downloads/${f.name}`,
+    console.log(`- ${downloadLocation}/${f.name}`);
+    await f.download({
+      destination: `${downloadLocation}/${f.name}`,
     });
-    res.files.push(`downloads/${f.name}`);
+    res.files.push(`${downloadLocation}/${f.name}`);
   }
   return res;
 }

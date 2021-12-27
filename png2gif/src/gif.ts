@@ -42,7 +42,7 @@ export const createGif = async (
       inputFrameGlobString: 'downloads/**?.png',
       gifOptions: {
         repeat: 0,
-        delay: 500, // time in ms.
+        delay: 1000, // time in ms.
         quality: 1, // default 10. Lower is better quality but slower. Values 1-20.
       },
       outputGifFilename: 'myanimated.gif',

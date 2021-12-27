@@ -15,8 +15,10 @@ interface DownloadSlideImagesReq {
 
 const LOCAL_DOWNLOAD_FOLDER = 'downloads';
 
-// TODO
-interface DownloadSlideImagesRes {}
+// The HTTP response for downloading images.
+interface DownloadSlideImagesRes {
+  images: string[]; // A list of paths to uploaded images
+}
 
 // Load env vars (.env)
 require('dotenv').config({

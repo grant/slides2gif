@@ -13,6 +13,14 @@ export type DownloadSlidesResult = Promise<{
   images: string[];
 }>;
 
+// https://developers.google.com/slides/reference/rest/v1/presentations.pages/getThumbnail#thumbnailsize
+// The client library currently doesn't provide enums for this.
+enum ThumbnailSize{
+  SMALL = 'SMALL', // 200×112
+  MEDIUM = 'MEDIUM', // 800x450
+  LARGE = 'LARGE', // 1600×900
+}
+
 /**
  * A Google Slides client.
  */
@@ -109,12 +117,7 @@ export class Slides {
       const thumbnail = await this.#slides.presentations.pages.getThumbnail({
         presentationId: presentationId,
         pageObjectId: page.objectId + '',
-        // https://developers.google.com/slides/reference/rest/v1/presentations.pages/getThumbnail#thumbnailsize
-        // TODO: Parameterize
-        // SMALL: 200×112
-        // MEDIUM: 800x450
-        // LARGE: 1600×900
-        'thumbnailProperties.thumbnailSize': 'MEDIUM',
+        'thumbnailProperties.thumbnailSize': ThumbnailSize.MEDIUM,
       });
       // Add data such as: contentUrl, height, width
       thumbnails.push(thumbnail.data);

@@ -18,16 +18,7 @@ const GIF_DOWNLOAD_LOCATION = 'downloads';
 http('createGif', async (req: Request, res: Response) => {
   const localFilename = `${uuidv4()}.gif`;
   const tempGCSFilename = localFilename;
-
-  // Configuration options if defined.
-  const gifReq: CreateGIFRequestOptions = {
-    inputFrameGlobString: `${GIF_DOWNLOAD_LOCATION}/**?.png`,
-    outputGifFilename: localFilename,
-    gifOptions: {},
-  };
-  if (req.query.delay !== undefined) gifReq.gifOptions.delay = +req.query.delay;
-  if (req.query.quality !== undefined) gifReq.gifOptions.quality = +req.query.quality;
-  if (req.query.repeat !== undefined) gifReq.gifOptions.repeat = +req.query.repeat;
+  const presentationId = req.query.presentationId;
 
   // Download images
   const downloadImagesReq: DownloadImagesRequestOptions = {
@@ -36,6 +27,16 @@ http('createGif', async (req: Request, res: Response) => {
     downloadLocation: GIF_DOWNLOAD_LOCATION,
   };
   await downloadFiles(downloadImagesReq);
+
+  // Configuration options if defined.
+  const gifReq: CreateGIFRequestOptions = {
+    inputFrameGlobString: `${GIF_DOWNLOAD_LOCATION}/${presentationId}/**?.png`,
+    outputGifFilename: localFilename,
+    gifOptions: {},
+  };
+  if (req.query.delay !== undefined) gifReq.gifOptions.delay = +req.query.delay;
+  if (req.query.quality !== undefined) gifReq.gifOptions.quality = +req.query.quality;
+  if (req.query.repeat !== undefined) gifReq.gifOptions.repeat = +req.query.repeat;
   await createGif(gifReq);
 
   // Upload GIF to GCS.
