@@ -12,7 +12,6 @@
     "deploy": "./deploy.sh",
     "postinstall": "npm run build",
     "test": "node .",
-    "admin": "node ./src/admin.js",
     "start": "npx @google-cloud/functions-framework --source src/index.js --target www"
   },
   "repository": {
