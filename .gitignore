@@ -74,3 +74,4 @@ creds.json
 
 # Ignore downloads
 downloads/
+*.png

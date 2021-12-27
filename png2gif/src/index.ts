@@ -1,29 +1,41 @@
 import {http, Request, Response} from '@google-cloud/functions-framework';
 import {createGif, CreateGIFRequestOptions} from './gif';
-import {uploadFile, getGCSPath} from './storage';
+import {uploadFile, downloadFiles, getGCSPath, DownloadImagesRequestOptions} from './storage';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
+const GIF_DOWNLOAD_LOCATION = 'downloads';
+
 /**
- * Creates a gif.
+ * Creates a gif given a folder of images in GCS.
  * URL parameters:
+ * - presentationId: The Google Slide presentation
+ * - slideList?: A comma delimited list of slides. i.e. "001,002"
  * - delay?: The GIF delay
  * - quality?: The GIF quality
  * - repeat?: The GIF repeat
  */
 http('createGif', async (req: Request, res: Response) => {
   const localFilename = `${uuidv4()}.gif`;
-  const gcsFilename = localFilename;
+  const tempGCSFilename = localFilename;
+
+  // Configuration options if defined.
   const gifReq: CreateGIFRequestOptions = {
+    inputFrameGlobString: `${GIF_DOWNLOAD_LOCATION}/**?.png`,
     outputGifFilename: localFilename,
     gifOptions: {},
   };
-  // Create GIF. Add options if defined.
   if (req.query.delay !== undefined) gifReq.gifOptions.delay = +req.query.delay;
-  if (req.query.quality !== undefined)
-    gifReq.gifOptions.quality = +req.query.quality;
-  if (req.query.repeat !== undefined)
-    gifReq.gifOptions.repeat = +req.query.repeat;
+  if (req.query.quality !== undefined) gifReq.gifOptions.quality = +req.query.quality;
+  if (req.query.repeat !== undefined) gifReq.gifOptions.repeat = +req.query.repeat;
+
+  // Download images
+  const downloadImagesReq: DownloadImagesRequestOptions = {
+    presentationId: req.query.presentationId + '',
+    slideList: req.query.slideList + '' || '*',
+    downloadLocation: GIF_DOWNLOAD_LOCATION,
+  };
+  await downloadFiles(downloadImagesReq);
   await createGif(gifReq);
 
   // Upload GIF to GCS.
@@ -32,7 +44,7 @@ http('createGif', async (req: Request, res: Response) => {
     console.log('Created gif locally!');
 
     // Upload then delete file
-    await uploadFile(localFilename, gcsFilename);
+    await uploadFile(localFilename, tempGCSFilename);
     fs.rmSync(localFilename);
 
     console.log(`Uploaded: ${gcsPath}`);

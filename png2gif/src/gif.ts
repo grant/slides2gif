@@ -37,7 +37,7 @@ export interface CreateGIFResponse {
 export const createGif = async (
   options: CreateGIFRequestOptions
 ): Promise<CreateGIFResponse> => {
-  const createGifOptions = mergeDeep(
+  const createGifOptions: CreateGIFRequestOptions = mergeDeep(
     {
       inputFrameGlobString: 'downloads/**?.png',
       gifOptions: {
@@ -79,7 +79,12 @@ export const createGif = async (
     return size.width === size0.width && size.height === size0.height;
   });
   for (const isSameSize of sameImgSizes) {
-    if (!isSameSize) throw new Error('Images are not the same size');
+    if (!isSameSize) {
+      return {
+        success: false,
+        error: new Error('Images are not the same size'),
+      };
+    }
   }
 
   /**
@@ -89,7 +94,7 @@ export const createGif = async (
   const encoder = new GIFEncoder(gifSize.width, gifSize.height);
   const stream = pngFileStream(createGifOptions.inputFrameGlobString)
     .pipe(encoder.createWriteStream(createGifOptions.gifOptions))
-    .pipe(fs.createWriteStream(createGifOptions.outputGifFilename));
+    .pipe(fs.createWriteStream(createGifOptions.outputGifFilename as string));
   try {
     // Wait for stream. (Doesn't return anything useful)
     await new Promise((resolve, reject) => {

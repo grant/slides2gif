@@ -11,15 +11,18 @@ A web service that interacts with auth and png2gif Converts a Google Slide prese
 
 ## User flow
 
-- User goes to website
-- (If unauth'd) Click "Get Slides"
-- (If unauth'd) OAuth flow
-  - Store refresh token on client
-- View all presentations from user
-- User clicks slide
-  - Get frames from slide
-  - Create GIF
-  - Show GIF
+Here is the most common user flow, and service that are used:
+
+- [`www`] User goes to website
+- [`www`]  (If unauth'd) Click "Get Slides"
+- [`www`]  (If unauth'd) OAuth flow
+  - [`auth`] Get user Auth
+  - [`www`] Store refresh token on client
+- [`googleapis`] View all presentations from user
+- [`www`] User clicks slide
+  - [`googleapis`] Get Google Slide frames
+  - [`png2gif`] Create GIF
+  - [`www`] Show GIF
 
 ## Requirements
 

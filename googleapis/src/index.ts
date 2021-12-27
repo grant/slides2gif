@@ -62,7 +62,7 @@ http('downloadSlideImages', async (req: Request, res: Response) => {
   const downloadRes = await slides.downloadSlides({
     presentationId: imageReq.presentationId,
     downloadLocation,
-    slideQuery: imageReq.slideQuery,
+    slideList: imageReq.slideQuery,
   });
   if (!downloadRes.done) {
     return res.status(400).send('Error downloading slides');

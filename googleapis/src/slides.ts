@@ -43,15 +43,16 @@ export class Slides {
    * Downloads all slide thumbnails given a presentation.
    * @param {string} presentationId The Google Slide presentation ID, i.e. "1RiBBZiBLH8XOxmc7oK8FJttZwMnk-dyRh0K67FVfvYo"
    * @param {string} downloadLocation The local download location for these files. Relative to the `package.json` file.
+   * @param {string} slideList A comma delimited list of slides. i.e. "001,002"
    */
   async downloadSlides({
     presentationId,
     downloadLocation = 'downloads',
-    slideQuery = '', // TODO
+    slideList = '', // TODO
   }: {
     presentationId: string;
     downloadLocation?: string;
-    slideQuery?: string;
+    slideList?: string;
   }): DownloadSlidesResult {
     console.log('- START downloadSlides: ' + presentationId);
 
