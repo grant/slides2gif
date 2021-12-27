@@ -1,4 +1,3 @@
-// // TODO: Fix eslint disable
 // /* eslint-disable @typescript-eslint/ban-ts-ignore */
 // import {Request, Response} from 'express';
 // import DB from '../db/firestore';
@@ -30,8 +29,6 @@
 //   // @ts-ignore
 //   console.log(req.session);
 //   if (!userid) return res.status(401).send('You need to log in first');
-
-//   // TODO, we should probably ensure teh user has access to the preso before requesting the gif.
 
 //   // Create Pub/Sub message
 //   const messageId = await createGifMessage({

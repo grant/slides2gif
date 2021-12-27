@@ -14,7 +14,7 @@
 
 // // Express session
 
-// // TODO: Store with https://cloud.google.com/nodejs/getting-started/session-handling-with-firestore
+// // https://cloud.google.com/nodejs/getting-started/session-handling-with-firestore
 // import {getFirestoreSession} from './src/db/firestore';
 // const session = require('express-session');
 // app.use(session(getFirestoreSession()));

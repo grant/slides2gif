@@ -95,7 +95,7 @@
 //       dataset: new Firestore(),
 //       kind: COLLECTION.EXPRESS_SESSIONS,
 //     }),
-//     secret: 'my-secret', // TODO configure
+//     secret: 'my-secret',
 //     resave: false,
 //     saveUninitialized: true,
 //   };
