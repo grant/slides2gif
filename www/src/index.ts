@@ -46,3 +46,9 @@
 // // Export Express app to Functions Framework.
 // console.log('STARTING APP');
 // exports.function = app;
+
+import {http, Request, Response} from '@google-cloud/functions-framework';
+
+http('www', (req, res) => {
+  res.send('hi www');
+});
