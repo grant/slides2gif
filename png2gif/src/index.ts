@@ -19,6 +19,11 @@ http('createGif', async (req: Request, res: Response) => {
   const localFilename = `${uuidv4()}.gif`;
   const tempGCSFilename = localFilename;
   const presentationId = req.query.presentationId;
+  if (presentationId === '') {
+    res.send({
+      result: 'FAILURE. Query param "presentationId" is required.',
+    });
+  }
 
   // Download images
   const downloadImagesReq: DownloadImagesRequestOptions = {

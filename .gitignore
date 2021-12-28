@@ -66,6 +66,7 @@ typings/
 
 # JS
 *.js
+!*.next*
 
 # Keys
 token.json
