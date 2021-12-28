@@ -4,15 +4,13 @@
   "description": "Create a GIF from Google Slides",
   "main": "index.js",
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "compile": "tsc",
     "watch": "tsc --watch",
-    "check": "gts check",
+    "start": "npx @google-cloud/functions-framework --source src/index.js --target www",
+    "deploy": "./deploy.sh",
     "clean": "gts clean",
     "fix": "gts fix",
-    "deploy": "./deploy.sh",
-    "postinstall": "npm run build",
-    "test": "node .",
-    "start": "npx @google-cloud/functions-framework --source src/index.js --target www"
+    "test": "node ."
   },
   "repository": {
     "type": "git",
