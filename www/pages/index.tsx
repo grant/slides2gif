@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import Layout, {siteTitle} from '../components/layout';
-// import SectionHeader from './home/section/header';
+import SectionHome from '../components/home';
 // import SectionAbout from './home/section/about';
 // import SectionProjects from './home/section/projects';
 // import SectionExperience from './home/section/experience';
@@ -12,7 +12,8 @@ export default function Home() {
       <Head key="head">
         <title>{siteTitle}</title>
       </Head>
-      nice www
+      <SectionHome />
+      nice main
     </Layout>
   );
 }

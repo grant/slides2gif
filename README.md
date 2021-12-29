@@ -1,6 +1,8 @@
-# slides2gif www
+# slides2gif
 
-A web service that interacts with auth and png2gif Converts a Google Slide presentation to a gif.
+Slides2GIF _for Google Slides_
+
+A web service that converts a Google Slide presentation to a gif.
 
 ## Services
 
@@ -121,3 +123,7 @@ https://stackoverflow.com/questions/44324080/how-to-store-access-token-oauth-2-a
 https://www.baeldung.com/spring-security-oauth2-remember-me
 https://auth0.com/docs/login/spa/authenticate-with-cookies#dealing-with-invalid-or-missing-cookies
 https://developers.google.com/slides/api/limits
+
+Branding:
+
+https://about.google/brand-resource-center/brand-elements/#product-icons

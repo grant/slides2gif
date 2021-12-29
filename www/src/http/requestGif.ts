@@ -31,18 +31,18 @@ export default async (req: Request, res: Response) => {
   if (!userid) return res.status(401).send('You need to log in first');
 
   // Create Pub/Sub message
-//   const messageId = await createGifMessage({
-//     userid,
-//     presentationid,
-//   });
+  //   const messageId = await createGifMessage({
+  //     userid,
+  //     presentationid,
+  //   });
 
   // Return result
   console.log('CREATE GIF REQUEST');
-//   console.log(`PRESENTATION: ${presentationid} MESSAGE: ${messageId}`);
-//   return res.send({
-//     success: true,
-//     presentationid,
-//     messageid: messageId,
-//   });
-    return;
+  //   console.log(`PRESENTATION: ${presentationid} MESSAGE: ${messageId}`);
+  //   return res.send({
+  //     success: true,
+  //     presentationid,
+  //     messageid: messageId,
+  //   });
+  return;
 };
