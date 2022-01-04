@@ -12,11 +12,15 @@ echo "Deploying to project: ${SERVICE}"
 
 # Build the app
 npm run build;
-
-# Deploys the web app to Cloud Run
-GCP_PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
-gcloud run deploy slides2gif \
---source . \
---platform managed \
---region us-central1 \
---allow-unauthenticated
+if [ $? -eq 0 ]; then
+  echo "BUILD SUCCESSFUL."
+  # Deploys the web app to Cloud Run
+  GCP_PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null);
+  gcloud run deploy slides2gif \
+  --source . \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+else
+  echo "BUILD FAILED!"
+fi

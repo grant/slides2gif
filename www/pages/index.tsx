@@ -12,8 +12,7 @@ export default function Home() {
       <Head key="head">
         <title>{siteTitle}</title>
       </Head>
-      <SectionHome />
-      nice main
+      <SectionHome />- Grant
     </Layout>
   );
 }

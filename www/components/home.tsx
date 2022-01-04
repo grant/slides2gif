@@ -6,7 +6,7 @@ export default function SectionHome() {
   const names = classNames(styles.about, styles.home);
   return (
     <section id="home" className={names}>
-      this is home 2
+      Hi Mom!
     </section>
   );
 }
