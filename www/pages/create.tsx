@@ -1,14 +1,14 @@
 import Head from 'next/head';
 import Layout, {siteTitle} from '../components/layout';
-import PageHome from '../components/home';
+import PageCreate from '../components/create';
 
-export default function Home() {
+export default function Create() {
   return (
     <Layout>
       <Head key="head">
         <title>{siteTitle}</title>
       </Head>
-      <PageHome />
+      <PageCreate />
     </Layout>
   );
 }
