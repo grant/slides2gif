@@ -1,51 +1,60 @@
+import commonStyles from './common.module.scss';
 import styles from './home.module.scss';
 import classNames from 'classnames/bind';
 
 export default function PageHome() {
   return (
-    <div>
-      <section className={classNames(styles.about, styles.home)}>
+    <div className={styles.page_wrapper}>
+      <section className={classNames(styles.splash, styles.section)}>
         <h1>Slides2Gif</h1>
-        <p>Create animated GIFs from Google Slide presentations</p>
-        <button>Create GIF</button>
-        <img src="" alt="Example GIF" className="hero-image" />
-
-        <hr />
-        <span>See how it works... <span>V</span></span>
+        <div className={styles.splash_top}>
+          <div className={styles.description_left}>
+            <p className={styles.splash_tagline}>Create animated GIFs from Google Slide presentations</p>
+            <button className={classNames(styles.cta_button, commonStyles.button)}>➕ Create GIF</button>
+          </div>
+          <div className={styles.image_right}>
+            <img src="https://placekitten.com/g/400/300" alt="Example GIF" className={styles.heroImage} />
+          </div>
+        </div>
+        <div className={styles.splash_bottom}>
+          <hr className={commonStyles.hr} />
+          <div className={styles.see_more}>See how it works... ⬇</div>
+        </div>
       </section>
-      <section>
+      <section className={classNames(styles.howitworks, styles.section)}>
         <h2>How it works</h2>
-        <ol>
+        <p className={styles.subtitle}>Turn Google Slide presentations into animated GIFs</p>
+        <ol className={classNames(styles.howitworks_steps)}>
           <li>
-            <img src="" alt="Logging in" />
+            <img className={styles.howitworks_images} src="https://placekitten.com/g/400/300" alt="Logging in" />
             <h3>Login</h3>
           </li>
           <li>
-            <img src="" alt="Chooose slides" />
+            <img className={styles.howitworks_images} src="https://placekitten.com/g/400/300" alt="Chooose slides" />
             <h3>Choose Slides</h3>
           </li>
           <li>
-            <img src="" alt="Create GIF" />
+            <img className={styles.howitworks_images} src="https://placekitten.com/g/400/300" alt="Create GIF" />
             <h3>Create GIF!</h3>
           </li>
         </ol>
       </section>
-      <section>
+      <section className={classNames(styles.features, styles.section)}>
         <h2>Features</h2>
-        <ol>
+        <ol className={classNames(styles.features_list)}>
           <li>
             <h3>Google OAuth</h3>
             <p>Sign in with Google to access:</p>
-            <ul>
-              <li>Slides</li>
-              <li>Drive metadata</li>
-              <li>User profile</li>
+            <ul className={classNames(styles.features_list_subbullets)}>
+              <li>Slides <span className={styles.feature_list_reason}>(for accessing Slide images)</span></li>
+              <li>Drive metadata <span className={styles.feature_list_reason}>(for accessing presentation metadata)</span></li>
+              <li>Basic User profile <span className={styles.feature_list_reason}>(for storing user session)</span></li>
             </ul>
           </li>
           <li>
             <h3>Customize GIF Animation</h3>
             <p>Options when creating your GIF:</p>
-            <ul>
+            <ul className={classNames(styles.features_list_subbullets)}>
               <li>Choose slides</li>
               <li>Delay between slides</li>
               <li>Image quality</li>
@@ -54,14 +63,16 @@ export default function PageHome() {
           </li>
           <li>
             <h3>Private Download Link</h3>
-            <p>Download your GIF with a private link.</p>
+            <ul className={classNames(styles.features_list_subbullets)}>
+              <li>Download your GIF with a private link.</li>
+            </ul>
           </li>
         </ol>
       </section>
-      <section>
+      <section className={classNames(styles.architecture, styles.section)}>
         <h3>Architecture</h3>
-        <p>How this website works, for all you geeks 🤓</p>
-        <img src="" alt="Google Cloud diagram" />
+        <p className={styles.subtitle}>How this website works, for all you geeks 🤓</p>
+        <img src="https://placekitten.com/g/400/300" alt="Google Cloud diagram" />
       </section>
     </div>
   );

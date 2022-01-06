@@ -23,7 +23,7 @@ function GoogleAnalytics() {
     <script
       dangerouslySetInnerHTML={{
         __html: `
-      // TODO
+      // TODO GA
     `,
       }}
     ></script>
