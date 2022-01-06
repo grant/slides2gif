@@ -3,6 +3,7 @@ ENV NODE_ENV=production
 WORKDIR /usr/app
 
 # Install a ton of dependencies needed for image manipulation (canvas)
+# https://www.npmjs.com/package/canvas
 # https://github.com/Automattic/node-canvas/wiki/Installation%3A-Ubuntu-and-other-Debian-based-systems
 ENV PYTHONUNBUFFERED=1
 RUN \

@@ -24,6 +24,10 @@
       border: 1px solid rgba($color: #000000, $alpha: 0.1);
       text-align: center;
     }
+
+    .slides_logo {
+      width: 100px;
+    }
   }
 
   .splash_bottom {
@@ -50,10 +54,14 @@
     width: 100%;
     background-color: red;
   }
+  .howitworks_step {
+    padding: 0 20px;
+  }
 }
 
 .features {
   .features_list {
+    padding-top: 10px;
     h3 {
       font-size: 20px;
     }
@@ -73,6 +81,13 @@
   .feature_list_reason {
     font-size: 10px;
     color: #333;
+  }
+
+  .feature_list_icon {
+    text-align: center;
+    & span {
+      font-size: 60px;
+    }
   }
 }
 
@@ -98,6 +113,8 @@
   }
 
   .subtitle {
+    padding-top: 10px;
+    padding-bottom: 10px;
     text-align: center;
     font-size: 16px;
   }

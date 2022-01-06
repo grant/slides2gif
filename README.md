@@ -4,40 +4,60 @@ Slides2GIF _for Google Slides_
 
 A web service that converts a Google Slide presentation to a gif.
 
-## Services
+Check it out at [slides2gif.com](https://slides2gif.com)!
+
+## Technologies
+
+There are a bunch of technologies used here to make this website:
+
+- Frontend
+  - Next.js / React
+  - SCSS
+  - Material Icons
+- Backend
+  - Cloud Run
+  - Cloud Functions
+  - Docker
+  - Google Cloud Buildpacks
+  - Node.js
+- APIs
+  - Google Slides API
+  - Google Sign-in API
+- Web hosting
+  - Namecheap
+  - Cloudflare
+
+## Backend Services
 
 - `auth`: A service that can get Google OAuth tokens
 - `googleapis` A service that can call various Google APIs using an authorized Google OAuth token
 - `png2gif`: A service that can download PNGs from Cloud Storage, generate a GIF, and upload the GIF to Cloud Storage
 - `www`: A service that provides a web interface for interacting with all of these services
 
-## User flow
+## Backend Services Architecture
 
-Here is the most common user flow, and service that are used:
+Here is the most common user flow and service that are used:
 
-- [`www`] User goes to website
-- [`www`]  (If unauth'd) Click "Get Slides"
-- [`www`]  (If unauth'd) OAuth flow
-  - [`auth`] Get user Auth
-  - [`www`] Store refresh token on client
-- [`googleapis`] View all presentations from user
-- [`www`] User clicks slide
-  - [`googleapis`] Get Google Slide frames
-  - [`png2gif`] Create GIF
-  - [`www`] Show GIF
+1. `www` – User goes to website
+1. `www` –  (If unauth'd) Click "Get Slides"
+1. `www` –  (If unauth'd) OAuth flow
+    - `auth` – Get user Auth
+    - `www` – Store refresh token on client
+1. `googleapis` – View all presentations from user
+1. `www` – User clicks slide
+    - `googleapis` – Get Google Slide frames
+    - `png2gif` – Create GIF
+    - `www` – Show GIF
 
-## Requirements
+## Service Limitations
 
-To start this project, you need to install some dependencies.
+Using the Google Slides API to create thumbnails is expensive and has limits.
 
-```
-brew install ffmpeg graphicsmagick
-npm i gify fluent-ffmpeg
-```
+See [limits](https://developers.google.com/slides/limits).
+- 500 per project per 100 seconds
+- 100 per user per 100 seconds
 
-See: https://www.npmjs.com/package/canvas
-
-## Run Setup Script
+## Setup Script
 
 ```sh
 gcloud config set project "my-project"
@@ -46,7 +66,6 @@ PROJECT=$(gcloud config get-value core/project 2> /dev/null)
 # Enable APIs
 gcloud services enable slides.googleapis.com
 gcloud services enable run.googleapis.com
-# gcloud services enable firebase.googleapis.com
 gcloud services enable firestore.googleapis.com
 
 # Create a service account for using the Firebase Database.
@@ -57,9 +76,6 @@ gcloud iam service-accounts create my-service-account
 gcloud iam service-accounts keys create creds.json \
 --iam-account my-service-account@${PROJECT}.iam.gserviceaccount.com
 export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
-
-# Create a Pub/Sub topic
-gcloud pubsub topics create topic_new_presentation
 
 # Create a bucket
 gsutil mb gs://slides2gif-upload-test
@@ -76,54 +92,11 @@ Enable **Cloud Firestore** in _native mode_, not Datastore Mode:
 
 https://firebase.google.com/docs/firestore/quickstart#create
 
-## Test
-
-Convert png to mp4 using [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg):
-
-```js
-var ffmpeg = require('fluent-ffmpeg');
-var command = ffmpeg()
-  .addInput('frame1.png')
-  .addInput('frame2.png')
-  ...
-  .fps(29.7)
-  .videoSize('640x480')
-  .on('error', function(err) {
-    console.log('An error occurred: ' + err.message);
-  })
-  .on('end', function() {
-    console.log('Processing finished !');
-  })
-  .save('output.mp4');
-
-```
-
-Then convert the mp4 to gif:
-
-```js
-var gify = require('gify');
-
-gify('video.mp4', 'out.gif', function(err){
-	  if (err) throw err;
-});
-```
-
-## Notice
-
-Using the Google Slides API to create thumbnails is expensive and has limits.
-
-See [limits](https://developers.google.com/slides/limits).
-- 500 per project per 100 seconds
-- 100 per user per 100 seconds
-
 ## Notes
 
-https://stackoverflow.com/questions/57650692/where-to-store-the-refresh-token-on-the-client
-https://stackoverflow.com/questions/44324080/how-to-store-access-token-oauth-2-auth-code-flow
-https://www.baeldung.com/spring-security-oauth2-remember-me
-https://auth0.com/docs/login/spa/authenticate-with-cookies#dealing-with-invalid-or-missing-cookies
-https://developers.google.com/slides/api/limits
-
-Branding:
-
-https://about.google/brand-resource-center/brand-elements/#product-icons
+- https://stackoverflow.com/questions/57650692/where-to-store-the-refresh-token-on-the-client
+- https://stackoverflow.com/questions/44324080/how-to-store-access-token-oauth-2-auth-code-flow
+- https://www.baeldung.com/spring-security-oauth2-remember-me
+- https://auth0.com/docs/login/spa/authenticate-with-cookies#dealing-with-invalid-or-missing-cookies
+- https://developers.google.com/slides/api/limits
+- Branding: https://about.google/brand-resource-center/brand-elements/#product-icons
