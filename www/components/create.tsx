@@ -37,7 +37,7 @@ export default function PageCreate() {
           </div>
         </div>
         <div className="right">
-          <img src="" alt="Demo GIF (sign in, customize, create)" />
+          <span src="" alt="Demo GIF (sign in, customize, create)" />
         </div>
       </section>
     </div>

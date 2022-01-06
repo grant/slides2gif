@@ -10,7 +10,7 @@ export default function PageHome() {
         <div className={styles.splash_top}>
           <div className={styles.description_left}>
             <p className={styles.splash_tagline}>Create animated GIFs from Google Slide presentations</p>
-            <button className={classNames(styles.cta_button, commonStyles.button)}>➕ Create GIF</button>
+            <a href="/create"><button className={classNames(styles.cta_button, commonStyles.button)}>➕ Create GIF</button></a>
           </div>
           <div className={styles.image_right}>
             <img src="https://placekitten.com/g/400/300" alt="Example GIF" className={styles.heroImage} />
@@ -72,7 +72,7 @@ export default function PageHome() {
       <section className={classNames(styles.architecture, styles.section)}>
         <h3>Architecture</h3>
         <p className={styles.subtitle}>How this website works, for all you geeks 🤓</p>
-        <img src="https://placekitten.com/g/400/300" alt="Google Cloud diagram" />
+        <img className={styles.architecture_image} src="https://placekitten.com/g/600/400" alt="Google Cloud diagram" />
       </section>
     </div>
   );
