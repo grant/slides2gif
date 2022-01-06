@@ -11,7 +11,7 @@ export default function PageCreate() {
     CREATE = 'CREATE',
     IMPORT = 'IMPORT',
   }
-  
+
   return (
     <div>
       <section className="create">
@@ -19,22 +19,29 @@ export default function PageCreate() {
         <div className="left">
           <div className="customize pane">
             <p>
-              To use slides2gif, the app needs access to Google Slides and metadata:
+              To use slides2gif, the app needs access to Google Slides and
+              metadata:
               <ul>
-                <li><code>userinfo.profile</code>: Read public profile, needed to store your user session</li>
-                <li><code>presentations.readonly</code>: Read your Google Slides</li>
-                <li><code>drive.activity.readonly</code>: Recommend recent presentations based on Drive activity</li>
+                <li>
+                  <code>userinfo.profile</code>: Read public profile, needed to
+                  store your user session
+                </li>
+                <li>
+                  <code>presentations.readonly</code>: Read your Google Slides
+                </li>
+                <li>
+                  <code>drive.activity.readonly</code>: Recommend recent
+                  presentations based on Drive activity
+                </li>
               </ul>
             </p>
             <button>Sign In</button>
           </div>
           <div className="choosePresentation pane">
             <h3>Choose a Presentation</h3>
-            <input type="text" placeholder=''/>
+            <input type="text" placeholder="" />
           </div>
-          <div className="chooseSlides pane">
-
-          </div>
+          <div className="chooseSlides pane"></div>
         </div>
         <div className="right">
           <span src="" alt="Demo GIF (sign in, customize, create)" />
@@ -42,4 +49,4 @@ export default function PageCreate() {
       </section>
     </div>
   );
-};
+}

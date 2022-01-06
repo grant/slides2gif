@@ -9,11 +9,23 @@ export default function PageHome() {
         <h1>Slides2Gif</h1>
         <div className={styles.splash_top}>
           <div className={styles.description_left}>
-            <p className={styles.splash_tagline}>Create animated GIFs from Google Slide presentations</p>
-            <a href="/create"><button className={classNames(styles.cta_button, commonStyles.button)}>➕ Create GIF</button></a>
+            <p className={styles.splash_tagline}>
+              Create animated GIFs from Google Slide presentations
+            </p>
+            <a href="/create">
+              <button
+                className={classNames(styles.cta_button, commonStyles.button)}
+              >
+                ➕ Create GIF
+              </button>
+            </a>
           </div>
           <div className={styles.image_right}>
-            <img src="https://placekitten.com/g/400/300" alt="Example GIF" className={styles.heroImage} />
+            <img
+              src="https://placekitten.com/g/400/300"
+              alt="Example GIF"
+              className={styles.heroImage}
+            />
           </div>
         </div>
         <div className={styles.splash_bottom}>
@@ -23,18 +35,32 @@ export default function PageHome() {
       </section>
       <section className={classNames(styles.howitworks, styles.section)}>
         <h2>How it works</h2>
-        <p className={styles.subtitle}>Turn Google Slide presentations into animated GIFs</p>
+        <p className={styles.subtitle}>
+          Turn Google Slide presentations into animated GIFs
+        </p>
         <ol className={classNames(styles.howitworks_steps)}>
           <li>
-            <img className={styles.howitworks_images} src="https://placekitten.com/g/400/300" alt="Logging in" />
+            <img
+              className={styles.howitworks_images}
+              src="https://placekitten.com/g/400/300"
+              alt="Logging in"
+            />
             <h3>Login</h3>
           </li>
           <li>
-            <img className={styles.howitworks_images} src="https://placekitten.com/g/400/300" alt="Chooose slides" />
+            <img
+              className={styles.howitworks_images}
+              src="https://placekitten.com/g/400/300"
+              alt="Chooose slides"
+            />
             <h3>Choose Slides</h3>
           </li>
           <li>
-            <img className={styles.howitworks_images} src="https://placekitten.com/g/400/300" alt="Create GIF" />
+            <img
+              className={styles.howitworks_images}
+              src="https://placekitten.com/g/400/300"
+              alt="Create GIF"
+            />
             <h3>Create GIF!</h3>
           </li>
         </ol>
@@ -46,9 +72,24 @@ export default function PageHome() {
             <h3>Google OAuth</h3>
             <p>Sign in with Google to access:</p>
             <ul className={classNames(styles.features_list_subbullets)}>
-              <li>Slides <span className={styles.feature_list_reason}>(for accessing Slide images)</span></li>
-              <li>Drive metadata <span className={styles.feature_list_reason}>(for accessing presentation metadata)</span></li>
-              <li>Basic User profile <span className={styles.feature_list_reason}>(for storing user session)</span></li>
+              <li>
+                Slides{' '}
+                <span className={styles.feature_list_reason}>
+                  (for accessing Slide images)
+                </span>
+              </li>
+              <li>
+                Drive metadata{' '}
+                <span className={styles.feature_list_reason}>
+                  (for accessing presentation metadata)
+                </span>
+              </li>
+              <li>
+                Basic User profile{' '}
+                <span className={styles.feature_list_reason}>
+                  (for storing user session)
+                </span>
+              </li>
             </ul>
           </li>
           <li>
@@ -71,8 +112,14 @@ export default function PageHome() {
       </section>
       <section className={classNames(styles.architecture, styles.section)}>
         <h3>Architecture</h3>
-        <p className={styles.subtitle}>How this website works, for all you geeks 🤓</p>
-        <img className={styles.architecture_image} src="https://placekitten.com/g/600/400" alt="Google Cloud diagram" />
+        <p className={styles.subtitle}>
+          How this website works, for all you geeks 🤓
+        </p>
+        <img
+          className={styles.architecture_image}
+          src="https://placekitten.com/g/600/400"
+          alt="Google Cloud diagram"
+        />
       </section>
     </div>
   );
