@@ -8,7 +8,7 @@ export default function Create() {
       <Head key="head">
         <title>{siteTitle}</title>
       </Head>
-      <PageCreate />
+      <PageCreate currentPageType="CREATE" />
     </Layout>
   );
 }

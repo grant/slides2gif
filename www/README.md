@@ -13,6 +13,13 @@ Features shown on the site:
     - Download GIF
 - Hosted on Cloud Run
 
+## Icons
+
+This site uses Material Design icons distributed through Google Fonts.
+
+- https://developers.google.com/fonts/docs/material_icons
+- https://fonts.google.com/icons
+
 ## Buying a Domain
 
 Here are steps needed to host this site on a domain:

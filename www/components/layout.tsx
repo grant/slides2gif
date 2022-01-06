@@ -7,7 +7,10 @@ export default function Layout({children}: {children: React.ReactNode}) {
   return (
     <div className={styles.container}>
       {/* https://google.github.io/material-design-icons/ */}
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      <link
+        href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        rel="stylesheet"
+      />
       <Head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="description" content="Create a GIF from slides" />

@@ -9,7 +9,11 @@ export default function PageHome() {
         <h1>Slides2Gif</h1>
         <div className={styles.splash_top}>
           <div className={styles.description_left}>
-            <img src="/images/Google_Slides_2020_Logo.svg" alt="Google Slides logo" className={styles.slides_logo} />
+            <img
+              src="/images/Google_Slides_2020_Logo.svg"
+              alt="Google Slides logo"
+              className={styles.slides_logo}
+            />
             <p className={styles.splash_tagline}>
               Create animated GIFs from Google Slide presentations
             </p>
@@ -70,7 +74,9 @@ export default function PageHome() {
         <h2>Features</h2>
         <ol className={classNames(styles.features_list)}>
           <li>
-            <div className={styles.feature_list_icon}><span className="material-icons">account_circle</span></div>
+            <div className={styles.feature_list_icon}>
+              <span className="material-icons">account_circle</span>
+            </div>
             <h3>Google OAuth</h3>
             <p>Sign in with Google to access:</p>
             <ul className={classNames(styles.features_list_subbullets)}>
@@ -95,7 +101,9 @@ export default function PageHome() {
             </ul>
           </li>
           <li>
-            <div className={styles.feature_list_icon}><span className="material-icons">settings_suggest</span></div>
+            <div className={styles.feature_list_icon}>
+              <span className="material-icons">settings_suggest</span>
+            </div>
             <h3>Customize GIF Animation</h3>
             <p>Options when creating your GIF:</p>
             <ul className={classNames(styles.features_list_subbullets)}>
@@ -106,7 +114,9 @@ export default function PageHome() {
             </ul>
           </li>
           <li>
-            <div className={styles.feature_list_icon}><span className="material-icons">link</span></div>
+            <div className={styles.feature_list_icon}>
+              <span className="material-icons">link</span>
+            </div>
             <h3>Private Download Link</h3>
             <p>Download your GIF with a private link.</p>
             <ul className={classNames(styles.features_list_subbullets)}>
