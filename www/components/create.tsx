@@ -42,29 +42,60 @@ export default function PageCreate({
   );
 }
 
+// An OAuth permission
+type Permission = {
+  icon: string;
+  id: string;
+  description: string;
+}
+
 /**
  * Page for Google Sign-in
  */
 function PageSignin() {
+  const PERMISSIONS: Permission[] = [{
+    id: 'userinfo.profile',
+      icon: 'account_circle',
+      description: 'Read public profile, for storing user ID',
+    },
+    {
+      id: 'presentations.readonly',
+      icon: 'slideshow',
+      description: 'Access your Slides images',
+    },
+    {
+      id: 'drive.metadata.readonly',
+      icon: 'description',
+      description: 'Access metadata about the Slide you picked',
+    },
+    {
+      id: 'drive.activity.readonly',
+      icon: 'preview',
+      description: 'Recommend recent presentations',
+    }
+  ];
+
   return (
-    <div>
+    <div className={styles.pageContent}>
       <h2>SLIDES2GIF <span>– Sign-in</span></h2>
-      <div className="section_left">
+      <div className={styles.sectionLeft}>
         <p className={styles.description}>To use slide2gif, the app needs access to view Google Slides and metadata.</p>
         <button className={classNames(styles.cta_button, commonStyles.button, commonStyles.yellow, commonStyles.large)}>
           Sign in
         </button>
         <div>
           Permission details:
-          <ul>
-            <li><span className="material-icons">account_circle</span><code>userinfo.profile</code>: Read public profile, for storing user ID</li>
-            <li><span className="material-icons">slideshow</span><code>presentations.readonly</code>: Access your Slides images</li>
-            <li><span className="material-icons">description</span><code>drive.metadata.readonly</code>: Access metadata about the Slide you picked</li>
-            <li><span className="material-icons">preview</span><code>drive.activity.readonly</code>: Recommend recent presentations</li>
+          <ul className={styles.listOfPermissions}>
+            {PERMISSIONS.map((p) => {
+              return <li key={p.id} className={styles.permissionItem}>
+                <span className={classNames("material-icons", styles.materialIcons)}>{p.icon}</span>
+                <code className={styles.permissionID}>{p.id}</code>: {p.description}
+              </li>
+            })}
           </ul>
         </div>
       </div>
-      <div className="section_right">
+      <div className={styles.sectionRight}>
         <img src="https://placekitten.com/g/400/300" alt="" />
       </div>
     </div>

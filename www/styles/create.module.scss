@@ -1,8 +1,37 @@
+.pageContent {
+  width: 1200px;
+  margin: 0 auto;
+}
+
+.sectionLeft {
+  width: 800px;
+  float: left;
+}
+.sectionRight {
+  float: right;;
+  // width: 100%;
+}
+
 .create {
   color: red;
 }
 
 .description {
-  max-width: 400px;;
+  max-width: 400px;
   font-size: 20px;
+  padding: 20px 0;
+}
+.listOfPermissions {
+  padding: 20px;
+}
+.permissionItem {
+ padding-bottom: 3px; 
+}
+.materialIcons {
+  vertical-align: text-bottom;
+  padding-right: 6px;
+}
+
+.permissionID {
+  font-family: monospace;
 }
