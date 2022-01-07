@@ -14,7 +14,8 @@ require('dotenv').config({
  * - /callback - Get the access / refresh tokens after auth
  */
 http(Auth.OAUTH2_URL, async (req, res) => {
-  const baseURL = req.protocol + '://' + req.get('host');
+  const host = process.env.LOCALHOST_REDIRECT_WWW || req.get('host');
+  const baseURL = req.protocol + '://' + host;
   Auth.setup(baseURL);
 
   // Auth and callback handlers

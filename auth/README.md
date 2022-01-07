@@ -45,3 +45,9 @@ Create a `.env` file in this directory with settings you created above:
 OAUTH_CLIENT_ID=xxx-yyy.apps.googleusercontent.com
 OAUTH_CLIENT_SECRET=zzz-fffffffffffffff
 ```
+
+For localhost configuration, add this var to set the OAuth redirect URL:
+
+```
+LOCALHOST_REDIRECT_WWW=localhost:3000
+```

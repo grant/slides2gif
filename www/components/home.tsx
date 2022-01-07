@@ -21,7 +21,7 @@ export default function PageHome() {
               <button
                 className={classNames(styles.cta_button, commonStyles.button)}
               >
-                ➕ Create GIF
+                <span className={classNames("material-icons", commonStyles.material_icons)}>add</span> Create GIF
               </button>
             </a>
           </div>
@@ -35,14 +35,11 @@ export default function PageHome() {
         </div>
         <div className={styles.splash_bottom}>
           <hr className={commonStyles.hr} />
-          <div className={styles.see_more}>See how it works... ⬇</div>
+          <div className={styles.see_more}>See how it works ⬇</div>
         </div>
       </section>
       <section className={classNames(styles.howitworks, styles.section)}>
-        <h2>How it works</h2>
-        <p className={styles.subtitle}>
-          Turn Google Slide presentations into animated GIFs
-        </p>
+        <h2 className={styles.subtitle}>How it works</h2>
         <ol className={classNames(styles.howitworks_steps)}>
           <li className={styles.howitworks_step}>
             <img
@@ -50,7 +47,7 @@ export default function PageHome() {
               src="https://placekitten.com/g/400/300"
               alt="Logging in"
             />
-            <h3>Login</h3>
+            <h4>Login</h4>
           </li>
           <li className={styles.howitworks_step}>
             <img
@@ -58,7 +55,7 @@ export default function PageHome() {
               src="https://placekitten.com/g/400/300"
               alt="Chooose slides"
             />
-            <h3>Choose Slides</h3>
+            <h4>Choose Slides</h4>
           </li>
           <li className={styles.howitworks_step}>
             <img
@@ -66,7 +63,7 @@ export default function PageHome() {
               src="https://placekitten.com/g/400/300"
               alt="Create GIF"
             />
-            <h3>Create GIF!</h3>
+            <h4>Create GIF!</h4>
           </li>
         </ol>
       </section>
@@ -107,7 +104,7 @@ export default function PageHome() {
             <h3>Customize GIF Animation</h3>
             <p>Options when creating your GIF:</p>
             <ul className={classNames(styles.features_list_subbullets)}>
-              <li>Choose slides</li>
+              <li>Slide frames</li>
               <li>Delay between slides</li>
               <li>Image quality</li>
               <li>Auto-repeat</li>

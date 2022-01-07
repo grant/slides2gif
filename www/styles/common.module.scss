@@ -1,11 +1,15 @@
+@import './global.scss';
+
 .button {
   cursor: pointer;
-  padding: 10px 20px;
+  padding: 14px 20px;
   border: 1px solid #999;
-  border-radius: 6px;
+  border-radius: 3px;
   box-shadow: 0 5px 10px rgba(55,55,55, 0.12);
   opacity: 0.95;
-  background-color: #fff;
+  background-color: $color-blue;
+  transition: background-color 200ms linear;
+  color: white;
 
   font-weight: 700;
   font-size: 20px;
@@ -17,20 +21,22 @@
   &.large {
     padding: 20px 40px; 
   }
-}
 
-.button:hover {
-  opacity: 1;
-}
-.button:hover:after {
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-}
-.button:after {
-  box-shadow: 0 5px 10px rgba(55,55,55, 0.12);
-}
+  .material_icons {
+    vertical-align: bottom;
+  }
 
-.button:active {
-  background-color: #ddd; 
+  &:hover:after {
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  &:after {
+    box-shadow: 0 5px 10px rgba(55,55,55, 0.12);
+  }
+
+  &:hover {
+    background-color: darken($color-blue, 5%)
+  }
 }
 
 .hr {

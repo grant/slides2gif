@@ -75,12 +75,20 @@ function PageSignin() {
     }
   ];
 
+  // Handler for when the user clicks.
+  const signInClick = () => {
+    console.log('hi');
+  };
+
   return (
     <div className={styles.pageContent}>
       <h2>SLIDES2GIF <span>– Sign-in</span></h2>
       <div className={styles.sectionLeft}>
         <p className={styles.description}>To use slide2gif, the app needs access to view Google Slides and metadata.</p>
-        <button className={classNames(styles.cta_button, commonStyles.button, commonStyles.yellow, commonStyles.large)}>
+        <button
+          className={classNames(styles.cta_button, commonStyles.button, commonStyles.yellow, commonStyles.large)}
+          onClick={signInClick}
+        >
           Sign in
         </button>
         <div>
