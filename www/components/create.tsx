@@ -4,8 +4,8 @@
  * - Create: Creating a GIF from slide images
  * - Import: Importing slide images
  */
-import commonStyles from './common.module.scss';
-import styles from './create.module.scss';
+import commonStyles from '../styles/common.module.scss';
+import styles from '../styles/create.module.scss';
 import classNames from 'classnames/bind';
 
 // TODO temp

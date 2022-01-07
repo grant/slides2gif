@@ -1,5 +1,5 @@
-import commonStyles from './common.module.scss';
-import styles from './home.module.scss';
+import commonStyles from '../styles/common.module.scss';
+import styles from '../styles/home.module.scss';
 import classNames from 'classnames/bind';
 
 export default function PageHome() {

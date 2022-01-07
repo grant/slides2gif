@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import styles from './layout.module.scss';
+import styles from '../styles/layout.module.scss';
 
 export const siteTitle = 'slides2gif';
 
