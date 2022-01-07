@@ -4,11 +4,12 @@
  * - Create: Creating a GIF from slide images
  * - Import: Importing slide images
  */
+import commonStyles from './common.module.scss';
 import styles from './create.module.scss';
-// import classNames from 'classnames/bind';
+import classNames from 'classnames/bind';
 
 // TODO temp
-const SIGNED_IN = true;
+let SIGNED_IN = false;
 
 // The current page.
 enum PAGE_TYPE {
@@ -27,8 +28,6 @@ export default function PageCreate({
   if (!SIGNED_IN) {
     type = PAGE_TYPE.SIGNIN;
   }
-
-  type = PAGE_TYPE.IMPORT;
 
   // Return the correct page
   const pageFunction = {
@@ -51,19 +50,19 @@ function PageSignin() {
     <div>
       <h2>SLIDES2GIF <span>– Sign-in</span></h2>
       <div className="section_left">
-        <p>To use slide2gif, the app needs access to view Google Slides and metadata.</p>
-        <button>
+        <p className={styles.description}>To use slide2gif, the app needs access to view Google Slides and metadata.</p>
+        <button className={classNames(styles.cta_button, commonStyles.button, commonStyles.yellow, commonStyles.large)}>
           Sign in
         </button>
-        <p>
+        <div>
           Permission details:
           <ul>
-            <li><code>userinfo.profile</code>: Read public profile, for storing user ID</li>
-            <li><code>presentations.readonly</code>: Access your Slides images</li>
-            <li><code>drive.metadata.readonly</code>: Access metadata about the Slide you picked</li>
-            <li><code>drive.activity.readonly</code>: Recommend recent presentations</li>
+            <li><span className="material-icons">account_circle</span><code>userinfo.profile</code>: Read public profile, for storing user ID</li>
+            <li><span className="material-icons">slideshow</span><code>presentations.readonly</code>: Access your Slides images</li>
+            <li><span className="material-icons">description</span><code>drive.metadata.readonly</code>: Access metadata about the Slide you picked</li>
+            <li><span className="material-icons">preview</span><code>drive.activity.readonly</code>: Recommend recent presentations</li>
           </ul>
-        </p>
+        </div>
       </div>
       <div className="section_right">
         <img src="https://placekitten.com/g/400/300" alt="" />

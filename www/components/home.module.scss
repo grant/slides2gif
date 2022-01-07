@@ -1,3 +1,5 @@
+@import './global.scss';
+
 // Wrapper
 .page_wrapper {
 }
@@ -6,7 +8,8 @@
 .splash {
   position: relative;
   color: rgb(20, 30, 50);
-  padding: 200px;
+  // padding: 200px;
+  padding: $splash-padding;
   height: 100vh;
 
   .splash_top {
