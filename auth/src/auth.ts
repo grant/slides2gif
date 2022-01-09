@@ -5,7 +5,7 @@ import {OAuth2Client, Credentials} from 'google-auth-library';
  */
 export class Auth {
   static OAUTH2_URL = 'oauth2';
-  static OAUTH2_URL_CALLBACK = 'oauth2callback';
+  static OAUTH2_URL_CALLBACK = 'api/oauth2callback';
   static #googleOAuthClient: OAuth2Client;
 
   public static setup(baseurl: string) {

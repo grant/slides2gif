@@ -1,15 +1,11 @@
 .pageContent {
-  width: 1200px;
-  margin: 0 auto;
-}
-
-.sectionLeft {
-  width: 800px;
-  float: left;
-}
-.sectionRight {
-  float: right;;
-  // width: 100%;
+  width: 600px;
+  margin: 100px auto;
+  // background-color: blue;
+  border-radius: 5px;
+  border: 2px solid #eee;
+  padding: 20px;
+  text-align: center;
 }
 
 .create {
@@ -17,7 +13,6 @@
 }
 
 .description {
-  max-width: 400px;
   font-size: 20px;
   padding: 20px 0;
 }
@@ -34,4 +29,8 @@
 
 .permissionID {
   font-family: monospace;
+}
+.permissionSection {
+  text-align: left;
+  font-size: 12px;
 }

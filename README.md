@@ -42,9 +42,10 @@ Here is the most common user flow and service that are used:
 1. `www` –  (If unauth'd) Click "Get Slides"
 1. `www` –  (If unauth'd) OAuth flow
     - `auth` – Get user Auth
-    - `www` – Store refresh token on client
-1. `googleapis` – View all presentations from user
-1. `www` – User clicks slide
+    - `www` – Store refresh token on client in session
+1. `www` – User is auth'd. Redirect to logged in screen.
+    - `googleapis` – Get all presentations from user
+1. `www` – User clicks presentation
     - `googleapis` – Get Google Slide frames
     - `png2gif` – Create GIF
     - `www` – Show GIF

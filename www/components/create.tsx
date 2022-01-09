@@ -8,6 +8,9 @@ import commonStyles from '../styles/common.module.scss';
 import styles from '../styles/create.module.scss';
 import classNames from 'classnames/bind';
 
+const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
+const AUTH_URL = 'http://localhost:8080/oauth2';
+
 // TODO temp
 let SIGNED_IN = false;
 
@@ -22,8 +25,12 @@ enum PAGE_TYPE {
  * The SPA page for sign-in, create, and import
  */
 export default function PageCreate({
-  currentPageType: type
-} = { currentPageType: PAGE_TYPE.CREATE }) {
+  currentPageType: type,
+  redirectURL,
+} = {
+  currentPageType: PAGE_TYPE.CREATE,
+  redirectURL: DEFAULT_REDIRECT_URL,
+}) {
   // Redirect to sign-in if not signed in.
   if (!SIGNED_IN) {
     type = PAGE_TYPE.SIGNIN;
@@ -55,57 +62,54 @@ type Permission = {
 function PageSignin() {
   const PERMISSIONS: Permission[] = [{
     id: 'userinfo.profile',
-      icon: 'account_circle',
-      description: 'Read public profile, for storing user ID',
-    },
-    {
-      id: 'presentations.readonly',
-      icon: 'slideshow',
-      description: 'Access your Slides images',
-    },
-    {
-      id: 'drive.metadata.readonly',
-      icon: 'description',
-      description: 'Access metadata about the Slide you picked',
-    },
-    {
-      id: 'drive.activity.readonly',
-      icon: 'preview',
-      description: 'Recommend recent presentations',
-    }
+    icon: 'account_circle',
+    description: 'Read public profile, for storing user ID',
+  },
+  {
+    id: 'presentations.readonly',
+    icon: 'slideshow',
+    description: 'Access your Slides images',
+  },
+  {
+    id: 'drive.metadata.readonly',
+    icon: 'description',
+    description: 'Access metadata about the Slide you picked',
+  },
+  {
+    id: 'drive.activity.readonly',
+    icon: 'preview',
+    description: 'Recommend recent presentations',
+  }
   ];
 
   // Handler for when the user clicks.
   const signInClick = () => {
-    console.log('hi');
+    console.log('Redirect');
+    window.location.href = AUTH_URL;
   };
 
   return (
     <div className={styles.pageContent}>
-      <h2>SLIDES2GIF <span>– Sign-in</span></h2>
-      <div className={styles.sectionLeft}>
-        <p className={styles.description}>To use slide2gif, the app needs access to view Google Slides and metadata.</p>
-        <button
-          className={classNames(styles.cta_button, commonStyles.button, commonStyles.yellow, commonStyles.large)}
-          onClick={signInClick}
-        >
-          Sign in
-        </button>
-        <div>
-          Permission details:
-          <ul className={styles.listOfPermissions}>
-            {PERMISSIONS.map((p) => {
-              return <li key={p.id} className={styles.permissionItem}>
-                <span className={classNames("material-icons", styles.materialIcons)}>{p.icon}</span>
-                <code className={styles.permissionID}>{p.id}</code>: {p.description}
-              </li>
-            })}
-          </ul>
-        </div>
+      <h2>Slides2Gif</h2>
+      <p className={styles.description}>Access to view Google Slides and metadata to create GIFs.</p>
+      <button
+        className={classNames(styles.cta_button, commonStyles.button)}
+        onClick={signInClick}
+      >
+        Sign in
+      </button>
+      <div className={styles.permissionSection}>
+        Permissions:
+        <ul className={styles.listOfPermissions}>
+          {PERMISSIONS.map((p) => {
+            return <li key={p.id} className={styles.permissionItem}>
+              <span className={classNames("material-icons", styles.materialIcons)}>{p.icon}</span>
+              <code className={styles.permissionID}>{p.id}</code>: {p.description}
+            </li>
+          })}
+        </ul>
       </div>
-      <div className={styles.sectionRight}>
-        <img src="https://placekitten.com/g/400/300" alt="" />
-      </div>
+      <img src="https://placekitten.com/g/400/300" alt="" />
     </div>
   );
 }

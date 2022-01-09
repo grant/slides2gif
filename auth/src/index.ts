@@ -23,6 +23,8 @@ http(Auth.OAUTH2_URL, async (req, res) => {
     return res.send({
       url: Auth.getAuthURL(),
     });
+  } else if (req.path === `/${Auth.OAUTH2_URL}`) {
+    return res.redirect(Auth.getAuthURL());
   } else if (req.path === `/${Auth.OAUTH2_URL_CALLBACK}`) {
     if (!req.query || !req.query.code) {
       return res.status(400).send('Invalid response code');
