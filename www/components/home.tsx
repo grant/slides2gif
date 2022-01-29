@@ -21,7 +21,15 @@ export default function PageHome() {
               <button
                 className={classNames(styles.cta_button, commonStyles.button)}
               >
-                <span className={classNames("material-icons", commonStyles.material_icons)}>add</span> Create GIF
+                <span
+                  className={classNames(
+                    'material-icons',
+                    commonStyles.material_icons
+                  )}
+                >
+                  add
+                </span>{' '}
+                Create GIF
               </button>
             </a>
           </div>
@@ -136,14 +144,20 @@ export default function PageHome() {
       </section>
       <section className={classNames(styles.tryit, styles.section)}>
         <h3>Try it!</h3>
-        <p className={styles.subtitle}>
-          Really, just click the button :)
-        </p>
+        <p className={styles.subtitle}>Really, just click the button :)</p>
         <a href="/create">
           <button
             className={classNames(styles.cta_button, commonStyles.button)}
           >
-            <span className={classNames("material-icons", commonStyles.material_icons)}>add</span> Create GIF
+            <span
+              className={classNames(
+                'material-icons',
+                commonStyles.material_icons
+              )}
+            >
+              add
+            </span>{' '}
+            Create GIF
           </button>
         </a>
       </section>

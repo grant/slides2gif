@@ -85,6 +85,24 @@ gsutil mb gs://slides2gif-upload-test
 gcloud auth application-default login
 ```
 
+### Create cookie secret
+
+Files:
+
+- `www/.env.development`
+- `www/.env.production`
+
+Contents:
+
+```sh
+# ⚠️ The SECRET_COOKIE_PASSWORD should never be inside your repository directly, it's here only to ease
+# the example deployment
+# For local development, you should store it inside a `.env.local` gitignored file
+# See https://nextjs.org/docs/basic-features/environment-variables#loading-environment-variables
+
+SECRET_COOKIE_PASSWORD=my-secret
+```
+
 ### Create a Cloud Firestore database
 
 Enable **Cloud Firestore** in _native mode_, not Datastore Mode:

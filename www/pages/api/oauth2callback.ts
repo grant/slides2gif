@@ -1,71 +1,37 @@
-import { ParsedUrlQuery } from "querystring";
+import {ParsedUrlQuery} from 'querystring';
 import Head from 'next/head';
-import { useRouter } from 'next/router'
-import { NextApiRequest, NextApiResponse } from "next";
-import nextSession from "next-session";
-import { IronSessionOptions } from 'iron-session';
-export const getSession = nextSession({});
+import {NextApiRequest, NextApiResponse} from 'next';
+import {withIronSessionApiRoute} from 'iron-session/next';
+import {sessionOptions} from 'lib/session';
+import {GoogleOAuthData} from 'lib/oauth';
 
-
-import { withIronSessionApiRoute } from "iron-session/next";
-
-export const ironOptions: IronSessionOptions = {
-  cookieName: "myapp_cookiename",
-  password: "complex_password_at_least_32_characters_long",
-  // secure: true should be used in production (HTTPS) but can't be used in development (HTTP)
-  cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
-  },
-};
-
-export default withIronSessionApiRoute(loginRoute, ironOptions);
-
-async function loginRoute(req: NextApiRequest, res: NextApiResponse) {
-  // Save session auth "code" and "scope" in "auth" object.
-  req.session.auth = {
-    ...req.query
-  };
-
-  // Save the session
-  await req.session.save();
-
-  // Send a response.
-  console.log('Saved req.session');
-  res.send({ ok: true, auth: req.session.auth });
-  // return <div>ok</div>;
-}
-
-// export default async function PageOAuth2Callback(async (req, res) => {
-//   res.send('hi');
-// });
-//   const router = useRouter()
-
-//   saveOAuthQuery(router.query);
-
-//   return (
-//     <Layout>
-//       <Head key="head">
-//         <title>{siteTitle}</title>
-//       </Head>
-//       Callback!
-//       <script>
-//         console.log('good');
-//       </script>
-//     </Layout>
-//   );
-// }
-
-// The callback parameters from oauth.
-interface OAuthCallbackQuery {
-  code: string;
-  scope: string;
-}
+export default withIronSessionApiRoute(oauth2callback, sessionOptions);
 
 /**
- * Save the OAuth data from the callback URL query.
- * @param query 
+ * The Google OAuth2 callback.
+ * Should give the `code` and `scope` query parameters.
+ * @see https://developers.google.com/identity/protocols/oauth2/web-server
  */
-function saveOAuthQuery(query: ParsedUrlQuery) {
-  const oauthQuery: OAuthCallbackQuery = query as unknown as OAuthCallbackQuery;
-  console.log(oauthQuery);
+async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
+  // Get URL parameters
+  const code = req.query.code + '';
+  const scope = req.query.scope + '';
+  if (!code) return res.send('ERROR: Missing `code` query param');
+  if (!scope) return res.send('ERROR: Missing `scope` query param');
+
+  // Set session Google OAuth
+  req.session.googleOAuth = {
+    code,
+    scope,
+    authDate: +new Date(),
+  };
+
+  console.log('SAVED SESSION!!!');
+  console.log(req.session.googleOAuth);
+
+  // Save session
+  await req.session.save();
+
+  // Redirect to create page.
+  return res.redirect('/create');
 }

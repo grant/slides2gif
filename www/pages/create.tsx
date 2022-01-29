@@ -1,40 +1,36 @@
 import Head from 'next/head';
 import Layout, {siteTitle} from '../components/layout';
 import PageCreate from '../components/create';
-import { useSession, getSession } from 'next-auth/react'
+import useUser from '../lib/useUser';
+import useSWR from 'swr';
 
-// import { getSession } from "next-auth/client"
+const fetcher = (...args) => fetch(...args).then(res => res.json());
 
-import nextSession from "next-session";
-import { IronSessionOptions } from 'iron-session';
+// export async function getServerSideProps() {
+//   const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-// export async function getServerSideProps(context) {
-//   console.log('context.req:');
-//   console.log(context.req.session);
+//   // const { data, error } = useSWR('/api/data', fetcher);
+
+//   const data = await fetcher('http://localhost:3000/api/user');
+
+//   console.log('data');
+//   console.log(data);
+//   // const data = await fetcher('/api/user');
 //   return {
 //     props: {
-//       foo: 'bar'
-//     }, // will be passed to the page component as props
+//       data,
+//     }
 //   }
 // }
 
-export async function getServerSideProps(context) {
-  return {
-    props: {
-      session: await getSession(context)
-    }
-  }
-}
-
 export default function Create(props) {
-  const { data: session, status } = useSession();
-	const loading = status === 'loading';
-
-  console.log('status');
-  console.log(status);
-
-  // console.log('Passed props:');
+  // console.log('props');
   // console.log(props);
+
+  const {data, error} = useSWR('http://localhost:3000/api/user', fetcher);
+  console.log('data, error');
+  console.log(data, error);
+
   return (
     <Layout>
       <Head key="head">
