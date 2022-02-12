@@ -4,6 +4,7 @@ import PageLogin from '../components/login';
 import useUser from '../lib/useUser';
 
 export async function getServerSideProps({req, res}) {
+  console.log(req, res);
   return {
     props: {},
   };
@@ -11,8 +12,10 @@ export async function getServerSideProps({req, res}) {
 
 export default function Login(props) {
   console.log('LOGIN');
+  console.log(props);
 
   const {user} = useUser();
+  console.log(user);
 
   return (
     <Layout>

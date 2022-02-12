@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import Layout, {siteTitle} from '../components/layout';
 import PageCreate from '../components/create';
-import useUser from '../lib/useUser';
+// import useUser from '../lib/useUser';
 import useSWR from 'swr';
 
 const fetcher = (...args) => fetch(...args).then(res => res.json());
@@ -24,8 +24,8 @@ const fetcher = (...args) => fetch(...args).then(res => res.json());
 // }
 
 export default function Create(props) {
-  // console.log('props');
-  // console.log(props);
+  console.log('props');
+  console.log(props);
 
   const {data, error} = useSWR('http://localhost:3000/api/user', fetcher);
   console.log('data, error');

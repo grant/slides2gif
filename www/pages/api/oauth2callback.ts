@@ -1,11 +1,11 @@
-import {ParsedUrlQuery} from 'querystring';
-import Head from 'next/head';
+// import {ParsedUrlQuery} from 'querystring';
+// import Head from 'next/head';
 import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
-import {GoogleOAuthData} from 'lib/oauth';
+// import {GoogleOAuthData} from 'lib/oauth';
 
-export default withIronSessionApiRoute(oauth2callback, sessionOptions);
+export default withIronSessionApiRoute(oauth2callback as any, sessionOptions);
 
 /**
  * The Google OAuth2 callback.

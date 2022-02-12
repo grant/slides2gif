@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-ignore */
 /**
  * API endpoints.
  */
@@ -47,7 +46,7 @@
 // console.log('STARTING APP');
 // exports.function = app;
 
-import {http, Request, Response} from '@google-cloud/functions-framework';
+import {http} from '@google-cloud/functions-framework';
 
 http('www', (req, res) => {
   res.send('hi www');

@@ -1,12 +1,13 @@
-import {useEffect} from 'react';
-import Router from 'next/router';
+// import {useEffect} from 'react';
+// import Router from 'next/router';
 import useSWR from 'swr';
-import {GoogleOAuthData} from 'lib/oauth';
+// import {GoogleOAuthData} from 'lib/oauth';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 export default function useUser({redirectIfFound = false} = {}) {
-  const redirectTo = '/login';
+  console.log(redirectIfFound);
+  // const redirectTo = '/login';
 
   const user = useSWR('/api/user', fetcher);
   return {user};

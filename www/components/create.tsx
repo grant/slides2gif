@@ -4,12 +4,12 @@
  * - Create: Creating a GIF from slide images
  * - Import: Importing slide images
  */
-import commonStyles from '../styles/common.module.scss';
-import styles from '../styles/create.module.scss';
-import classNames from 'classnames/bind';
-import useUser from '../lib/useUser';
+// import commonStyles from '../styles/common.module.scss';
+// import styles from '../styles/create.module.scss';
+// import classNames from 'classnames/bind';
+// import useUser from '../lib/useUser';
 
-const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
+// const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
 
 // The current page.
 enum PAGE_TYPE {
@@ -36,7 +36,7 @@ export default function PageCreate(props) {
   // console.log(data);
 
   // Redirect to login if no user
-  const {user} = useUser();
+  // const {user} = useUser();
 
   // Return the correct page
   const pageFunction = {

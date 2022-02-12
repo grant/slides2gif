@@ -1,7 +1,7 @@
 import '../styles/reset.scss';
 import '../styles/global.scss';
 import {AppProps} from 'next/app';
-import {SessionProvider} from 'next-auth/react';
+// import {SessionProvider} from 'next-auth/react';
 
 /**
  * The base component for the whole app.

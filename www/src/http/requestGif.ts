@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-ignore */
 import {Request, Response} from 'express';
 // import DB from '../db/firestore';
 // import createGifMessage from '../pubsub/pubsubCreateGifMessage';
@@ -24,9 +23,7 @@ export default async (req: Request, res: Response) => {
   }
   console.log(`Requesting GIF: ${presentationid}`);
 
-  // @ts-ignore
   const userid = req.session.userid;
-  // @ts-ignore
   console.log(req.session);
   if (!userid) return res.status(401).send('You need to log in first');
 
