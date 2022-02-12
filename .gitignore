@@ -76,3 +76,4 @@ creds.json
 # Ignore downloads
 downloads/
 *.png
+tsconfig.tsbuildinfo
