@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Read env vars
+set -a
+[ -f .env ] && . .env
+set +a
+
 # Config
 SERVICE=""
 if [[ "${RUN_ENV}" == "PROD" ]]; then
@@ -20,6 +25,8 @@ if [ $? -eq 0 ]; then
   --source . \
   --platform managed \
   --region us-central1 \
+  --set-env-vars "OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID" \
+  --set-env-vars "OAUTH_CLIENT_SECRET=$OAUTH_CLIENT_SECRET" \
   --allow-unauthenticated
 else
   echo "BUILD FAILED!"

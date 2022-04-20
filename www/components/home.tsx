@@ -9,11 +9,11 @@ export default function PageHome() {
         <h1>Slides2Gif</h1>
         <div className={styles.splash_top}>
           <div className={styles.description_left}>
-            <img
+            {/* <img
               src="/images/Google_Slides_2020_Logo.svg"
               alt="Google Slides logo"
               className={styles.slides_logo}
-            />
+            /> */}
             <p className={styles.splash_tagline}>
               Create animated GIFs from Google Slide presentations
             </p>
@@ -43,7 +43,7 @@ export default function PageHome() {
         </div>
         <div className={styles.splash_bottom}>
           <hr className={commonStyles.hr} />
-          <div className={styles.see_more}>See how it works ⬇</div>
+          <div className={styles.see_more}>See how it works... ⬇</div>
         </div>
       </section>
       <section className={classNames(styles.howitworks, styles.section)}>
@@ -144,7 +144,7 @@ export default function PageHome() {
       </section>
       <section className={classNames(styles.tryit, styles.section)}>
         <h3>Try it!</h3>
-        <p className={styles.subtitle}>Really, just click the button :)</p>
+        <p className={styles.subtitle}>Really, just click some buttons :)</p>
         <a href="/create">
           <button
             className={classNames(styles.cta_button, commonStyles.button)}

@@ -4,39 +4,44 @@ import PageCreate from '../components/create';
 // import useUser from '../lib/useUser';
 import useSWR from 'swr';
 
-const fetcher = (...args) => fetch(...args).then(res => res.json());
+// const fetcher = (...args) => fetch(...args).then(res => res.json());
 
-// export async function getServerSideProps() {
-//   const fetcher = (url: string) => fetch(url).then(r => r.json());
+const fetcher = async (url) => {
+  const res = await fetch(url);
 
-//   // const { data, error } = useSWR('/api/data', fetcher);
+  // If the status code is not in the range 200-299,
+  // we still try to parse and throw it.
+  if (!res.ok) {
+    const error = new Error("An error occurred while fetching the data.");
+    // Attach extra info to the error object.
+    // error.info = await res.json();
+    // error.status = res.status;
+    throw error;
+  }
 
-//   const data = await fetcher('http://localhost:3000/api/user');
-
-//   console.log('data');
-//   console.log(data);
-//   // const data = await fetcher('/api/user');
-//   return {
-//     props: {
-//       data,
-//     }
-//   }
-// }
+  return res.json();
+};
 
 export default function Create(props) {
-  console.log('props');
-  console.log(props);
+  const { data, error } = useSWR('/api/user', fetcher)
+  if (error) return <div>failed to load</div>
+  if (!data) return <div>loading...</div>
 
-  const {data, error} = useSWR('http://localhost:3000/api/user', fetcher);
-  console.log('data, error');
-  console.log(data, error);
+  // Redirect to login page
+  if (!data.isLoggedIn) {
+    window.location.href = '/login';
+    return <div>Redirecting...</div>
+  }
 
   return (
     <Layout>
       <Head key="head">
         <title>{siteTitle}</title>
       </Head>
-      <PageCreate currentPageType="CREATE" />
+      <PageCreate
+        currentPageType="CREATE"
+        userData={data}
+        />
     </Layout>
   );
 }

@@ -2,10 +2,10 @@
  * The page for Google sign-in.
  */
 import commonStyles from '../styles/common.module.scss';
-import styles from '../styles/create.module.scss';
+import styles from '../styles/login.module.scss';
 import classNames from 'classnames/bind';
 
-const AUTH_URL = 'http://localhost:8080/oauth2';
+const AUTH_URL = 'http://localhost:3000/api/oauth2';
 
 export default function PageSignin() {
   // An OAuth permission

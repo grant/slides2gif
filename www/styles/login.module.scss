@@ -1,0 +1,36 @@
+.pageContent {
+  width: 600px;
+  margin: 100px auto;
+  // background-color: blue;
+  border-radius: 5px;
+  border: 2px solid #eee;
+  padding: 20px;
+  text-align: center;
+}
+
+.create {
+  color: red;
+}
+
+.description {
+  font-size: 20px;
+  padding: 20px 0;
+}
+.listOfPermissions {
+  padding: 20px;
+}
+.permissionItem {
+ padding-bottom: 3px; 
+}
+.materialIcons {
+  vertical-align: text-bottom;
+  padding-right: 6px;
+}
+
+.permissionID {
+  font-family: monospace;
+}
+.permissionSection {
+  text-align: left;
+  font-size: 12px;
+}
