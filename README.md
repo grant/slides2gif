@@ -1,8 +1,6 @@
 # slides2gif
 
-Slides2GIF _for Google Slides_
-
-A web service that converts a Google Slide presentation to a gif.
+Slides2gif is web service that converts a Google Slide presentation to a gif.
 
 Check it out at [slides2gif.com](https://slides2gif.com)!
 
