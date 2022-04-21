@@ -1,10 +1,21 @@
+.section_content {
+  display: flex;
+}
 .section_left {
+  flex: 1;
 }
 .list_of_slides {
+  background-color: red;
 }
 .list_of_slides_list {
+  overflow: scroll;
 }
 .slide_frame {
+  border: 2px solid black;
+  display: inline-block;
+}
+.slide_frame_image {
+  width: 200px;
 }
 .selected_slides {
 }
@@ -13,6 +24,8 @@
 .selected_slides_numbers {
 }
 .section_right {
+  flex: 0 0 300px;
+  padding: 0 10px;
 }
 .select_presentation {
 }
@@ -21,4 +34,8 @@
 .presentation_item {
 }
 .presentation_id {
+}
+
+.label {
+  display:block;  
 }

@@ -14,7 +14,13 @@
   font-size: 20px;
 
   &.yellow {
-    background-color: yellow;
+    background-color: $color-yellow;
+    color: black;
+    border: 1px solid black;
+
+    &:hover {
+      background-color: darken($color-yellow, 5%)
+    }
   }
 
   &.large {
