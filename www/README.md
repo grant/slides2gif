@@ -1,6 +1,6 @@
 # www
 
-The frontend.
+The frontend in Next.js.
 
 ## Features
 
@@ -12,6 +12,24 @@ Features shown on the site:
     - Customize delay, number of slides, gif size
     - Download GIF
 - Hosted on Cloud Run
+
+## Routes
+
+### Web
+
+GET /
+GET /login
+GET /list
+GET /create
+GET /import
+
+### API
+
+```
+GET  /api/status
+POST /api/oauth2
+POST /api/oauth2callback
+```
 
 ## Icons
 

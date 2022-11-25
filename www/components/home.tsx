@@ -1,14 +1,15 @@
 import commonStyles from '../styles/common.module.scss';
 import styles from '../styles/home.module.scss';
 import classNames from 'classnames/bind';
+import React from 'react';
 
 export default function PageHome() {
   return (
     <div className={styles.page_wrapper}>
       <section className={classNames(styles.splash, styles.section)}>
-        <h1>Slides2Gif</h1>
         <div className={styles.splash_top}>
           <div className={styles.description_left}>
+            <h1>Slides2Gif</h1>
             {/* <img
               src="/images/Google_Slides_2020_Logo.svg"
               alt="Google Slides logo"

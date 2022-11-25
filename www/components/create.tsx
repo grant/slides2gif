@@ -7,6 +7,7 @@
 import commonStyles from '../styles/common.module.scss';
 import styles from '../styles/create.module.scss';
 import classNames from 'classnames/bind';
+import React from 'react';
 // import useUser from '../lib/useUser';
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';

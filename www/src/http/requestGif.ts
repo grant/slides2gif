@@ -23,7 +23,7 @@ export default async (req: Request, res: Response) => {
   }
   console.log(`Requesting GIF: ${presentationid}`);
 
-  const userid = req.session.userid;
+  const userid = req.session.user?.id;
   console.log(req.session);
   if (!userid) return res.status(401).send('You need to log in first');
 
