@@ -10,14 +10,24 @@ RUN \
   apt-get update && \
   apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev pkg-config curl ruby python ffmpeg graphicsmagick
 
-COPY ./ /usr/app
-
 # https://github.com/goodspb/pdlib/issues/17
 ENV PKG_CONFIG_PATH=/dlib-install/usr/local/lib64/pkgconfig/
 
-# Install dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm i
+COPY tsconfig.json ./
+
+# Install all dependencies (including dev dependencies for TypeScript compilation)
+RUN npm ci
+
+# Copy source files
+COPY src ./src
+
+# Compile TypeScript
+RUN npm run compile
+
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
 # Start the server
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

@@ -18,6 +18,7 @@ export interface CreateGIFRequestOptions {
     quality?: number;
   };
   outputGifFilename?: string;
+  thumbnailSize?: "SMALL" | "MEDIUM" | "LARGE"; // For filtering files by size
 }
 
 export interface CreateGIFResponse {
@@ -65,9 +66,37 @@ export const createGif = async (
     base: string;
     path: string;
   }
-  const arr: Array<GS> = await toArray(
+  let arr: Array<GS> = await toArray(
     gs(createGifOptions.inputFrameGlobString)
   );
+  
+  // Filter files by thumbnail size to ensure we only use the correct size
+  // All sizes now use a suffix, so we can filter consistently
+  if (createGifOptions.thumbnailSize) {
+    const requestedSize = createGifOptions.thumbnailSize;
+    const beforeCount = arr.length;
+    const expectedSuffix = `_${requestedSize.toLowerCase()}.`;
+    
+    arr = arr.filter((file) => {
+      const fileName = file.path.split("/").pop() || "";
+      // Only include files with the specific size suffix
+      return fileName.includes(expectedSuffix);
+    });
+    
+    console.log(`Filtered from ${beforeCount} to ${arr.length} ${requestedSize} images`);
+  }
+  
+  // Check if any images were found
+  if (arr.length === 0) {
+    console.error(`No images found matching: ${createGifOptions.inputFrameGlobString}`);
+    return {
+      success: false,
+      error: new Error(`No images found matching pattern: ${createGifOptions.inputFrameGlobString}`),
+    };
+  }
+  
+  console.log(`Found ${arr.length} images to process`);
+  
   // TODO: More error handling
   type ImgSize = {height: number; width: number; type: string};
   const imgSizes: ImgSize[] = arr.map(img => {
@@ -76,6 +105,20 @@ export const createGif = async (
 
   // Throw error if sizes aren't the same.
   const size0 = imgSizes[0];
+  if (!size0) {
+    return {
+      success: false,
+      error: new Error('Could not read image dimensions'),
+    };
+  }
+  
+  // Log image dimensions for debugging
+  console.log('Image dimensions:', {
+    count: imgSizes.length,
+    width: size0.width,
+    height: size0.height,
+    allSizes: imgSizes.map(s => `${s.width}x${s.height}`),
+  });
   const sameImgSizes = imgSizes.map((size: ImgSize) => {
     return size.width === size0.width && size.height === size0.height;
   });
@@ -92,6 +135,11 @@ export const createGif = async (
    * Create a GIF via a PNG stream images.
    */
   const gifSize = size0;
+  console.log('Creating GIF with dimensions:', {
+    width: gifSize.width,
+    height: gifSize.height,
+    options: createGifOptions.gifOptions,
+  });
   const encoder = new GIFEncoder(gifSize.width, gifSize.height);
   const stream = pngFileStream(createGifOptions.inputFrameGlobString)
     .pipe(encoder.createWriteStream(createGifOptions.gifOptions))

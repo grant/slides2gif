@@ -1,11 +1,10 @@
 import Head from 'next/head';
-import styles from '../styles/layout.module.scss';
 
 export const siteTitle = 'slides2gif';
 
 export default function Layout({children}: {children: React.ReactNode}) {
   return (
-    <div className={styles.container}>
+    <div className="h-full w-full overflow-x-hidden">
       {/* https://google.github.io/material-design-icons/ */}
       <link
         href="https://fonts.googleapis.com/icon?family=Material+Icons"

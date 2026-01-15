@@ -1,11 +1,10 @@
 import Head from 'next/head';
 import Layout, {siteTitle} from '../components/layout';
-import PageCreate from '../components/create';
+import {PageCreate} from '../components/create';
 // import useUser from '../lib/useUser';
 import useSWR from 'swr';
 import React from 'react';
-
-// const fetcher = (...args) => fetch(...args).then(res => res.json());
+import {APIResUser} from '../types/user';
 
 const fetcher = async (url) => {
   const res = await fetch(url);
@@ -24,14 +23,23 @@ const fetcher = async (url) => {
 };
 
 export default function Create(props) {
-  const { data, error } = useSWR('/api/user', fetcher)
-  if (error) return <div>todo: failed to load</div>
-  if (!data) return <div>todo: loading...</div>
+  const { data, error } = useSWR<APIResUser>('/api/user', fetcher);
+  console.log('User data:', { error, data, isLoggedIn: data?.isLoggedIn });
+  
+  if (error) {
+    console.error('Error loading user:', error);
+    return <div className="p-5">Failed to load user data. Please try again.</div>
+  }
+  if (!data) {
+    return <div className="p-5">Loading...</div>
+  }
 
   // Redirect to login page
   if (!data.isLoggedIn) {
-    window.location.href = '/login';
-    return <div>Redirecting...</div>
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+    return <div className="p-5">Redirecting to login...</div>
   }
 
   return (
@@ -41,7 +49,7 @@ export default function Create(props) {
       </Head>
       <PageCreate
         currentPageType="CREATE"
-        userData={data}
+        user={data}
         />
     </Layout>
   );

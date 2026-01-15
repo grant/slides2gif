@@ -1,58 +1,114 @@
 # slides2gif
 
-Slides2gif is web service that converts a Google Slide presentation to a gif.
+Create animated GIFs from Google Slides presentations.
 
 Check it out at [slides2gif.com](https://slides2gif.com)!
 
+## Quick Start
+
+This project uses [Just](https://github.com/casey/just) to manage development tasks.
+
+### Install Just
+
+```bash
+# macOS
+brew install just
+
+# Or via cargo
+cargo install just
+```
+
+### Run Everything
+
+```bash
+just
+# or
+just dev
+```
+
+This will start:
+- **www service** on `http://localhost:3000` (Next.js)
+- **png2gif service** on `http://localhost:3001` (Express)
+
+## Available Commands
+
+### Development
+- `just` or `just dev` - Run both services in parallel
+- `just dev-www` - Run only the www service
+- `just dev-png2gif` - Run only the png2gif service
+
+### Installation
+- `just install-all` - Install dependencies for all services
+- `just install-www` - Install dependencies for www service
+- `just install-png2gif` - Install dependencies for png2gif service
+
+### Building
+- `just build-all` - Build all services
+- `just build-www` - Build www service
+- `just build-png2gif` - Build png2gif service
+
+### Linting
+- `just lint-all` - Lint all services
+- `just lint-www` - Lint www service
+- `just lint-png2gif` - Lint png2gif service
+
+### Cleanup
+- `just clean` - Remove build artifacts
+
+## Architecture
+
+The project consists of two main services:
+
+### www (Next.js)
+- Frontend web application
+- API routes for Google Slides integration
+- Runs on port `3000` (default)
+
+### png2gif (Express)
+- Converts PNG images to animated GIFs
+- Runs on port `3001` (configurable via `PORT` env var)
+
+## Authentication
+
+### Local Development
+- **No authentication required** - Both services run without auth in local development
+- The png2gif service skips authentication when `NODE_ENV !== 'production'` or `GOOGLE_CLOUD_PROJECT` is not set
+
+### Cloud Run (Production)
+- **Service-to-service authentication** - The www service uses Google Auth Library to get ID tokens
+- The png2gif service verifies the `Authorization: Bearer <token>` header
+- Set `PNG2GIF_SERVICE_URL` environment variable to the Cloud Run service URL
+
+## Environment Variables
+
+### Local Development
+No environment variables required for basic operation.
+
+### Cloud Run
+- `PNG2GIF_SERVICE_URL` - URL of the png2gif Cloud Run service
+- `GOOGLE_CLOUD_PROJECT` - Google Cloud project ID (automatically set in Cloud Run)
+- `GCS_CACHE_BUCKET` - Google Cloud Storage bucket name for caching
+
 ## Technologies
 
-There are a bunch of technologies used here to make this website:
-
-- Frontend
+- **Frontend**
   - Next.js / React
-  - SCSS
+  - Tailwind CSS
   - Material Icons
-- Backend
+- **Backend**
   - Cloud Run
-  - Cloud Functions
   - Docker
-  - Google Cloud Buildpacks
   - Node.js
-- APIs
+- **APIs**
   - Google Slides API
   - Google Sign-in API
-- Web hosting
-  - Namecheap
-  - Cloudflare
-
-## Backend Services
-
-- `auth`: A service that can get Google OAuth tokens
-- `googleapis` A service that can call various Google APIs using an authorized Google OAuth token
-- `png2gif`: A service that can download PNGs from Cloud Storage, generate a GIF, and upload the GIF to Cloud Storage
-- `www`: A service that provides a web interface for interacting with all of these services
-
-## Backend Services Architecture
-
-Here is the most common user flow and service that are used:
-
-1. `www` – User goes to website
-1. `www` –  (If unauth'd) Click "Get Slides"
-1. `www` –  (If unauth'd) OAuth flow
-    - `auth` – Get user Auth
-    - `www` – Store refresh token on client in session
-1. `www` – User is auth'd. Redirect to logged in screen.
-    - `googleapis` – Get all presentations from user
-1. `www` – User clicks presentation
-    - `googleapis` – Get Google Slide frames
-    - `png2gif` – Create GIF
-    - `www` – Show GIF
+  - Google Cloud Storage
 
 ## Service Limitations
 
 Using the Google Slides API to create thumbnails is expensive and has limits.
 
-See [limits](https://developers.google.com/slides/limits).
+See [limits](https://developers.google.com/slides/limits):
 - 500 per project per 100 seconds
 - 100 per user per 100 seconds
 
@@ -65,55 +121,42 @@ PROJECT=$(gcloud config get-value core/project 2> /dev/null)
 # Enable APIs
 gcloud services enable slides.googleapis.com
 gcloud services enable run.googleapis.com
-gcloud services enable firestore.googleapis.com
+gcloud services enable storage.googleapis.com
 
-# Create a service account for using the Firebase Database.
+# Create a service account for accessing Google Cloud Storage
 # See: https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys
-## Create service account
-gcloud iam service-accounts create my-service-account
-## Create creds for service account
+gcloud iam service-accounts create slides2gif-service-account
 gcloud iam service-accounts keys create creds.json \
---iam-account my-service-account@${PROJECT}.iam.gserviceaccount.com
+  --iam-account slides2gif-service-account@${PROJECT}.iam.gserviceaccount.com
 export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
 
-# Create a bucket
+# Grant necessary permissions
+gcloud projects add-iam-policy-binding ${PROJECT} \
+  --member="serviceAccount:slides2gif-service-account@${PROJECT}.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+# Create a bucket for caching slide images
+gsutil mb gs://slides2gif-cache
+gsutil iam ch allUsers:objectViewer gs://slides2gif-cache
+
+# Create a bucket for uploaded GIFs
 gsutil mb gs://slides2gif-upload-test
+gsutil iam ch allUsers:objectViewer gs://slides2gif-upload-test
 
 # Login with ADC
 gcloud auth application-default login
 ```
 
-### Create cookie secret
+### Create Cookie Secret
 
-Files:
-
-- `www/.env.development`
-- `www/.env.production`
-
-Contents:
+Create `www/.env.local`:
 
 ```sh
-# ⚠️ The SECRET_COOKIE_PASSWORD should never be inside your repository directly, it's here only to ease
-# the example deployment
-# For local development, you should store it inside a `.env.local` gitignored file
+# ⚠️ The SECRET_COOKIE_PASSWORD should never be inside your repository directly
+# For local development, store it inside a `.env.local` gitignored file
 # See https://nextjs.org/docs/basic-features/environment-variables#loading-environment-variables
 
-SECRET_COOKIE_PASSWORD=my-secret
+SECRET_COOKIE_PASSWORD=my-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secret
 ```
 
-### Create a Cloud Firestore database
-
-Enable **Cloud Firestore** in _native mode_, not Datastore Mode:
-- https://firebase.google.com/docs/firestore/quickstart#node.js
-- https://console.firebase.google.com/project/serverless-com-demo/database/firestore/data~2Fcredentials
-
-https://firebase.google.com/docs/firestore/quickstart#create
-
-## Notes
-
-- https://stackoverflow.com/questions/57650692/where-to-store-the-refresh-token-on-the-client
-- https://stackoverflow.com/questions/44324080/how-to-store-access-token-oauth-2-auth-code-flow
-- https://www.baeldung.com/spring-security-oauth2-remember-me
-- https://auth0.com/docs/login/spa/authenticate-with-cookies#dealing-with-invalid-or-missing-cookies
-- https://developers.google.com/slides/api/limits
-- Branding: https://about.google/brand-resource-center/brand-elements/#product-icons
+OAuth: https://console.cloud.google.com/apis/credentials

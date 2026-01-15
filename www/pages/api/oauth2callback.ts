@@ -1,9 +1,15 @@
 // import {ParsedUrlQuery} from 'querystring';
 // import Head from 'next/head';
-import {NextApiRequest, NextApiResponse} from 'next';
-import {withIronSessionApiRoute} from 'iron-session/next';
-import {sessionOptions} from 'lib/session';
+import { NextApiRequest, NextApiResponse } from "next";
+import { withIronSessionApiRoute } from "iron-session/next";
+import { sessionOptions } from "lib/session";
+import { Auth } from "lib/oauth";
 // import {GoogleOAuthData} from 'lib/oauth';
+
+// Load env vars (.env)
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../../.env"),
+});
 
 export default withIronSessionApiRoute(oauth2callback as any, sessionOptions);
 
@@ -14,10 +20,22 @@ export default withIronSessionApiRoute(oauth2callback as any, sessionOptions);
  */
 async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
   // Get URL parameters
-  const code = req.query.code + '';
-  const scope = req.query.scope + '';
-  if (!code) return res.send('ERROR: Missing `code` query param');
-  if (!scope) return res.send('ERROR: Missing `scope` query param');
+  const code = req.query.code + "";
+  const scope = req.query.scope + "";
+  if (!code) return res.send("ERROR: Missing `code` query param");
+  if (!scope) return res.send("ERROR: Missing `scope` query param");
+
+  // Setup Auth client
+  const baseURL = req.headers.host?.includes("localhost")
+    ? `http://${req.headers.host}`
+    : `https://${req.headers.host}`;
+  Auth.setup(baseURL);
+
+  // Exchange code for tokens
+  const tokens = await Auth.exchangeAuthCodeForTokens(code);
+  if (!tokens) {
+    return res.send("ERROR: Failed to exchange code for tokens");
+  }
 
   // Set session Google OAuth
   req.session.googleOAuth = {
@@ -26,12 +44,20 @@ async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
     authDate: +new Date(),
   };
 
-  console.log('SAVED SESSION!!!');
+  // Store tokens in session
+  req.session.googleTokens = {
+    access_token: tokens.access_token || undefined,
+    refresh_token: tokens.refresh_token || undefined,
+    expiry_date: tokens.expiry_date || undefined,
+  };
+
+  console.log("SAVED SESSION!!!");
   console.log(req.session.googleOAuth);
+  console.log("Tokens stored:", !!req.session.googleTokens?.access_token);
 
   // Save session
   await req.session.save();
 
   // Redirect to create page.
-  return res.redirect('/create');
+  return res.redirect("/create");
 }

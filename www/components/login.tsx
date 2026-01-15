@@ -1,9 +1,6 @@
 /**
  * The page for Google sign-in.
  */
-import commonStyles from '../styles/common.module.scss';
-import styles from '../styles/login.module.scss';
-import classNames from 'classnames/bind';
 
 const AUTH_URL = 'http://localhost:3000/api/oauth2';
 
@@ -45,29 +42,27 @@ export default function PageSignin() {
   };
 
   return (
-    <div className={styles.pageContent}>
+    <div className="mx-auto my-[100px] w-[600px] rounded border-2 border-gray-200 p-5 text-center">
       <h2>Slides2Gif</h2>
-      <p className={styles.description}>
+      <p className="py-5 text-xl">
         Access to view Google Slides and metadata to create GIFs.
       </p>
       <button
-        className={classNames(styles.cta_button, commonStyles.button)}
+        className="cursor-pointer rounded bg-blue px-5 py-3.5 text-xl font-bold text-white shadow-[0_5px_10px_rgba(55,55,55,0.12)] opacity-95 transition-colors duration-200 hover:bg-blue/90"
         onClick={signInClick}
       >
         Sign in
       </button>
-      <div className={styles.permissionSection}>
+      <div className="mt-5 text-left text-xs">
         Permissions:
-        <ul className={styles.listOfPermissions}>
+        <ul className="py-5">
           {PERMISSIONS.map(p => {
             return (
-              <li key={p.id} className={styles.permissionItem}>
-                <span
-                  className={classNames('material-icons', styles.materialIcons)}
-                >
+              <li key={p.id} className="pb-0.5">
+                <span className="material-icons align-text-bottom pr-1.5">
                   {p.icon}
                 </span>
-                <code className={styles.permissionID}>{p.id}</code>:{' '}
+                <code className="font-mono">{p.id}</code>:{' '}
                 {p.description}
               </li>
             );

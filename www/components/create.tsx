@@ -4,26 +4,29 @@
  * - Create: Creating a GIF from slide images
  * - Import: Importing slide images
  */
-import commonStyles from '../styles/common.module.scss';
-import styles from '../styles/create.module.scss';
-import classNames from 'classnames/bind';
-import React from 'react';
-// import useUser from '../lib/useUser';
+import React, { useState } from "react";
+import { APIResUser } from "../types/user";
+import useSWR from "swr";
+import { useRouter } from "next/router";
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
 
 // The current page.
 enum PAGE_TYPE {
-  CREATE = 'CREATE',
-  IMPORT = 'IMPORT',
+  CREATE = "CREATE",
+  IMPORT = "IMPORT",
+}
+
+interface PageCreateProps {
+  currentPageType: "CREATE" | "IMPORT";
+  user: APIResUser;
 }
 
 /**
  * The SPA page for sign-in, create, and import
  */
-export default function PageCreate(props) {
-  console.log('props');
-  console.log(props);
+export function PageCreate(props: PageCreateProps) {
+  console.log("PAGE props");
 
   const type = PAGE_TYPE.CREATE;
   // const type = PAGE_TYPE.IMPORT;
@@ -49,95 +52,172 @@ export default function PageCreate(props) {
   return <section className={type}>{pageFunction[type]()}</section>;
 }
 
+interface Presentation {
+  id: string;
+  name: string;
+  thumbnailLink?: string;
+  firstSlidePreview?: string;
+  modifiedTime?: string;
+  createdTime?: string;
+}
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const error = new Error(
+      errorData.error || "An error occurred while fetching the data.",
+    );
+    (error as any).status = res.status;
+    (error as any).info = errorData;
+    throw error;
+  }
+  return res.json();
+};
+
 /**
  * Page for creating a GIF from slides
+ * Shows a grid of presentations to choose from
  */
 function PageCreateGIF() {
-  const pages = [{
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }, {
-    src: 'https://placekitten.com/g/400/300',
-  }];
+  const router = useRouter();
+  const [loadedThumbnails, setLoadedThumbnails] = useState<Set<string>>(
+    new Set(),
+  );
+  const { data, error } = useSWR<{ presentations: Presentation[] }>(
+    "/api/presentations",
+    fetcher,
+  );
+
+  const handlePresentationClick = (fileId: string) => {
+    router.push(`/create/x/${fileId}`);
+  };
+
+  if (!data && !error) {
+    return PageWrapper({
+      pageTitle: "Create GIF",
+      pageContents: (
+        <div className="py-5">
+          <h3 className="mb-5 text-2xl">Choose a presentation:</h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="relative overflow-hidden rounded-lg border-2 border-gray-300 bg-white shadow-sm"
+              >
+                <div className="h-[140px] w-full bg-gray-100"></div>
+                <div className="truncate px-3 py-3">
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    });
+  }
+
+  if (error) {
+    console.error("Error loading presentations:", error);
+    const errorMessage =
+      (error as any)?.info?.error ||
+      (error as any)?.message ||
+      "Failed to load presentations";
+    return PageWrapper({
+      pageTitle: "Create GIF",
+      pageContents: (
+        <div className="py-10 px-5 text-center">
+          <p className="text-base text-red-600">
+            {errorMessage}. Please try again.
+          </p>
+          {(error as any)?.status === 401 && (
+            <p className="mt-2 text-sm text-gray-600">
+              You may need to{" "}
+              <a href="/login" className="text-blue underline">
+                log in again
+              </a>
+              .
+            </p>
+          )}
+        </div>
+      ),
+    });
+  }
+
+  const presentations = data?.presentations || [];
 
   return PageWrapper({
-    pageTitle: 'Create GIF',
+    pageTitle: "Create GIF",
     pageContents: (
-      <div className={styles.section_content}>
-        <div className={styles.section_left}>
-          <div className={styles.list_of_slides}>
-            <ul className={styles.list_of_slides_list}>
-              <li>
-                <button className={classNames(commonStyles.button, commonStyles.yellow)}>Import Slides</button>
-              </li>
-              {pages.map((p) => {
-                return (
-                  <li className={styles.slide_frame}>
-                    <img
-                      className={styles.slide_frame_image}
-                      src={p.src}
-                      alt=""
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+      <div className="py-5">
+        <h3 className="mb-5 text-2xl">Choose a presentation:</h3>
+        {presentations.length === 0 ? (
+          <p>No presentations found.</p>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
+            {presentations.map((presentation) => {
+              const thumbnailUrl =
+                presentation.firstSlidePreview || presentation.thumbnailLink;
+              const isLoaded = loadedThumbnails.has(presentation.id);
+              const showPlaceholder = !isLoaded && thumbnailUrl;
+
+              return (
+                <div
+                  key={presentation.id}
+                  className="relative cursor-pointer rounded-lg border-2 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:shadow-md"
+                  onClick={() => handlePresentationClick(presentation.id)}
+                >
+                  {thumbnailUrl ? (
+                    <>
+                      {showPlaceholder && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue"></div>
+                            <span className="text-xs text-gray-500">
+                              Loading...
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="relative">
+                        <img
+                          src={thumbnailUrl}
+                          alt={presentation.name}
+                          className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
+                            presentation.firstSlidePreview
+                              ? "object-contain"
+                              : "object-cover"
+                          } ${isLoaded ? "opacity-100" : "opacity-0"}`}
+                          loading="lazy"
+                          onLoad={() => {
+                            setLoadedThumbnails((prev) =>
+                              new Set(prev).add(presentation.id),
+                            );
+                          }}
+                          onError={() => {
+                            setLoadedThumbnails((prev) =>
+                              new Set(prev).add(presentation.id),
+                            );
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
+                      <span>No preview</span>
+                    </div>
+                  )}
+                  <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">
+                    {presentation.name}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className={styles.selected_slides}>
-            <ol className={styles.selected_slides_list}>
-              <li>
-                <img
-                  className={styles.slide_frame_image}
-                  src="https://placekitten.com/g/400/300"
-                  alt=""
-                />
-              </li>
-              <li>
-                <img
-                  className={styles.slide_frame_image}
-                  src="https://placekitten.com/g/400/300"
-                  alt=""
-                />
-              </li>
-            </ol>
-          </div>
-          <div className={styles.selected_slides_numbers}>
-            <p>Slides: 1, 2, 5, 6, 3</p>
-          </div>
-        </div>
-        <div className={styles.section_right}>
-          <h3>Config</h3>
-          <form action="">
-            <label htmlFor="delay">Delay (ms):</label>
-            <input
-              type="number"
-              id="delay"
-              name="delay"
-              placeholder="300"
-              min="10"
-              max="60000"
-            />
-            <button className={classNames(commonStyles.button, commonStyles.yellow)}>Create GIF</button>
-          </form>
-        </div>
+        )}
       </div>
-    )
-  })
+    ),
+  });
 }
 /**
  * Page for importing Slides
@@ -149,52 +229,61 @@ function PageImportSlides() {
     link: string;
   }
 
-  const presentationData: Presentation[] = [{
-    title: 'Presentation 1 Name',
-    id: '15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir4',
-    link: 'http://google.com'
-  }, {
-    title: 'Presentation 2 Name',
-    id: '15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir1',
-    link: 'http://google.com'
-  }, {
-    title: 'Presentation 3 Name',
-    id: '15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir2',
-    link: 'http://google.com'
-  }];
+  const presentationData: Presentation[] = [
+    {
+      title: "Presentation 1 Name",
+      id: "15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir4",
+      link: "http://google.com",
+    },
+    {
+      title: "Presentation 2 Name",
+      id: "15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir1",
+      link: "http://google.com",
+    },
+    {
+      title: "Presentation 3 Name",
+      id: "15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir2",
+      link: "http://google.com",
+    },
+  ];
 
   return PageWrapper({
-    pageTitle: 'Import Slides',
+    pageTitle: "Import Slides",
     pageContents: (
       <form action="">
-        <div className={styles.section_content}>
-          <div className={styles.section_left}>
-            <h4 className={styles.select_presentation}>Select presentation:</h4>
-            <ul className={styles.presentation_list}>
+        <div className="flex">
+          <div className="flex-1">
+            <h4 className="text-3xl">Select presentation:</h4>
+            <ul>
               {presentationData.map((p) => {
-                return <li className={styles.presentation_item}>
-                  <label className={styles.label} htmlFor={p.id}>
-                    <input id={p.id} type="checkbox" name="presentation1" value="presentation1" />
-                    {p.title}
-                    {' '}
-                    <span className={styles.presentation_id}>{p.id}</span>
-                    {' '}
-                    <a href={p.link}>LINK</a>
-                  </label>
-                </li>
+                return (
+                  <li>
+                    <label className="block" htmlFor={p.id}>
+                      <input
+                        id={p.id}
+                        type="checkbox"
+                        name="presentation1"
+                        value="presentation1"
+                      />
+                      {p.title} <span>{p.id}</span> <a href={p.link}>LINK</a>
+                    </label>
+                  </li>
+                );
               })}
             </ul>
             <span>
               ID: <input type="text" />
             </span>
           </div>
-          <div className={styles.section_right}>
+          <div className="flex-shrink-0 px-2.5" style={{ flexBasis: "300px" }}>
             <h3>Config</h3>
-            <button className={classNames(commonStyles.button, commonStyles.yellow)}>Import slides</button>
+            <button className="cursor-pointer rounded border border-black bg-yellow px-5 py-3.5 text-xl font-bold text-black shadow-[0_5px_10px_rgba(55,55,55,0.12)] opacity-95 transition-colors duration-200 hover:bg-yellow/90">
+              Import slides
+            </button>
           </div>
         </div>
       </form>
-    )
+    ),
   });
 }
 
@@ -205,11 +294,11 @@ interface PageOptions {
 }
 function PageWrapper(options: PageOptions) {
   return (
-    <div className={styles.section_container}>
+    <div className="p-5">
       <h2>
         SLIDES2GIF <span>– {options.pageTitle}</span>
       </h2>
       {options.pageContents}
     </div>
-  )
+  );
 }

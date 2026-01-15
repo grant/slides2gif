@@ -19,14 +19,19 @@ Features shown on the site:
 
 GET /
 GET /login
-GET /list
-GET /create
-GET /import
+GET /gifs
+GET /gifs/create
+GET /presentations/import
 
 ### API
 
 ```
 GET  /api/status
+GET  /api/gif
+GET  /api/gif/list
+GET  /api/frames/list
+GET  /api/presentation/list
+POST /api/presentation/import
 POST /api/oauth2
 POST /api/oauth2callback
 ```
