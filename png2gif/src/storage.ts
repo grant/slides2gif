@@ -69,9 +69,10 @@ export async function downloadFiles({
   }
   const storage = new Storage();
 
-  // Files are stored at: presentations/{presentationId}/slides/{objectId}_{size}.jpg
-  // All sizes now use a suffix: _small, _medium, or _large
-  const sizeSuffix = `_${thumbnailSize.toLowerCase()}`;
+  // Files are stored at: presentations/{presentationId}/slides/{objectId}.jpg (SMALL)
+  // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg (MEDIUM/LARGE)
+  const sizeSuffix =
+    thumbnailSize !== "SMALL" ? `_${thumbnailSize.toLowerCase()}` : "";
   const prefix = `presentations/${presentationId}/slides/`;
   console.log(`Looking for files in bucket: ${BUCKET_NAME}, prefix: ${prefix}`);
   const [fileList] = await storage.bucket(BUCKET_NAME).getFiles({
@@ -121,19 +122,20 @@ export async function downloadFiles({
   // Filter files by slideList if specified
   const filesToDownload = slideIds
     ? fileList.filter((file) => {
-        // Extract objectId from path: presentations/{presentationId}/slides/{objectId}_{size}.jpg
-        // All files now have a size suffix: _small, _medium, or _large
+        // Extract objectId from path: presentations/{presentationId}/slides/{objectId}.jpg
+        // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg
         const fileName = file.name.split("/").pop() || "";
         // Remove size suffix and extension to get objectId
-        const objectId = fileName.replace(
-          /_(small|medium|large)\.(jpg|jpeg|png)$/i,
-          "",
-        );
+        const objectId = fileName
+          .replace(/_(small|medium|large)\.(jpg|jpeg|png)$/i, "")
+          .replace(/\.(jpg|jpeg|png)$/i, "");
         const matches = slideIds.includes(objectId);
 
-        // Check that the file matches the requested size (all files have suffixes now)
-        const expectedSuffix = `_${thumbnailSize.toLowerCase()}.`;
-        const hasCorrectSize = fileName.includes(expectedSuffix);
+        // Also check that the file matches the requested size
+        const hasCorrectSize =
+          thumbnailSize === "SMALL"
+            ? !fileName.match(/_(small|medium|large)\.(jpg|jpeg|png)$/i)
+            : fileName.includes(`_${thumbnailSize.toLowerCase()}.`);
 
         const shouldDownload = matches && hasCorrectSize;
 

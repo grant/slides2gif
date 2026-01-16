@@ -1,9 +1,10 @@
 import Head from "next/head";
 import Layout, { siteTitle } from "../../../components/layout";
 import useSWR from "swr";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { APIResUser } from "../../../types/user";
 import { useRouter } from "next/router";
+import { useAuth } from "../../../lib/useAuth";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -59,12 +60,44 @@ export default function CreatePresentationDetail() {
   // GIF configuration options
   const [gifDelay, setGifDelay] = useState<number>(1000); // milliseconds between frames
   const [gifQuality, setGifQuality] = useState<"Best" | "HQ" | "LQ">("Best"); // Quality preset
-  const [thumbnailSize, setThumbnailSize] = useState<"SMALL" | "MEDIUM" | "LARGE">("MEDIUM"); // Thumbnail size for GIF
+  const [thumbnailSize, setThumbnailSize] = useState<
+    "SMALL" | "MEDIUM" | "LARGE"
+  >("MEDIUM"); // Thumbnail size for GIF
 
-  const { data: userData, error: userError } = useSWR<APIResUser>(
-    "/api/user",
-    fetcher,
-  );
+  // Check authentication - will redirect to login if not authenticated
+  const { userData, error: userError, isLoading: isLoadingUser } = useAuth();
+
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <Layout>
+        <Head>
+          <title>{siteTitle}</title>
+        </Head>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show redirecting message if not authenticated (useAuth will handle redirect)
+  if (userData && !userData.isLoggedIn) {
+    return (
+      <Layout>
+        <Head>
+          <title>{siteTitle}</title>
+        </Head>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Redirecting to login...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   // Load metadata first
   const {
@@ -227,11 +260,16 @@ export default function CreatePresentationDetail() {
         })),
         slideList,
       });
-      
+
       // Debug: Verify objectIds are not empty
-      if (selectedSlides.some(s => !s.objectId || s.objectId === "")) {
-        console.error("ERROR: Some selectedSlides have empty or missing objectId!", selectedSlides);
-        alert("Error: Some slides are missing objectId. Please try selecting slides again.");
+      if (selectedSlides.some((s) => !s.objectId || s.objectId === "")) {
+        console.error(
+          "ERROR: Some selectedSlides have empty or missing objectId!",
+          selectedSlides,
+        );
+        alert(
+          "Error: Some slides are missing objectId. Please try selecting slides again.",
+        );
         setIsGeneratingGif(false);
         return;
       }
@@ -416,7 +454,9 @@ export default function CreatePresentationDetail() {
                         max="10000"
                         step="10"
                         value={gifDelay}
-                        onChange={(e) => setGifDelay(parseInt(e.target.value) || 1000)}
+                        onChange={(e) =>
+                          setGifDelay(parseInt(e.target.value) || 1000)
+                        }
                         className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
                         disabled={isGeneratingGif}
                       />
@@ -431,7 +471,9 @@ export default function CreatePresentationDetail() {
                       <select
                         id="gif-quality"
                         value={gifQuality}
-                        onChange={(e) => setGifQuality(e.target.value as "Best" | "HQ" | "LQ")}
+                        onChange={(e) =>
+                          setGifQuality(e.target.value as "Best" | "HQ" | "LQ")
+                        }
                         className="rounded border border-gray-300 px-2 py-1 text-sm"
                         disabled={isGeneratingGif}
                       >
@@ -450,7 +492,11 @@ export default function CreatePresentationDetail() {
                       <select
                         id="thumbnail-size"
                         value={thumbnailSize}
-                        onChange={(e) => setThumbnailSize(e.target.value as "SMALL" | "MEDIUM" | "LARGE")}
+                        onChange={(e) =>
+                          setThumbnailSize(
+                            e.target.value as "SMALL" | "MEDIUM" | "LARGE",
+                          )
+                        }
                         className="rounded border border-gray-300 px-2 py-1 text-sm"
                         disabled={isGeneratingGif}
                       >
@@ -577,7 +623,12 @@ export default function CreatePresentationDetail() {
                     alt="Generated GIF"
                     className="mx-auto rounded"
                     style={{
-                      maxWidth: thumbnailSize === "LARGE" ? "1600px" : thumbnailSize === "MEDIUM" ? "800px" : "200px",
+                      maxWidth:
+                        thumbnailSize === "LARGE"
+                          ? "1600px"
+                          : thumbnailSize === "MEDIUM"
+                          ? "800px"
+                          : "200px",
                       width: "100%",
                       height: "auto",
                     }}
@@ -644,7 +695,7 @@ export default function CreatePresentationDetail() {
                             key={`skeleton-${index}`}
                             className="relative h-[112px] overflow-hidden rounded-lg border-2 border-gray-300 bg-white shadow-sm"
                           >
-                            <div className="h-full w-full bg-gray-100"></div>
+                            <div className="h-full w-full bg-gray-100 shimmer"></div>
                           </div>
                         ),
                       )
@@ -683,7 +734,9 @@ export default function CreatePresentationDetail() {
                                         metadata.title
                                       }`}
                                       className={`block h-[112px] w-full bg-gray-100 object-cover transition-opacity duration-300 ${
-                                        isLoaded ? "opacity-100" : "opacity-0"
+                                        isLoaded
+                                          ? "opacity-100"
+                                          : "opacity-0 shimmer"
                                       }`}
                                       loading="lazy"
                                       onLoad={() => {
@@ -727,7 +780,7 @@ export default function CreatePresentationDetail() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="h-[112px] w-full bg-gray-100"></div>
+                                  <div className="h-[112px] w-full bg-gray-100 shimmer"></div>
                                 )}
                               </div>
                             )}
