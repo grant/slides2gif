@@ -29,15 +29,10 @@ install-www:
 install-png2gif:
     cd png2gif && npm install
 
-# Install dependencies for scripts
-install-scripts:
-    cd scripts && npm install
-
 # Install all dependencies
 install-all:
     just install-www
     just install-png2gif
-    just install-scripts
 
 # Build www service
 build-www:
@@ -84,12 +79,6 @@ fix-png2gif:
 fix:
     just fix-www || true
     just fix-png2gif || true
-
-# Cleanup JPG files from GCS bucket (switched to PNG format)
-# Use --yes or -y to skip confirmation
-# Example: just cleanup-jpg --yes
-cleanup-jpg args:
-    cd scripts && npm run cleanup-jpg {{args}}
 
 # OAuth Client Management Commands
 # Note: OAuth client secrets can only be viewed once when created.
