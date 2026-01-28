@@ -4,7 +4,7 @@
  * - Create: Creating a GIF from slide images
  * - Import: Importing slide images
  */
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {APIResUser} from '../types/user';
 import useSWR from 'swr';
 import {useRouter} from 'next/router';
@@ -15,6 +15,7 @@ import {
   presentationsSWRConfig,
   PresentationsResponse,
   Presentation,
+  apiPost,
 } from '../lib/apiFetcher';
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
@@ -69,11 +70,17 @@ function PageCreateGIF() {
   const [loadedThumbnails, setLoadedThumbnails] = useState<Set<string>>(
     new Set()
   );
-  const {data, error} = useSWR<PresentationsResponse>(
+  const [generatingPreviews, setGeneratingPreviews] = useState<Set<string>>(
+    new Set()
+  );
+  const {data, error, mutate} = useSWR<PresentationsResponse>(
     '/api/presentations',
     fetcher,
     presentationsSWRConfig
   );
+  const processingQueueRef = useRef<Set<string>>(new Set());
+  const isProcessingRef = useRef(false);
+  const hasQueuedRef = useRef(false);
 
   const handlePresentationClick = (fileId: string) => {
     router.push(Routes.CREATE_PRESENTATION(fileId));
@@ -81,6 +88,125 @@ function PageCreateGIF() {
 
   const isLoading = !data && !error;
   const presentations = data?.presentations || [];
+
+  // Queue preview generation for presentations without previews
+  useEffect(() => {
+    if (!data?.presentations) {
+      return;
+    }
+
+    // Find presentations without previews
+    const presentationsWithoutPreviews = data.presentations.filter(
+      p => !p.firstSlidePreview && !p.thumbnailLink
+    );
+
+    if (presentationsWithoutPreviews.length === 0) {
+      hasQueuedRef.current = false;
+      return;
+    }
+
+    // Add to queue if not already queued
+    let addedToQueue = false;
+    presentationsWithoutPreviews.forEach(p => {
+      if (
+        !processingQueueRef.current.has(p.id) &&
+        !generatingPreviews.has(p.id)
+      ) {
+        processingQueueRef.current.add(p.id);
+        addedToQueue = true;
+      }
+    });
+
+    // Only start processing if we added new items and aren't already processing
+    if (!addedToQueue || isProcessingRef.current || hasQueuedRef.current) {
+      return;
+    }
+
+    hasQueuedRef.current = true;
+
+    // Process queue one at a time
+    const processQueue = async () => {
+      if (isProcessingRef.current) {
+        return;
+      }
+
+      isProcessingRef.current = true;
+
+      while (processingQueueRef.current.size > 0) {
+        const presentationId = Array.from(processingQueueRef.current)[0];
+        processingQueueRef.current.delete(presentationId);
+
+        // Check current state using mutate to get fresh data
+        let shouldSkip = false;
+        await mutate(
+          currentData => {
+            const presentation = currentData?.presentations.find(
+              p => p.id === presentationId
+            );
+            if (presentation?.firstSlidePreview || presentation?.thumbnailLink) {
+              shouldSkip = true;
+            }
+            return currentData; // Don't modify, just read
+          },
+          {revalidate: false}
+        );
+
+        if (shouldSkip) {
+          continue;
+        }
+
+        setGeneratingPreviews(prev => new Set(prev).add(presentationId));
+
+        try {
+          // Generate preview
+          const response = await apiPost<{
+            success: boolean;
+            previewUrl: string;
+            presentationId: string;
+          }>(`/api/presentation/${presentationId}/preview`, {});
+
+          if (response.success && response.previewUrl) {
+            // Update the SWR cache with the new preview
+            mutate(
+              currentData => {
+                if (!currentData) return currentData;
+                return {
+                  presentations: currentData.presentations.map(p =>
+                    p.id === presentationId
+                      ? {...p, firstSlidePreview: response.previewUrl}
+                      : p
+                  ),
+                };
+              },
+              {revalidate: false}
+            );
+          }
+        } catch (error) {
+          console.error(
+            `Failed to generate preview for ${presentationId}:`,
+            error
+          );
+          // If rate limited, wait a bit before continuing
+          if ((error as any)?.status === 429) {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        } finally {
+          setGeneratingPreviews(prev => {
+            const next = new Set(prev);
+            next.delete(presentationId);
+            return next;
+          });
+          // Small delay between requests to avoid rate limits
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      isProcessingRef.current = false;
+      hasQueuedRef.current = false;
+    };
+
+    processQueue();
+  }, [data, mutate]);
 
   // Skeleton loader component for presentation cards
   const PresentationSkeleton = () => (
@@ -176,7 +302,14 @@ function PageCreateGIF() {
                     </>
                   ) : (
                     <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
-                      <span>No preview</span>
+                      {generatingPreviews.has(presentation.id) ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <LoadingSpinner size="sm" />
+                          <span className="text-xs">Generating preview...</span>
+                        </div>
+                      ) : (
+                        <span>No preview</span>
+                      )}
                     </div>
                   )}
                   <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">

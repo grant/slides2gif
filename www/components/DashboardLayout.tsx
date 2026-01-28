@@ -43,12 +43,16 @@ export default function DashboardLayout({
         }`}
       >
         {/* Logo and Collapse Toggle */}
-        <div className="border-b border-gray-200 p-4">
+        <div
+          className={`border-b border-gray-200 ${
+            isCollapsed ? 'h-16 p-0' : 'p-4'
+          } flex items-center justify-center`}
+        >
           <div className="flex flex-col items-center gap-2">
             {isCollapsed ? (
               <button
                 onClick={() => setIsCollapsed(false)}
-                className="group relative flex h-14 items-center justify-center rounded-full bg-white px-3 py-3 shadow-sm transition-all"
+                className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-white px-3 py-3 shadow-sm transition-all"
                 aria-label="Expand sidebar"
               >
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -57,9 +61,9 @@ export default function DashboardLayout({
                   </div>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-gray-600 text-lg opacity-0 transition-opacity group-hover:opacity-100">
-                    →
-                  </div>
+                  <span className="material-icons text-lg text-gray-600 opacity-0 transition-opacity group-hover:opacity-100">
+                    chevron_right
+                  </span>
                 </div>
               </button>
             ) : (
@@ -70,7 +74,7 @@ export default function DashboardLayout({
                   className="flex items-center rounded p-1 text-gray-600 hover:bg-gray-100"
                   aria-label="Collapse sidebar"
                 >
-                  <span className="material-icons">chevron_left</span>
+                  <span className="material-icons text-lg">chevron_left</span>
                 </button>
               </div>
             )}
