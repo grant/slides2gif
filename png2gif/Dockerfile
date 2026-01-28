@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:24-slim
 ENV NODE_ENV=production
 WORKDIR /usr/app
 
@@ -8,7 +8,9 @@ WORKDIR /usr/app
 ENV PYTHONUNBUFFERED=1
 RUN \
   apt-get update && \
-  apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev pkg-config curl ruby python ffmpeg graphicsmagick
+  apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev pkg-config curl ruby python3 ffmpeg graphicsmagick && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 
 # https://github.com/goodspb/pdlib/issues/17
 ENV PKG_CONFIG_PATH=/dlib-install/usr/local/lib64/pkgconfig/

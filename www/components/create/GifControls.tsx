@@ -59,9 +59,7 @@ export function GifControls({
           <select
             value={thumbnailSize}
             onChange={e =>
-              setThumbnailSize(
-                e.target.value as 'SMALL' | 'MEDIUM' | 'LARGE'
-              )
+              setThumbnailSize(e.target.value as 'SMALL' | 'MEDIUM' | 'LARGE')
             }
             className="ml-1 h-8 w-20 rounded border border-gray-300 px-1 text-xs"
             disabled={isGeneratingGif}

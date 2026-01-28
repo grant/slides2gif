@@ -23,7 +23,9 @@ export function Timeline({
   if (selectedSlides.length === 0) {
     return (
       <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-4 text-center">
-        <p className="text-xs text-gray-500">Select slides to add to timeline</p>
+        <p className="text-xs text-gray-500">
+          Select slides to add to timeline
+        </p>
       </div>
     );
   }

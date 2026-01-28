@@ -14,7 +14,11 @@ interface SlideGridProps {
   imageRetryAttempts: Map<string, number>;
   isLoading: boolean;
   slideCount: number;
-  onSlideSelect: (slideIndex: number, objectId: string, thumbnailUrl: string | null) => void;
+  onSlideSelect: (
+    slideIndex: number,
+    objectId: string,
+    thumbnailUrl: string | null
+  ) => void;
   onImageLoad: (objectId: string) => void;
   onImageError: (objectId: string) => void;
 }

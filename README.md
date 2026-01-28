@@ -130,67 +130,86 @@ See [limits](https://developers.google.com/slides/limits):
 - 500 per project per 100 seconds
 - 100 per user per 100 seconds
 
-## Setup Script
+## Deployment
 
-```sh
-gcloud config set project "slides2gifcom"
-PROJECT=$(gcloud config get-value core/project 2> /dev/null)
+### Initial Setup
 
-# Enable APIs
-gcloud services enable slides.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable storage.googleapis.com
+Run the setup script to configure your Google Cloud project:
 
-# Create a service account for accessing Google Cloud Storage
-# See: https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys
-gcloud iam service-accounts create slides2gif-service-account
-gcloud iam service-accounts keys create creds.json \
-  --iam-account slides2gif-service-account@${PROJECT}.iam.gserviceaccount.com
-export GOOGLE_APPLICATION_CREDENTIALS="creds.json"
-
-# Grant necessary permissions
-gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member="serviceAccount:slides2gif-service-account@${PROJECT}.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-
-# Create a bucket for caching slide images
-gsutil mb gs://slides2gif-cache
-gsutil iam ch allUsers:objectViewer gs://slides2gif-cache
-
-# Create a bucket for uploaded GIFs
-gsutil mb gs://slides2gif-upload-test
-gsutil iam ch allUsers:objectViewer gs://slides2gif-upload-test
-
-# Login with ADC
-gcloud auth application-default login
+```bash
+./setup.sh
 ```
 
-### Create Environment Variables File
+This will check and configure:
+- ✓ Authentication
+- ✓ Project configuration
+- ✓ Required APIs
+- ✓ Cloud Storage buckets
+- ✓ Service account and permissions
+- ✓ Environment variables
+- ✓ Application Default Credentials
 
-Create `www/.env.local` with all required environment variables:
+You can run `./setup.sh` multiple times - it's idempotent and will show what's already done vs what needs to be configured.
 
-```sh
-# ⚠️ These secrets should never be inside your repository directly
-# For local development, store them inside a `.env.local` gitignored file
-# See https://nextjs.org/docs/basic-features/environment-variables#loading-environment-variables
+### Deploy Services
 
+After setup, deploy both services:
+
+```bash
+./deploy.sh
+```
+
+This will:
+1. Deploy `png2gif` service
+2. Deploy `www` service (auto-discovers png2gif URL)
+3. Configure IAM permissions for service-to-service communication
+
+### Secret Management
+
+**Production (Cloud Run):** Secrets are stored in Google Cloud Secret Manager.
+
+**Local Development:** Create `www/.env.local` (gitignored) with:
+
+```bash
 # Session encryption key (32+ characters)
-SECRET_COOKIE_PASSWORD=my-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secret
+SECRET_COOKIE_PASSWORD=your-32-plus-character-secret
 
 # Google OAuth 2.0 credentials
-# Get these from: https://console.cloud.google.com/apis/credentials
-# Option 1: Use separate clients for local and production (recommended)
-OAUTH_CLIENT_ID_LOCAL=your-local-client-id.apps.googleusercontent.com
-OAUTH_CLIENT_SECRET_LOCAL=your-local-client-secret
-OAUTH_CLIENT_ID_PROD=your-prod-client-id.apps.googleusercontent.com
-OAUTH_CLIENT_SECRET_PROD=your-prod-client-secret
+OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+OAUTH_CLIENT_SECRET=your-client-secret
 
-# Option 2: Use the same client for both (fallback)
-# OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
-# OAUTH_CLIENT_SECRET=your-client-secret
-
-# Google Cloud Storage bucket for caching slide thumbnails
+# Google Cloud Storage bucket
 GCS_CACHE_BUCKET=slides2gif-cache
 ```
 
+**Setting up secrets for production:**
+
+1. Run `./setup.sh` - it will create secrets from your `www/.env.local` if available
+2. Or create secrets manually:
+   ```bash
+   # Create a secret
+   echo -n "your-secret-value" | gcloud secrets create oauth-client-id \
+     --data-file=- \
+     --replication-policy="automatic" \
+     --project slides2gifcom
+   
+   # Or use the helper script
+   ./scripts/create-secret.sh oauth-client-id
+   ```
+
+**Required secrets:**
+- `oauth-client-id` - OAuth Client ID
+- `oauth-client-secret` - OAuth Client Secret  
+- `secret-cookie-password` - Session cookie encryption key (32+ chars)
+
 **Get OAuth Credentials:** https://console.cloud.google.com/apis/credentials
+
+### Individual Service Deployment
+
+```bash
+# Deploy png2gif only
+cd png2gif && ./deploy.sh
+
+# Deploy www only
+cd www && ./deploy.sh
+```

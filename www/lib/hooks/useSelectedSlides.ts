@@ -11,7 +11,11 @@ export interface UseSelectedSlidesReturn {
   setSelectedSlides: React.Dispatch<React.SetStateAction<SelectedSlide[]>>;
   draggedIndex: number | null;
   setDraggedIndex: React.Dispatch<React.SetStateAction<number | null>>;
-  handleSlideSelect: (slideIndex: number, objectId: string, thumbnailUrl: string | null) => void;
+  handleSlideSelect: (
+    slideIndex: number,
+    objectId: string,
+    thumbnailUrl: string | null
+  ) => void;
   handleSlideDeselect: (objectId: string) => void;
   handleDragStart: (index: number) => void;
   handleDragOver: (e: React.DragEvent, index: number) => void;

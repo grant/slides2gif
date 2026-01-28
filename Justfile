@@ -80,6 +80,34 @@ fix:
     just fix-www || true
     just fix-png2gif || true
 
+# Setup and Deployment Commands
+setup:
+    ./setup.sh
+
+# Deploy to production
+deploy:
+    DEPLOY_ENV=production ./deploy.sh
+
+# Deploy to staging
+stage:
+    DEPLOY_ENV=staging ./deploy.sh
+
+deploy-www:
+    cd www && ./deploy.sh
+
+deploy-png2gif:
+    cd png2gif && ./deploy.sh
+
+# Secret Management Commands
+verify-secrets:
+    ./scripts/verify-secrets.sh
+
+sync-secrets:
+    ./scripts/sync-secrets.sh
+
+create-secret secret_name:
+    ./scripts/create-secret.sh {{secret_name}}
+
 # OAuth Client Management Commands
 # Note: OAuth client secrets can only be viewed once when created.
 # If you've lost the secret, you'll need to create a new OAuth client.

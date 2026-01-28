@@ -47,7 +47,9 @@ export function useImageRetry(
       );
 
       console.log(
-        `Scheduling remount for ${objectId} in ${delay}ms (attempt ${retryAttempt + 1})`
+        `Scheduling remount for ${objectId} in ${delay}ms (attempt ${
+          retryAttempt + 1
+        })`
       );
 
       const timer = setTimeout(() => {

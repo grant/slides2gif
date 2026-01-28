@@ -23,7 +23,6 @@ import {SlideGrid} from '../../../components/create/SlideGrid';
 import {GifControls} from '../../../components/create/GifControls';
 import {GifPreview} from '../../../components/create/GifPreview';
 
-
 export default function CreatePresentationDetail() {
   const router = useRouter();
   const {fileId} = router.query;
@@ -143,8 +142,7 @@ export default function CreatePresentationDetail() {
   };
 
   // Loading states
-  const isLoadingMetadata =
-    !metadata && !metadataError && isValidatingMetadata;
+  const isLoadingMetadata = !metadata && !metadataError && isValidatingMetadata;
   const isLoadingSlides = !slidesData && !isValidatingSlides;
 
   // Show loading state while checking authentication
@@ -177,12 +175,14 @@ export default function CreatePresentationDetail() {
         <title>
           {metadata ? `${metadata.title} - ${siteTitle}` : siteTitle}
         </title>
-        {slidesData && slidesData.slides.length > 0 && slidesData.slides[0].thumbnailUrl && (
-          <meta
-            property="og:image"
-            content={slidesData.slides[0].thumbnailUrl}
-          />
-        )}
+        {slidesData &&
+          slidesData.slides.length > 0 &&
+          slidesData.slides[0].thumbnailUrl && (
+            <meta
+              property="og:image"
+              content={slidesData.slides[0].thumbnailUrl}
+            />
+          )}
       </Head>
       <DashboardLayout activeTab="create" initialCollapsed={true}>
         <div className="flex h-screen overflow-hidden">
