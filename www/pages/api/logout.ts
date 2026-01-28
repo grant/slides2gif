@@ -8,7 +8,15 @@ async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    req.session.destroy();
+    // Explicitly clear all session data
+    req.session.user = undefined;
+    req.session.isLoggedIn = false;
+    req.session.googleOAuth = undefined;
+    req.session.googleTokens = undefined;
+
+    // Save the cleared session to persist the logout
+    await req.session.save();
+
     return res.status(200).json({success: true});
   } catch (error: any) {
     console.error('Logout error:', error);

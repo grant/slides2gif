@@ -94,6 +94,7 @@ export interface DashboardStats {
     url: string;
     createdAt: number;
     presentationId?: string;
+    presentationTitle?: string;
   }>;
 }
 

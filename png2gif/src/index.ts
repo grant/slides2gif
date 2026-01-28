@@ -112,6 +112,9 @@ app.get(
       localFilename = `${uuidv4()}.gif`;
       const tempGCSFilename = localFilename;
       const presentationId = req.query.presentationId as string;
+      const presentationTitle = req.query.presentationTitle as
+        | string
+        | undefined;
 
       if (!presentationId || presentationId === '') {
         res.status(400).json({
@@ -125,23 +128,94 @@ app.get(
       const thumbnailSize = ((req.query.thumbnailSize as string) ||
         'MEDIUM') as 'SMALL' | 'MEDIUM' | 'LARGE';
 
+      // Clean the slides directory for this presentation before downloading
+      // This ensures we only process the files we're about to download, not old files
+      const slidesDownloadDir = `${GIF_DOWNLOAD_LOCATION}/presentations/${presentationId}/slides`;
+      if (fs.existsSync(slidesDownloadDir)) {
+        const slideFiles = fs.readdirSync(slidesDownloadDir);
+        console.log(
+          `Cleaning ${slideFiles.length} existing files in ${slidesDownloadDir} to ensure only selected slides are processed`
+        );
+        for (const slideFile of slideFiles) {
+          try {
+            fs.unlinkSync(`${slidesDownloadDir}/${slideFile}`);
+          } catch (error) {
+            // Ignore errors deleting individual files
+            console.warn(`Could not delete ${slideFile}:`, error);
+          }
+        }
+        console.log(
+          `Cleaned ${slideFiles.length} files from download directory`
+        );
+      }
+
+      // Get the slideList to log what we're expecting
+      const slideList = (req.query.slideList as string) || '*';
+      const expectedSlideCount =
+        slideList === '*' ? null : slideList.split(',').length;
+      console.log(
+        `[png2gif] Generating GIF with ${
+          expectedSlideCount ?? 'all'
+        } slide(s): ${slideList}`
+      );
+
       // Download images
       const downloadImagesReq: DownloadImagesRequestOptions = {
         presentationId: presentationId,
-        slideList: (req.query.slideList as string) || '*',
+        slideList: slideList,
         downloadLocation: GIF_DOWNLOAD_LOCATION,
         thumbnailSize: thumbnailSize as 'SMALL' | 'MEDIUM' | 'LARGE',
       };
-      await downloadFiles(downloadImagesReq);
+      const downloadResult = await downloadFiles(downloadImagesReq);
+
+      // Verify we downloaded the expected number of files
+      if (downloadResult && 'files' in downloadResult) {
+        console.log(
+          `[png2gif] Successfully downloaded ${downloadResult.files.length} file(s) for GIF generation`
+        );
+
+        // Verify the downloaded file count matches expectations
+        if (
+          expectedSlideCount !== null &&
+          downloadResult.files.length !== expectedSlideCount
+        ) {
+          console.warn(
+            `[png2gif] WARNING: Expected ${expectedSlideCount} file(s) but downloaded ${downloadResult.files.length} file(s)`
+          );
+        }
+      }
+
+      // Verify files in directory match what we expect
+      if (fs.existsSync(slidesDownloadDir)) {
+        const filesAfterDownload = fs.readdirSync(slidesDownloadDir);
+        const sizeSuffix = `_${thumbnailSize.toLowerCase()}`;
+        const matchingFiles = filesAfterDownload.filter(
+          f => f.includes(sizeSuffix) && f.endsWith('.png')
+        );
+        console.log(
+          `[png2gif] Files in directory after download: ${
+            matchingFiles.length
+          } (${matchingFiles.join(', ')})`
+        );
+
+        if (
+          expectedSlideCount !== null &&
+          matchingFiles.length !== expectedSlideCount
+        ) {
+          console.warn(
+            `[png2gif] WARNING: Directory contains ${matchingFiles.length} file(s) but expected ${expectedSlideCount}`
+          );
+        }
+      }
 
       // Configuration options if defined.
-      // Files are stored as .jpg in GCS at: presentations/{presentationId}/slides/{objectId}.jpg (SMALL)
-      // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg (MEDIUM/LARGE)
-      // After download, they're at: downloads/presentations/{presentationId}/slides/{objectId}.jpg
+      // Files are stored as .png in GCS at: presentations/{presentationId}/slides/{objectId}.png (SMALL)
+      // or: presentations/{presentationId}/slides/{objectId}_{size}.png (MEDIUM/LARGE)
+      // After download, they're at: downloads/presentations/{presentationId}/slides/{objectId}.png
       // Build glob pattern to match only the requested size
       // All sizes now use a suffix: _small, _medium, or _large
       const sizeSuffix = `_${thumbnailSize.toLowerCase()}`;
-      const globPattern = `${GIF_DOWNLOAD_LOCATION}/presentations/${presentationId}/slides/*${sizeSuffix}.{jpg,jpeg,png}`;
+      const globPattern = `${GIF_DOWNLOAD_LOCATION}/presentations/${presentationId}/slides/*${sizeSuffix}.png`;
 
       const gifReq: CreateGIFRequestOptions = {
         inputFrameGlobString: globPattern,
@@ -176,9 +250,15 @@ app.get(
       if (fs.existsSync(localFilename)) {
         console.log('Created gif locally!');
 
-        // Upload file (cleanup happens in finally block)
-        await uploadFile(localFilename, tempGCSFilename);
-        console.log(`Uploaded: ${gcsPath}`);
+        // Upload file with metadata (cleanup happens in finally block)
+        const metadata: {[key: string]: string} = {
+          presentationId,
+        };
+        if (presentationTitle) {
+          metadata.presentationTitle = presentationTitle;
+        }
+        await uploadFile(localFilename, tempGCSFilename, metadata);
+        console.log(`Uploaded: ${gcsPath} with metadata:`, metadata);
         res.json({
           result: 'SUCCESS',
           file: gcsPath,
@@ -207,7 +287,10 @@ app.get(
           fs.unlinkSync(localFilename);
           console.log(`Final cleanup: removed ${localFilename}`);
         } catch (cleanupError) {
-          console.error(`Error in final cleanup of ${localFilename}:`, cleanupError);
+          console.error(
+            `Error in final cleanup of ${localFilename}:`,
+            cleanupError
+          );
         }
       }
     }

@@ -20,10 +20,11 @@ export default function Custom500() {
           <h1 className="text-9xl font-black text-white md:text-[12rem] lg:text-[16rem]">
             500
           </h1>
-          <p className="mt-8 text-2xl font-semibold text-white">
-            Server error
-          </p>
-          <a href="/" className="mt-8 text-lg text-white underline hover:text-white/80">
+          <p className="mt-8 text-2xl font-semibold text-white">Server error</p>
+          <a
+            href="/"
+            className="mt-8 text-lg text-white underline hover:text-white/80"
+          >
             Go back home →
           </a>
         </main>

@@ -3,8 +3,8 @@ import {getIronSession} from 'iron-session';
 import {sessionOptions} from '../../lib/session';
 import {GoogleAuth} from 'google-auth-library';
 import {google} from 'googleapis';
-import {OAuth2Client, Credentials} from 'google-auth-library';
 import {cacheSlideThumbnail, getCachedSlideUrl} from '../../lib/storage';
+import {getAuthenticatedClient} from '../../lib/oauthClient';
 
 interface GenerateGifRequest {
   presentationId: string;
@@ -77,41 +77,36 @@ export default async function handler(
     );
     const slideObjectIds = slideList.split(',').map(id => id.trim());
 
+    // Declare presentationTitle outside try-catch so it's accessible later
+    let presentationTitle: string | undefined;
+
     try {
-      // Setup OAuth2 client for Google Slides API
-      const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-      const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
-      if (!CLIENT_ID || !CLIENT_SECRET) {
-        return res
-          .status(500)
-          .json({error: 'OAuth credentials not configured'});
+      // Get authenticated OAuth2 client (handles token refresh if needed)
+      const authResult = await getAuthenticatedClient(session, res);
+      if (!authResult) {
+        return; // Error response already sent by getAuthenticatedClient
       }
 
-      const auth = new OAuth2Client({
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET,
-      });
-
-      // Set credentials from session
-      if (!session.googleTokens) {
-        return res.status(401).json({error: 'No Google tokens in session'});
-      }
-
-      const credentials: Credentials = {
-        access_token: session.googleTokens.access_token || undefined,
-        refresh_token: session.googleTokens.refresh_token || undefined,
-        expiry_date: session.googleTokens.expiry_date || undefined,
-      };
-      auth.setCredentials(credentials);
-
-      // Refresh token if expired
-      if (credentials.expiry_date && credentials.expiry_date <= Date.now()) {
-        const {credentials: newCredentials} = await auth.refreshAccessToken();
-        auth.setCredentials(newCredentials);
-      }
+      const {client: auth} = authResult;
 
       // Get Slides API client
       const slides = google.slides({version: 'v1', auth: auth as any});
+
+      // Get presentation title from Google Drive File API
+      try {
+        const drive = google.drive({version: 'v3', auth: auth as any});
+        const fileData = await drive.files.get({
+          fileId: presentationId,
+          fields: 'name',
+        });
+        presentationTitle = fileData.data.name || undefined;
+      } catch (error) {
+        console.warn(
+          'Failed to fetch presentation title from Drive API:',
+          error
+        );
+        // Continue without title
+      }
 
       // Fetch high-res thumbnails for each selected slide
       const thumbnailPromises = slideObjectIds.map(async objectId => {
@@ -134,6 +129,7 @@ export default async function handler(
             presentationId,
             pageObjectId: objectId,
             'thumbnailProperties.thumbnailSize': thumbnailSize,
+            'thumbnailProperties.mimeType': 'PNG',
           });
 
           const thumbnailUrl = thumbnail.data.contentUrl;
@@ -213,6 +209,9 @@ export default async function handler(
     url.searchParams.set('presentationId', presentationId);
     url.searchParams.set('slideList', slideList);
     url.searchParams.set('thumbnailSize', thumbnailSize);
+    if (presentationTitle) {
+      url.searchParams.set('presentationTitle', presentationTitle);
+    }
     // Add optional GIF configuration parameters
     if (delay !== undefined) {
       url.searchParams.set('delay', delay.toString());

@@ -2,10 +2,11 @@ import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
 import {google} from 'googleapis';
-import {OAuth2Client, Credentials} from 'google-auth-library';
+import {Credentials} from 'google-auth-library';
 import {cacheSlideThumbnail, makePresentationFilesPublic} from 'lib/storage';
 import {checkRateLimit} from 'lib/rateLimit';
 import {Auth} from 'lib/oauth';
+import {getAuthenticatedClient} from 'lib/oauthClient';
 
 // Load env vars (.env)
 require('dotenv').config({
@@ -26,11 +27,6 @@ async function refetchRoute(req: NextApiRequest, res: NextApiResponse) {
   const fileId = req.query.fileId as string;
   if (!fileId) {
     return res.status(400).json({error: 'Missing fileId parameter'});
-  }
-
-  // Check if user is logged in
-  if (!req.session.googleTokens?.access_token) {
-    return res.status(401).json({error: 'Not authenticated'});
   }
 
   // Get user ID for rate limiting
@@ -71,42 +67,13 @@ async function refetchRoute(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    // Setup OAuth2 client
-    const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-    const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
-    if (!CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(500).json({error: 'OAuth credentials not configured'});
+    // Get authenticated OAuth2 client (handles token refresh if needed)
+    const authResult = await getAuthenticatedClient(req.session, res);
+    if (!authResult) {
+      return; // Error response already sent by getAuthenticatedClient
     }
 
-    const auth = new OAuth2Client({
-      clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
-    });
-
-    // Set credentials from session
-    const credentials: Credentials = {
-      access_token: req.session.googleTokens.access_token || undefined,
-      refresh_token: req.session.googleTokens.refresh_token || undefined,
-      expiry_date: req.session.googleTokens.expiry_date || undefined,
-    };
-    auth.setCredentials(credentials);
-
-    // Refresh token if expired
-    if (credentials.expiry_date && credentials.expiry_date <= Date.now()) {
-      const {credentials: newCredentials} = await auth.refreshAccessToken();
-      auth.setCredentials(newCredentials);
-
-      // Update session with new tokens
-      req.session.googleTokens = {
-        access_token: newCredentials.access_token || undefined,
-        refresh_token:
-          newCredentials.refresh_token ||
-          credentials.refresh_token ||
-          undefined,
-        expiry_date: newCredentials.expiry_date || undefined,
-      };
-      await req.session.save();
-    }
+    const {client: auth} = authResult;
 
     // Get Slides API client
     const slides = google.slides({version: 'v1', auth: auth as any});
@@ -150,6 +117,7 @@ async function refetchRoute(req: NextApiRequest, res: NextApiResponse) {
             presentationId: fileId,
             pageObjectId: objectId,
             'thumbnailProperties.thumbnailSize': 'SMALL',
+            'thumbnailProperties.mimeType': 'PNG',
           });
 
           const thumbnailUrl = thumbnail.data.contentUrl;

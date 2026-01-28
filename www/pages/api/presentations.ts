@@ -2,8 +2,8 @@ import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
 import {google} from 'googleapis';
-import {OAuth2Client, Credentials} from 'google-auth-library';
 import {getCachedSlideUrl} from 'lib/storage';
+import {getAuthenticatedClient} from 'lib/oauthClient';
 
 // Load env vars (.env)
 require('dotenv').config({
@@ -23,52 +23,14 @@ async function presentationsRoute(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({error: 'Method not allowed'});
   }
 
-  // Check if user is logged in
-  if (!req.session.googleTokens?.access_token) {
-    console.log('No access token in session. Session data:', {
-      hasGoogleTokens: !!req.session.googleTokens,
-      hasGoogleOAuth: !!req.session.googleOAuth,
-    });
-    return res.status(401).json({error: 'Not authenticated'});
-  }
-
   try {
-    // Setup OAuth2 client
-    const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-    const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
-    if (!CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(500).json({error: 'OAuth credentials not configured'});
+    // Get authenticated OAuth2 client (handles token refresh if needed)
+    const authResult = await getAuthenticatedClient(req.session, res);
+    if (!authResult) {
+      return; // Error response already sent by getAuthenticatedClient
     }
 
-    const auth = new OAuth2Client({
-      clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
-    });
-
-    // Set credentials from session
-    const credentials: Credentials = {
-      access_token: req.session.googleTokens.access_token || undefined,
-      refresh_token: req.session.googleTokens.refresh_token || undefined,
-      expiry_date: req.session.googleTokens.expiry_date || undefined,
-    };
-    auth.setCredentials(credentials);
-
-    // Refresh token if expired
-    if (credentials.expiry_date && credentials.expiry_date <= Date.now()) {
-      const {credentials: newCredentials} = await auth.refreshAccessToken();
-      auth.setCredentials(newCredentials);
-
-      // Update session with new tokens
-      req.session.googleTokens = {
-        access_token: newCredentials.access_token || undefined,
-        refresh_token:
-          newCredentials.refresh_token ||
-          credentials.refresh_token ||
-          undefined,
-        expiry_date: newCredentials.expiry_date || undefined,
-      };
-      await req.session.save();
-    }
+    const {client: auth} = authResult;
 
     // Get Drive API client
     const drive = google.drive({version: 'v3', auth: auth as any});

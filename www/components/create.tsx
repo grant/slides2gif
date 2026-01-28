@@ -8,7 +8,6 @@ import React, {useState} from 'react';
 import {APIResUser} from '../types/user';
 import useSWR from 'swr';
 import {useRouter} from 'next/router';
-import {LoadingScreen} from './LoadingScreen';
 import {LoadingSpinner} from './LoadingSpinner';
 import {Routes} from '../lib/routes';
 import {
@@ -80,48 +79,51 @@ function PageCreateGIF() {
     router.push(Routes.CREATE_PRESENTATION(fileId));
   };
 
-  if (!data && !error) {
-    return PageWrapper({
-      pageTitle: 'Create GIF',
-      pageContents: <LoadingScreen message="Loading presentations..." />,
-    });
-  }
-
-  if (error) {
-    console.error('Error loading presentations:', error);
-    const errorMessage =
-      (error as any)?.info?.error ||
-      (error as any)?.message ||
-      'Failed to load presentations';
-    return PageWrapper({
-      pageTitle: 'Create GIF',
-      pageContents: (
-        <div className="py-10 px-5 text-center">
-          <p className="text-base text-red-600">
-            {errorMessage}. Please try again.
-          </p>
-          {(error as any)?.status === 401 && (
-            <p className="mt-2 text-sm text-gray-600">
-              You may need to{' '}
-              <a href="/login" className="text-blue underline">
-                log in again
-              </a>
-              .
-            </p>
-          )}
-        </div>
-      ),
-    });
-  }
-
+  const isLoading = !data && !error;
   const presentations = data?.presentations || [];
+
+  // Skeleton loader component for presentation cards
+  const PresentationSkeleton = () => (
+    <div className="relative rounded-lg border-2 border-gray-200 bg-white shadow-sm">
+      {/* Image skeleton */}
+      <div className="h-[140px] w-full animate-pulse bg-gray-200" />
+      {/* Title skeleton */}
+      <div className="px-3 py-3">
+        <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+      </div>
+    </div>
+  );
 
   return PageWrapper({
     pageTitle: 'Create GIF',
     pageContents: (
       <div className="py-5">
         <h3 className="mb-5 text-2xl">Choose a presentation:</h3>
-        {presentations.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
+            {[...Array(6)].map((_, index) => (
+              <PresentationSkeleton key={`skeleton-${index}`} />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="py-10 px-5 text-center">
+            <p className="text-base text-red-600">
+              {(error as any)?.info?.error ||
+                (error as any)?.message ||
+                'Failed to load presentations'}
+              . Please try again.
+            </p>
+            {(error as any)?.status === 401 && (
+              <p className="mt-2 text-sm text-gray-600">
+                You may need to{' '}
+                <a href="/login" className="text-blue underline">
+                  log in again
+                </a>
+                .
+              </p>
+            )}
+          </div>
+        ) : presentations.length === 0 ? (
           <p>No presentations found.</p>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
@@ -263,12 +265,5 @@ interface PageOptions {
   pageContents: JSX.Element;
 }
 function PageWrapper(options: PageOptions) {
-  return (
-    <div className="p-5">
-      <h2>
-        SLIDES2GIF <span>– {options.pageTitle}</span>
-      </h2>
-      {options.pageContents}
-    </div>
-  );
+  return <div className="p-5">{options.pageContents}</div>;
 }

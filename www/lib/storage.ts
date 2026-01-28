@@ -12,7 +12,7 @@ function getBucket() {
 
 /**
  * Gets the cache path for a slide thumbnail
- * Format: presentations/{presentationId}/slides/{objectId}_{size}.jpg
+ * Format: presentations/{presentationId}/slides/{objectId}_{size}.png
  * All sizes use a suffix: _small, _medium, or _large
  */
 export function getSlideCachePath(
@@ -22,7 +22,7 @@ export function getSlideCachePath(
 ): string {
   const basePath = `presentations/${presentationId}/slides/${objectId}`;
   const sizeSuffix = size.toLowerCase();
-  return `${basePath}_${sizeSuffix}.jpg`;
+  return `${basePath}_${sizeSuffix}.png`;
 }
 
 /**
@@ -101,7 +101,7 @@ export async function cacheSlideThumbnail(
 
     await file.save(imageBuffer, {
       metadata: {
-        contentType: 'image/jpeg',
+        contentType: 'image/png',
         cacheControl: 'public, max-age=31536000', // Cache for 1 year
       },
     });

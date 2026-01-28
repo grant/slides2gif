@@ -22,14 +22,24 @@ export interface DownloadImagesRequestOptions {
  * Uploads a file to Cloud Storage
  * @param localFilepath The path to the local file
  * @param gcsFilename The name of the file in Cloud Storage, i.e. `myfile.gif`
+ * @param metadata Optional metadata to attach to the file
  */
-export async function uploadFile(localFilepath: string, gcsFilename: string) {
+export async function uploadFile(
+  localFilepath: string,
+  gcsFilename: string,
+  metadata?: {[key: string]: string}
+) {
   try {
     const storage = new Storage();
     const [file]: [File, Metadata] = await storage
       .bucket(BUCKET_NAME)
       .upload(localFilepath, {
         destination: gcsFilename,
+        metadata: metadata
+          ? {
+              metadata,
+            }
+          : undefined,
       });
     return file;
   } catch (error) {
@@ -76,10 +86,9 @@ export async function downloadFiles({
   }
   const storage = new Storage();
 
-  // Files are stored at: presentations/{presentationId}/slides/{objectId}.jpg (SMALL)
-  // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg (MEDIUM/LARGE)
-  const sizeSuffix =
-    thumbnailSize !== 'SMALL' ? `_${thumbnailSize.toLowerCase()}` : '';
+  // Files are stored at: presentations/{presentationId}/slides/{objectId}_{size}.png
+  // All sizes use suffixes: _small, _medium, _large
+  const sizeSuffix = `_${thumbnailSize.toLowerCase()}`;
   const prefix = `presentations/${presentationId}/slides/`;
   console.log(
     `[png2gif] Looking for files in bucket: ${BUCKET_NAME}, prefix: ${prefix}`
@@ -140,8 +149,8 @@ export async function downloadFiles({
   // Filter files by slideList if specified
   const filesToDownload = slideIds
     ? fileList.filter(file => {
-        // Extract objectId from path: presentations/{presentationId}/slides/{objectId}.jpg
-        // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg
+        // Extract objectId from path: presentations/{presentationId}/slides/{objectId}.png
+        // or: presentations/{presentationId}/slides/{objectId}_{size}.png
         const fileName = file.name.split('/').pop() || '';
         // Remove size suffix and extension to get objectId
         const objectId = fileName
@@ -150,10 +159,21 @@ export async function downloadFiles({
         const matches = slideIds.includes(objectId);
 
         // Also check that the file matches the requested size
-        const hasCorrectSize =
-          thumbnailSize === 'SMALL'
-            ? !fileName.match(/_(small|medium|large)\.(jpg|jpeg|png)$/i)
-            : fileName.includes(`_${thumbnailSize.toLowerCase()}.`);
+        // All sizes now use suffixes: _small, _medium, _large
+        const expectedSizeSuffix = `_${thumbnailSize.toLowerCase()}`;
+        // Check if filename ends with the size suffix followed by .png
+        const hasCorrectSize = fileName
+          .toLowerCase()
+          .endsWith(`${expectedSizeSuffix}.png`);
+
+        // Debug logging
+        if (matches && !hasCorrectSize) {
+          console.log(
+            `  [DEBUG] File matched objectId but wrong size: ${fileName}, expected suffix: ${expectedSizeSuffix}.png, actual ends with: ${fileName.slice(
+              -15
+            )}`
+          );
+        }
 
         const shouldDownload = matches && hasCorrectSize;
 
@@ -205,7 +225,7 @@ export async function downloadFiles({
   for (let i = 0; i < filesToDownload.length; ++i) {
     const f = filesToDownload[i];
     try {
-      // Preserve directory structure: downloads/{presentationId}/presentations/{presentationId}/slides/{objectId}.jpg
+      // Preserve directory structure: downloads/{presentationId}/presentations/{presentationId}/slides/{objectId}.png
       const destination = `${downloadLocation}/${f.name}`;
       console.log(`- Downloading ${f.name} to ${destination}`);
 

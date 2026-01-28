@@ -23,7 +23,10 @@ export default function Custom404() {
           <p className="mt-8 text-2xl font-semibold text-white">
             Page not found
           </p>
-          <a href="/" className="mt-8 text-lg text-white underline hover:text-white/80">
+          <a
+            href="/"
+            className="mt-8 text-lg text-white underline hover:text-white/80"
+          >
             Go back home →
           </a>
         </main>

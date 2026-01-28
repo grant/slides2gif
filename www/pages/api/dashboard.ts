@@ -3,7 +3,7 @@ import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from '../../lib/session';
 import {Storage} from '@google-cloud/storage';
 import {google} from 'googleapis';
-import {OAuth2Client, Credentials} from 'google-auth-library';
+import {getAuthenticatedClient} from '../../lib/oauthClient';
 
 const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
 
@@ -15,6 +15,7 @@ interface DashboardStats {
     url: string;
     createdAt: number;
     presentationId?: string;
+    presentationTitle?: string;
   }>;
 }
 
@@ -29,34 +30,13 @@ async function dashboardHandler(
   try {
     const session = req.session;
 
-    if (!session.googleTokens?.access_token && !session.googleOAuth) {
-      return res.status(401).json({error: 'Unauthorized'});
+    // Get authenticated OAuth2 client (handles token refresh if needed)
+    const authResult = await getAuthenticatedClient(session, res);
+    if (!authResult) {
+      return; // Error response already sent by getAuthenticatedClient
     }
 
-    // Setup OAuth2 client
-    const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-    const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
-    if (!CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(500).json({error: 'OAuth credentials not configured'});
-    }
-
-    const auth = new OAuth2Client({
-      clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
-    });
-
-    const credentials: Credentials = {
-      access_token: session.googleTokens?.access_token || undefined,
-      refresh_token: session.googleTokens?.refresh_token || undefined,
-      expiry_date: session.googleTokens?.expiry_date || undefined,
-    };
-    auth.setCredentials(credentials);
-
-    // Refresh token if expired
-    if (credentials.expiry_date && credentials.expiry_date <= Date.now()) {
-      const {credentials: newCredentials} = await auth.refreshAccessToken();
-      auth.setCredentials(newCredentials);
-    }
+    const {client: auth} = authResult;
 
     // Get Slides API client
     const slides = google.slides({version: 'v1', auth: auth as any});
@@ -77,18 +57,27 @@ async function dashboardHandler(
       prefix: 'presentations/',
     });
 
-    // Count unique presentations
-    const presentationIds = new Set<string>();
-    let totalSlidesProcessed = 0;
+    // Count unique slides (presentationId + objectId pairs)
+    // Path format: presentations/{presentationId}/slides/{objectId}_{size}.png
+    // We need to count unique (presentationId, objectId) pairs, not total files
+    // since each slide can have multiple sizes cached
+    const uniqueSlides = new Set<string>();
 
     files.forEach(file => {
-      // Extract presentation ID from path: presentations/{id}/slides/{objectId}_{size}.jpg
-      const match = file.name.match(/^presentations\/([^/]+)\/slides\//);
+      // Extract presentation ID and object ID from path
+      // Format: presentations/{presentationId}/slides/{objectId}_{size}.png
+      const match = file.name.match(
+        /^presentations\/([^/]+)\/slides\/([^_]+)_/
+      );
       if (match) {
-        presentationIds.add(match[1]);
-        totalSlidesProcessed++;
+        const presentationId = match[1];
+        const objectId = match[2];
+        // Create a unique key for this slide
+        uniqueSlides.add(`${presentationId}:${objectId}`);
       }
     });
+
+    const totalSlidesProcessed = uniqueSlides.size;
 
     // Get list of GIFs from GCS (files ending in .gif)
     const [gifFiles] = await bucket.getFiles({
@@ -99,14 +88,26 @@ async function dashboardHandler(
       .filter(file => file.name.endsWith('.gif'))
       .map(file => {
         // Extract timestamp from metadata or use file creation time
-        const createdAt =
-          file.metadata.timeCreated
-            ? new Date(file.metadata.timeCreated).getTime()
-            : Date.now();
+        const createdAt = file.metadata.timeCreated
+          ? new Date(file.metadata.timeCreated).getTime()
+          : Date.now();
+
+        // Extract custom metadata
+        const customMetadata = file.metadata.metadata || {};
+        const presentationId =
+          typeof customMetadata.presentationId === 'string'
+            ? customMetadata.presentationId
+            : undefined;
+        const presentationTitle =
+          typeof customMetadata.presentationTitle === 'string'
+            ? customMetadata.presentationTitle
+            : undefined;
 
         return {
           url: `https://storage.googleapis.com/${BUCKET_NAME}/${file.name}`,
           createdAt,
+          presentationId,
+          presentationTitle,
         };
       })
       .sort((a, b) => b.createdAt - a.createdAt); // Most recent first

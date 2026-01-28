@@ -8,6 +8,8 @@ const mergeDeep = require('merge-deep');
 import * as fs from 'fs';
 import {createCanvas, loadImage} from 'canvas';
 import * as path from 'path';
+import * as os from 'os';
+import {v4 as uuidv4} from 'uuid';
 
 /**
  * Request options when creating a GIF.
@@ -113,7 +115,7 @@ export const createGif = async (
     );
   });
 
-  // Google Slides API returns PNG by default, even if cached with .jpg extension
+  // Google Slides API returns PNG format - all files should be PNG
   // Check actual file format by reading first few bytes (magic numbers)
   const fileFormats: string[] = [];
   for (const file of arr) {
@@ -231,11 +233,52 @@ export const createGif = async (
     }
   }
 
-  // TODO: More error handling
+  // Validate and filter out any corrupted files before processing
   type ImgSize = {height: number; width: number; type: string};
-  const imgSizes: ImgSize[] = arr.map(img => {
-    return sizeOf(img.path);
-  });
+  const validFiles: Array<GS> = [];
+  const imgSizes: ImgSize[] = [];
+
+  for (const file of arr) {
+    try {
+      // Verify file exists and is readable
+      if (!fs.existsSync(file.path)) {
+        console.warn(`  Skipping missing file: ${file.path}`);
+        continue;
+      }
+
+      // Try to read image dimensions - this will fail if file is corrupted
+      const imgSize = sizeOf(file.path);
+      if (!imgSize || !imgSize.width || !imgSize.height) {
+        console.warn(`  Skipping invalid image: ${file.path}`);
+        continue;
+      }
+
+      // Double-check file format by reading magic numbers
+      const buffer = fs.readFileSync(file.path).slice(0, 8);
+      const isPNG =
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47;
+      if (!isPNG) {
+        console.warn(`  Skipping non-PNG file: ${file.path}`);
+        continue;
+      }
+
+      validFiles.push(file);
+      imgSizes.push(imgSize);
+    } catch (error: any) {
+      console.warn(`  Skipping corrupted file ${file.path}:`, error.message);
+      continue;
+    }
+  }
+
+  if (validFiles.length === 0) {
+    return {
+      success: false,
+      error: new Error('No valid PNG files found after validation'),
+    };
+  }
 
   // Throw error if sizes aren't the same.
   const size0 = imgSizes[0];
@@ -274,31 +317,88 @@ export const createGif = async (
     height: gifSize.height,
     options: createGifOptions.gifOptions,
   });
-  // Create a glob pattern for PNG files
-  // png-file-stream expects files in order, so we need to ensure they're sorted
-  // and create a glob that matches all PNG files in the directory
-  const firstFileDir = path.dirname(arr[0].path);
-  // Use a glob pattern that matches all PNG files in the directory
-  // png-file-stream will process them in alphabetical order
-  const pngGlobPattern = path.join(firstFileDir, '*.png');
-  console.log(`\n=== GIF CREATION ===`);
-  console.log(`Directory: ${firstFileDir}`);
-  console.log(`PNG glob pattern: ${pngGlobPattern}`);
-  console.log(`Total files to process: ${arr.length}`);
-  console.log(`Files that will be processed:`);
-  arr.forEach((file, index) => {
-    console.log(`  ${index + 1}. ${path.basename(file.path)}`);
+
+  // Sort files by name to ensure consistent ordering
+  validFiles.sort((a, b) => {
+    const nameA = path.basename(a.path).toLowerCase();
+    const nameB = path.basename(b.path).toLowerCase();
+    return nameA.localeCompare(nameB);
   });
 
+  // Create a temporary directory with only our validated files
+  // This ensures png-file-stream only processes exactly the files we want
+  const tempDir = path.join(os.tmpdir(), `gif-${uuidv4()}`);
+  fs.mkdirSync(tempDir, {recursive: true});
+  const tempFilePaths: string[] = [];
+
+  console.log(`\n=== GIF CREATION ===`);
+  console.log(`Temporary directory: ${tempDir}`);
+  console.log(
+    `Total valid files: ${validFiles.length} (filtered from ${arr.length})`
+  );
+  console.log(`Copying validated files to temporary directory:`);
+
+  // Copy validated files to temp directory with sequential names (000.png, 001.png, etc.)
+  for (let i = 0; i < validFiles.length; i++) {
+    const sourceFile = validFiles[i].path;
+    const tempFileName = `${String(i).padStart(3, '0')}.png`;
+    const tempFilePath = path.join(tempDir, tempFileName);
+
+    try {
+      fs.copyFileSync(sourceFile, tempFilePath);
+      tempFilePaths.push(tempFilePath);
+      console.log(
+        `  ${i + 1}. ${path.basename(sourceFile)} -> ${tempFileName}`
+      );
+    } catch (error: any) {
+      console.error(`  Error copying ${sourceFile} to ${tempFilePath}:`, error);
+      // Clean up temp directory and fail
+      try {
+        fs.rmSync(tempDir, {recursive: true, force: true});
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+      return {
+        success: false,
+        error: new Error(`Failed to copy file ${sourceFile}: ${error.message}`),
+      };
+    }
+  }
+
+  // Use glob pattern for the temp directory - this will only match our sequential files
+  const pngGlobPattern = path.join(tempDir, '*.png');
+
   const encoder = new GIFEncoder(gifSize.width, gifSize.height);
+
+  // Add error handling to identify which file is causing issues
+  let currentFile: string | null = null;
   const stream = pngFileStream(pngGlobPattern)
+    .on('data', (chunk: any) => {
+      // Track which file is being processed if possible
+      if (chunk && chunk.path) {
+        currentFile = chunk.path;
+      }
+    })
+    .on('error', (error: Error) => {
+      console.error(
+        `Error processing PNG file${currentFile ? `: ${currentFile}` : ''}:`,
+        error
+      );
+    })
     .pipe(encoder.createWriteStream(createGifOptions.gifOptions))
     .pipe(fs.createWriteStream(createGifOptions.outputGifFilename as string));
+
   try {
     // Wait for stream. (Doesn't return anything useful)
     await new Promise((resolve, reject) => {
       stream.on('finish', resolve);
-      stream.on('error', reject);
+      stream.on('error', (error: Error) => {
+        console.error(
+          `Stream error${currentFile ? ` processing ${currentFile}` : ''}:`,
+          error
+        );
+        reject(error);
+      });
     });
 
     // Clean up converted PNG files
@@ -311,6 +411,17 @@ export const createGif = async (
       } catch (cleanupError) {
         console.error(`Error cleaning up ${pngFile}:`, cleanupError);
       }
+    }
+
+    // Clean up temporary directory
+    try {
+      fs.rmSync(tempDir, {recursive: true, force: true});
+      console.log(`Cleaned up temporary directory: ${tempDir}`);
+    } catch (cleanupError) {
+      console.error(
+        `Error cleaning up temp directory ${tempDir}:`,
+        cleanupError
+      );
     }
 
     return {
@@ -327,6 +438,16 @@ export const createGif = async (
       } catch (cleanupError) {
         // Ignore cleanup errors
       }
+    }
+
+    // Clean up temporary directory even on error
+    try {
+      fs.rmSync(tempDir, {recursive: true, force: true});
+    } catch (cleanupError) {
+      console.error(
+        `Error cleaning up temp directory ${tempDir}:`,
+        cleanupError
+      );
     }
     console.error(e);
     return {

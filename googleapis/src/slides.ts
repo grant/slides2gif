@@ -118,6 +118,7 @@ export class Slides {
         presentationId: presentationId,
         pageObjectId: page.objectId + '',
         'thumbnailProperties.thumbnailSize': ThumbnailSize.MEDIUM,
+        'thumbnailProperties.mimeType': 'PNG',
       });
       // Add data such as: contentUrl, height, width
       thumbnails.push(thumbnail.data);

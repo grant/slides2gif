@@ -7,11 +7,7 @@ import {LoadingSpinner} from '../components/LoadingSpinner';
 import {Routes} from '../lib/routes';
 import useSWR from 'swr';
 import React from 'react';
-import {
-  fetcher,
-  dashboardSWRConfig,
-  DashboardStats,
-} from '../lib/apiFetcher';
+import {fetcher, dashboardSWRConfig, DashboardStats} from '../lib/apiFetcher';
 
 export default function Dashboard() {
   const {userData: data, error: authError, isLoading: authLoading} = useAuth();
@@ -123,25 +119,51 @@ export default function Dashboard() {
                 {stats.gifs.map((gif, index) => (
                   <div
                     key={index}
-                    className="group relative overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md"
+                    className="group relative flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md"
                   >
-                    <img
-                      src={gif.url}
-                      alt={`GIF ${index + 1}`}
-                      className="h-48 w-full object-cover"
-                    />
-                    <div className="p-4">
-                      <div className="text-xs text-gray-500">
-                        {new Date(gif.createdAt).toLocaleDateString()}
+                    {/* GIF Preview */}
+                    <div className="flex aspect-video items-center justify-center bg-gray-50">
+                      <img
+                        src={gif.url}
+                        alt={gif.presentationTitle || `GIF ${index + 1}`}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+
+                    {/* Title and Metadata */}
+                    <div className="flex flex-1 flex-col p-3">
+                      {/* Title */}
+                      <h3 className="mb-2 line-clamp-2 text-sm font-medium text-gray-900">
+                        {gif.presentationTitle || `GIF ${index + 1}`}
+                      </h3>
+
+                      {/* Footer: Slides icon, Date, Actions */}
+                      <div className="mt-auto flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span className="material-icons text-base">
+                            slideshow
+                          </span>
+                          <span>
+                            {new Date(gif.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {/* Actions Menu */}
+                        <div className="relative">
+                          <button
+                            className="rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100"
+                            aria-label="Actions"
+                            onClick={e => {
+                              e.stopPropagation();
+                              // TODO: Implement actions menu (download, delete, etc.)
+                            }}
+                          >
+                            <span className="material-icons text-lg">
+                              more_vert
+                            </span>
+                          </button>
+                        </div>
                       </div>
-                      <a
-                        href={gif.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 block text-sm font-medium text-blue hover:underline"
-                      >
-                        View GIF →
-                      </a>
                     </div>
                   </div>
                 ))}
