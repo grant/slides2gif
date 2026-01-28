@@ -2,7 +2,7 @@ import Head from 'next/head';
 import Layout, {siteTitle} from '../../../components/layout';
 import DashboardLayout from '../../../components/DashboardLayout';
 import useSWR from 'swr';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {useRouter} from 'next/router';
 import {useAuth} from '../../../lib/useAuth';
 import {LoadingScreen} from '../../../components/LoadingScreen';
@@ -342,34 +342,10 @@ export default function CreatePresentationDetail() {
     }
   }, [slidesData]);
 
-  // Show loading state while checking authentication
-  if (isLoadingUser) {
-    return (
-      <Layout>
-        <Head>
-          <title>{siteTitle}</title>
-        </Head>
-        <LoadingScreen fullScreen message="Loading..." />
-      </Layout>
-    );
-  }
-
-  // Show redirecting message if not authenticated (useAuth will handle redirect)
-  if (userData && !userData.isLoggedIn) {
-    return (
-      <Layout>
-        <Head>
-          <title>{siteTitle}</title>
-        </Head>
-        <LoadingScreen fullScreen message="Redirecting to login..." />
-      </Layout>
-    );
-  }
-
   const isLoadingMetadata = !metadata && !metadataError && isValidatingMetadata;
   const isLoadingSlides = !slidesData && !slidesError && isValidatingSlides;
 
-  const handleRefetch = async () => {
+  const handleRefetch = useCallback(async () => {
     if (!fileId || isRefetching || failedSlideIndices.size === 0) return;
 
     setIsRefetching(true);
@@ -473,7 +449,140 @@ export default function CreatePresentationDetail() {
       setIsRefetching(false);
       setIsLoadingSlidesIncrementally(false);
     }
-  };
+  }, [fileId, isRefetching, failedSlideIndices, slideObjectIds]);
+
+  // Auto-retry failed slides after a delay
+  React.useEffect(() => {
+    if (
+      !fileId ||
+      isRefetching ||
+      failedSlideIndices.size === 0 ||
+      isLoadingSlidesIncrementally
+    ) {
+      return;
+    }
+
+    // Wait 3 seconds before auto-retrying failed slides
+    const retryTimer = setTimeout(() => {
+      console.log(`Auto-retrying ${failedSlideIndices.size} failed slides...`);
+      handleRefetch();
+    }, 3000);
+
+    return () => clearTimeout(retryTimer);
+  }, [
+    failedSlideIndices.size,
+    fileId,
+    isRefetching,
+    isLoadingSlidesIncrementally,
+    handleRefetch,
+  ]);
+
+  // Track image mount keys to force remount on retry
+  const [imageMountKey, setImageMountKey] = useState<Map<string, number>>(
+    new Map()
+  );
+  // Track retry attempts for exponential backoff
+  const [imageRetryAttempts, setImageRetryAttempts] = useState<
+    Map<string, number>
+  >(new Map());
+  const MAX_RETRY_ATTEMPTS = 5; // Stop retrying after 5 attempts
+  const INITIAL_RETRY_DELAY = 2000; // Start with 2 seconds
+  const MAX_RETRY_DELAY = 32000; // Cap at 32 seconds
+
+  // Auto-remount failed images with exponential backoff
+  React.useEffect(() => {
+    if (!fileId || failedImages.size === 0 || isLoadingSlidesIncrementally) {
+      return;
+    }
+
+    const failedObjectIds = Array.from(failedImages);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    // Schedule remount for each failed image with exponential backoff
+    failedObjectIds.forEach(objectId => {
+      const retryAttempt = imageRetryAttempts.get(objectId) || 0;
+
+      // Stop retrying if we've exceeded max attempts
+      if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
+        console.log(
+          `Max retry attempts reached for ${objectId}, stopping retries`
+        );
+        return;
+      }
+
+      // Calculate exponential backoff delay: 2s, 4s, 8s, 16s, 32s
+      const delay = Math.min(
+        INITIAL_RETRY_DELAY * Math.pow(2, retryAttempt),
+        MAX_RETRY_DELAY
+      );
+
+      console.log(
+        `Scheduling remount for ${objectId} in ${delay}ms (attempt ${
+          retryAttempt + 1
+        })`
+      );
+
+      const timer = setTimeout(() => {
+        console.log(`Remounting ${objectId} (attempt ${retryAttempt + 1})...`);
+
+        // Clear failed and loaded state
+        setFailedImages(prev => {
+          const updated = new Set(prev);
+          updated.delete(objectId);
+          return updated;
+        });
+        setLoadedImages(prev => {
+          const updated = new Set(prev);
+          updated.delete(objectId);
+          return updated;
+        });
+
+        // Increment retry attempts
+        setImageRetryAttempts(prev => {
+          const updated = new Map(prev);
+          updated.set(objectId, retryAttempt + 1);
+          return updated;
+        });
+
+        // Increment mount key to force React to unmount and remount the image
+        setImageMountKey(prev => {
+          const updated = new Map(prev);
+          updated.set(objectId, (updated.get(objectId) || 0) + 1);
+          return updated;
+        });
+      }, delay);
+
+      timers.push(timer);
+    });
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [failedImages, fileId, isLoadingSlidesIncrementally, imageRetryAttempts]);
+
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <Layout>
+        <Head>
+          <title>{siteTitle}</title>
+        </Head>
+        <LoadingScreen fullScreen message="Loading..." />
+      </Layout>
+    );
+  }
+
+  // Show redirecting message if not authenticated (useAuth will handle redirect)
+  if (userData && !userData.isLoggedIn) {
+    return (
+      <Layout>
+        <Head>
+          <title>{siteTitle}</title>
+        </Head>
+        <LoadingScreen fullScreen message="Redirecting to login..." />
+      </Layout>
+    );
+  }
 
   const handleGenerateGif = async () => {
     if (!fileId || selectedSlides.length === 0) {
@@ -748,7 +857,18 @@ export default function CreatePresentationDetail() {
                                       slide.thumbnailUrl &&
                                       !failedImages.has(slide.objectId) && (
                                         <img
-                                          src={slide.thumbnailUrl}
+                                          key={`${slide.objectId}-${
+                                            imageMountKey.get(slide.objectId) ||
+                                            0
+                                          }`}
+                                          src={`${slide.thumbnailUrl}${
+                                            slide.thumbnailUrl.includes('?')
+                                              ? '&'
+                                              : '?'
+                                          }t=${
+                                            imageMountKey.get(slide.objectId) ||
+                                            0
+                                          }`}
                                           alt={`Slide ${index + 1}`}
                                           className={`block aspect-video w-full bg-gray-100 object-cover transition-opacity duration-300 ${
                                             isLoaded
@@ -760,8 +880,21 @@ export default function CreatePresentationDetail() {
                                             setLoadedImages(prev =>
                                               new Set(prev).add(slide.objectId)
                                             );
+                                            // Clear from failed images if it was there
+                                            setFailedImages(prev => {
+                                              const updated = new Set(prev);
+                                              updated.delete(slide.objectId);
+                                              return updated;
+                                            });
+                                            // Reset retry attempts on successful load
+                                            setImageRetryAttempts(prev => {
+                                              const updated = new Map(prev);
+                                              updated.delete(slide.objectId);
+                                              return updated;
+                                            });
                                           }}
                                           onError={() => {
+                                            // On error, mark as failed (will trigger remount after delay)
                                             setFailedImages(prev =>
                                               new Set(prev).add(slide.objectId)
                                             );
@@ -772,8 +905,23 @@ export default function CreatePresentationDetail() {
                                         />
                                       )}
                                     {failedImages.has(slide.objectId) && (
-                                      <div className="relative flex aspect-video w-full items-center justify-center bg-gray-100 text-[10px] text-red-500">
-                                        Failed
+                                      <div className="relative flex aspect-video w-full items-center justify-center bg-gray-100">
+                                        {(() => {
+                                          const retryAttempt =
+                                            imageRetryAttempts.get(
+                                              slide.objectId
+                                            ) || 0;
+                                          if (
+                                            retryAttempt >= MAX_RETRY_ATTEMPTS
+                                          ) {
+                                            return (
+                                              <div className="flex flex-col items-center gap-1 text-[10px] text-gray-400">
+                                                <span>Unable to load</span>
+                                              </div>
+                                            );
+                                          }
+                                          return <LoadingSpinner size="sm" />;
+                                        })()}
                                       </div>
                                     )}
                                     <div className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium text-white">
@@ -781,13 +929,16 @@ export default function CreatePresentationDetail() {
                                     </div>
                                   </>
                                 ) : (
-                                  <div className="relative flex aspect-video w-full items-center justify-center bg-gray-100 text-[10px] text-gray-500">
+                                  <div className="relative flex aspect-video w-full items-center justify-center bg-gray-100">
                                     {slide.error ? (
-                                      <div className="text-red-500">
-                                        {slide.error}
+                                      <div className="flex flex-col items-center gap-2">
+                                        <LoadingSpinner size="sm" />
+                                        <span className="text-[10px] text-gray-500">
+                                          Retrying...
+                                        </span>
                                       </div>
                                     ) : (
-                                      <div className="h-full w-full bg-gray-200 shimmer"></div>
+                                      <LoadingSpinner size="sm" />
                                     )}
                                     <div className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium text-white">
                                       {index + 1}
