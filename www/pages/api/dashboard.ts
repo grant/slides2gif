@@ -118,6 +118,13 @@ async function dashboardHandler(
       gifs: gifs.slice(0, 50), // Limit to 50 most recent
     };
 
+    // Set cache headers to prevent unnecessary refetches
+    // Cache for 5 minutes on the client side
+    res.setHeader(
+      'Cache-Control',
+      'private, max-age=300, stale-while-revalidate=600'
+    );
+
     return res.status(200).json(stats);
   } catch (error: any) {
     console.error('Error fetching dashboard stats:', error);

@@ -11,6 +11,12 @@ import {useRouter} from 'next/router';
 import {LoadingScreen} from './LoadingScreen';
 import {LoadingSpinner} from './LoadingSpinner';
 import {Routes} from '../lib/routes';
+import {
+  fetcher,
+  presentationsSWRConfig,
+  PresentationsResponse,
+  Presentation,
+} from '../lib/apiFetcher';
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
 
@@ -55,29 +61,6 @@ export function PageCreate(props: PageCreateProps) {
   return <section className={type}>{pageFunction[type]()}</section>;
 }
 
-interface Presentation {
-  id: string;
-  name: string;
-  thumbnailLink?: string;
-  firstSlidePreview?: string;
-  modifiedTime?: string;
-  createdTime?: string;
-}
-
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    const error = new Error(
-      errorData.error || 'An error occurred while fetching the data.'
-    );
-    (error as any).status = res.status;
-    (error as any).info = errorData;
-    throw error;
-  }
-  return res.json();
-};
-
 /**
  * Page for creating a GIF from slides
  * Shows a grid of presentations to choose from
@@ -87,9 +70,10 @@ function PageCreateGIF() {
   const [loadedThumbnails, setLoadedThumbnails] = useState<Set<string>>(
     new Set()
   );
-  const {data, error} = useSWR<{presentations: Presentation[]}>(
+  const {data, error} = useSWR<PresentationsResponse>(
     '/api/presentations',
-    fetcher
+    fetcher,
+    presentationsSWRConfig
   );
 
   const handlePresentationClick = (fileId: string) => {

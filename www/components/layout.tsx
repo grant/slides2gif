@@ -14,6 +14,10 @@ export default function Layout({children}: {children: React.ReactNode}) {
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap"
         rel="stylesheet"
       />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
       <Head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="description" content="Create a GIF from slides" />

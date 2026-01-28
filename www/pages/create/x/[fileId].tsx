@@ -7,41 +7,14 @@ import {useAuth} from '../../../lib/useAuth';
 import {LoadingScreen} from '../../../components/LoadingScreen';
 import {LoadingSpinner} from '../../../components/LoadingSpinner';
 import {Routes} from '../../../lib/routes';
-
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const error = new Error('An error occurred while fetching the data.');
-    throw error;
-  }
-  return res.json();
-};
-
-interface Slide {
-  objectId: string;
-  thumbnailUrl: string | null;
-  width: number | null;
-  height: number | null;
-  cached?: boolean;
-  error?: string;
-}
-
-interface PresentationMetadata {
-  id: string;
-  title: string;
-  locale?: string;
-  revisionId?: string;
-  slideCount: number;
-  slideObjectIds?: string[];
-}
-
-interface SlidesData {
-  slides: Slide[];
-  rateLimit?: {
-    remaining: number;
-    resetTime: number;
-  };
-}
+import {
+  fetcher,
+  apiPost,
+  presentationMetadataSWRConfig,
+  PresentationMetadata,
+  SlidesData,
+  Slide,
+} from '../../../lib/apiFetcher';
 
 interface SelectedSlide {
   slideIndex: number;
@@ -60,16 +33,12 @@ export default function CreatePresentationDetail() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isGeneratingGif, setIsGeneratingGif] = useState(false);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
-  const [generatedGifs, setGeneratedGifs] = useState<
-    Array<{
-      gifUrl: string;
-      timestamp: number;
-      thumbnailSize: 'SMALL' | 'MEDIUM' | 'LARGE';
-      delay: number;
-      quality: string;
-      frameCount: number;
-    }>
-  >([]);
+  const [currentGifConfig, setCurrentGifConfig] = useState<{
+    thumbnailSize: 'SMALL' | 'MEDIUM' | 'LARGE';
+    delay: number;
+    quality: string;
+    frameCount: number;
+  } | null>(null);
   // GIF configuration options
   const [gifDelay, setGifDelay] = useState<number>(1000); // milliseconds between frames
   const [gifQuality, setGifQuality] = useState<'Best' | 'HQ' | 'LQ'>('Best'); // Quality preset
@@ -87,7 +56,8 @@ export default function CreatePresentationDetail() {
     isValidating: isValidatingMetadata,
   } = useSWR<PresentationMetadata>(
     fileId ? `/api/presentation/${fileId}/metadata` : null,
-    fetcher
+    fetcher,
+    presentationMetadataSWRConfig
   );
 
   // State for incrementally loaded slides
@@ -134,18 +104,23 @@ export default function CreatePresentationDetail() {
       setIncrementalSlides(placeholderSlides);
       setImagesReady(true); // Show placeholders immediately
 
-      // Load slides in batches to avoid rate limits but allow parallel loading
-      const BATCH_SIZE = 5; // Load 5 slides at a time
-      const BATCH_DELAY = 500; // 500ms delay between batches
+      // Adaptive loading algorithm
+      let batchSize = 15; // Start aggressively with 15 slides at a time
+      let batchDelay = 200; // Start with 200ms delay between batches
+      let consecutiveRateLimits = 0; // Track consecutive rate limit errors
+      const MIN_BATCH_SIZE = 2; // Minimum batch size
+      const MAX_BATCH_SIZE = 20; // Maximum batch size
+      const MIN_DELAY = 100; // Minimum delay in ms
+      const MAX_DELAY = 2000; // Maximum delay in ms
 
-      for (let batchStart = 0; batchStart < slideObjectIds.length; batchStart += BATCH_SIZE) {
-        const batchEnd = Math.min(batchStart + BATCH_SIZE, slideObjectIds.length);
+      for (let batchStart = 0; batchStart < slideObjectIds.length; ) {
+        const batchEnd = Math.min(batchStart + batchSize, slideObjectIds.length);
         const batch = slideObjectIds.slice(batchStart, batchEnd);
 
         // Load all slides in this batch in parallel
         const batchPromises = batch.map(async (objectId, batchIndex) => {
           const i = batchStart + batchIndex;
-          if (!objectId) return;
+          if (!objectId) return {success: false, rateLimited: false};
 
           try {
             const slideResponse = await fetch(
@@ -154,6 +129,26 @@ export default function CreatePresentationDetail() {
 
             if (slideResponse.ok) {
               const slideData = await slideResponse.json();
+              // Check if response indicates rate limiting
+              const isRateLimited = slideData.error === 'Rate limited' || slideData.error === 'API rate limit exceeded';
+              
+              if (isRateLimited) {
+                // Mark as rate limited
+                setIncrementalSlides(prev => {
+                  const updated = [...prev];
+                  updated[i] = {
+                    ...updated[i],
+                    error: 'Rate limited',
+                  };
+                  return updated;
+                });
+                setSlidesLoadingProgress(prev => ({
+                  ...prev,
+                  loaded: prev.loaded + 1,
+                }));
+                return {success: false, rateLimited: true};
+              }
+
               // Update the specific slide in the array
               setIncrementalSlides(prev => {
                 const updated = [...prev];
@@ -164,8 +159,14 @@ export default function CreatePresentationDetail() {
                 ...prev,
                 loaded: prev.loaded + 1,
               }));
+              return {success: true, rateLimited: false};
             } else {
               const errorData = await slideResponse.json().catch(() => ({}));
+              const isRateLimited = 
+                slideResponse.status === 429 ||
+                errorData.error === 'Rate limited' ||
+                errorData.error === 'API rate limit exceeded';
+              
               // If fetch fails, mark as error
               setIncrementalSlides(prev => {
                 const updated = [...prev];
@@ -179,6 +180,7 @@ export default function CreatePresentationDetail() {
                 ...prev,
                 loaded: prev.loaded + 1,
               }));
+              return {success: false, rateLimited: isRateLimited};
             }
           } catch (error) {
             console.error(`Error loading slide ${i}:`, error);
@@ -195,16 +197,43 @@ export default function CreatePresentationDetail() {
               ...prev,
               loaded: prev.loaded + 1,
             }));
+            return {success: false, rateLimited: false};
           }
         });
 
         // Wait for all slides in this batch to complete
-        await Promise.all(batchPromises);
+        const results = await Promise.all(batchPromises);
+        
+        // Analyze results to adapt batch size and delay
+        const rateLimitedCount = results.filter(r => r.rateLimited).length;
+        const successCount = results.filter(r => r.success).length;
+        
+        if (rateLimitedCount > 0) {
+          // Rate limited - back off aggressively
+          consecutiveRateLimits++;
+          batchSize = Math.max(MIN_BATCH_SIZE, Math.floor(batchSize * 0.5)); // Halve batch size
+          batchDelay = Math.min(MAX_DELAY, batchDelay * 2); // Double delay
+          console.log(`Rate limited detected. Backing off: batchSize=${batchSize}, delay=${batchDelay}ms`);
+          
+          // If heavily rate limited, wait longer before next batch
+          if (rateLimitedCount > batchSize / 2) {
+            await new Promise(resolve => setTimeout(resolve, batchDelay * 2));
+          }
+        } else if (successCount === batch.length && consecutiveRateLimits === 0) {
+          // All succeeded and no recent rate limits - speed up gradually
+          batchSize = Math.min(MAX_BATCH_SIZE, Math.floor(batchSize * 1.2)); // Increase by 20%
+          batchDelay = Math.max(MIN_DELAY, Math.floor(batchDelay * 0.9)); // Reduce delay by 10%
+        } else {
+          // Some failures but not rate limited - reset consecutive counter and maintain current settings
+          consecutiveRateLimits = Math.max(0, consecutiveRateLimits - 1);
+        }
 
         // Add delay between batches (except after the last batch)
         if (batchEnd < slideObjectIds.length) {
-          await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+          await new Promise(resolve => setTimeout(resolve, batchDelay));
         }
+
+        batchStart = batchEnd;
       }
 
       setIsLoadingSlidesIncrementally(false);
@@ -329,16 +358,10 @@ export default function CreatePresentationDetail() {
     setIsRefetching(true);
 
     try {
-      const response = await fetch(`/api/presentation/${fileId}/refetch`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to refetch');
-      }
-
-      const result = await response.json();
+      const result = await apiPost<{succeeded: number; failed: number}>(
+        `/api/presentation/${fileId}/refetch`,
+        {}
+      );
 
       // Reload slides after refetch
       setIncrementalSlides([]);
@@ -389,39 +412,24 @@ export default function CreatePresentationDetail() {
         return;
       }
 
-      const response = await fetch('/api/generate-gif', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          presentationId: fileId,
-          slideList,
-          delay: gifDelay,
-          quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,
-          thumbnailSize,
-        }),
+      const result = await apiPost<{gifUrl: string}>('/api/generate-gif', {
+        presentationId: fileId,
+        slideList,
+        delay: gifDelay,
+        quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,
+        thumbnailSize,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate GIF');
-      }
-
-      const result = await response.json();
       const newGifUrl = result.gifUrl;
 
-      // Add to generated GIFs list
-      const newGif = {
-        gifUrl: newGifUrl,
-        timestamp: Date.now(),
+      // Update current GIF
+      setGifUrl(newGifUrl);
+      setCurrentGifConfig({
         thumbnailSize,
         delay: gifDelay,
         quality: gifQuality,
         frameCount: selectedSlides.length,
-      };
-      setGeneratedGifs(prev => [newGif, ...prev]); // Add to beginning of list
-      setGifUrl(newGifUrl);
+      });
     } catch (error: any) {
       console.error('Error generating GIF:', error);
       alert(`Error: ${error.message}`);
@@ -557,254 +565,262 @@ export default function CreatePresentationDetail() {
               </div>
             </div>
 
-            {/* GIF Frames Section */}
-            <div className="mb-8">
-              <div className="mb-5 flex items-center justify-between">
-                <h4 className="text-xl text-gray-800">GIF Frames</h4>
+            {/* Two-column layout: GIF Frames (left) and Generated GIF (right) */}
+            <div className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-start">
+              {/* Left Column: GIF Frames */}
+              <div className="flex-1 min-w-0">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-xl text-gray-800">GIF Frames</h4>
+                  {selectedSlides.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-gray-600">
+                        {selectedSlides.length}{' '}
+                        {selectedSlides.length === 1 ? 'frame' : 'frames'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Controls Card */}
                 {selectedSlides.length > 0 && (
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <label
-                        htmlFor="gif-delay"
-                        className="text-sm text-gray-600"
-                      >
-                        Delay (ms):
-                      </label>
-                      <input
-                        id="gif-delay"
-                        type="number"
-                        min="10"
-                        max="10000"
-                        step="10"
-                        value={gifDelay}
-                        onChange={e =>
-                          setGifDelay(parseInt(e.target.value) || 1000)
-                        }
-                        className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
-                        disabled={isGeneratingGif}
-                      />
+                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="gif-delay"
+                          className="text-xs font-medium text-gray-700"
+                        >
+                          Delay (ms)
+                        </label>
+                        <input
+                          id="gif-delay"
+                          type="number"
+                          min="10"
+                          max="10000"
+                          step="10"
+                          value={gifDelay}
+                          onChange={e =>
+                            setGifDelay(parseInt(e.target.value) || 1000)
+                          }
+                          className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                          disabled={isGeneratingGif}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="gif-quality"
+                          className="text-xs font-medium text-gray-700"
+                        >
+                          Quality
+                        </label>
+                        <select
+                          id="gif-quality"
+                          value={gifQuality}
+                          onChange={e =>
+                            setGifQuality(e.target.value as 'Best' | 'HQ' | 'LQ')
+                          }
+                          className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                          disabled={isGeneratingGif}
+                        >
+                          <option value="Best">Best</option>
+                          <option value="HQ">HQ</option>
+                          <option value="LQ">LQ</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="thumbnail-size"
+                          className="text-xs font-medium text-gray-700"
+                        >
+                          Size
+                        </label>
+                        <select
+                          id="thumbnail-size"
+                          value={thumbnailSize}
+                          onChange={e =>
+                            setThumbnailSize(
+                              e.target.value as 'SMALL' | 'MEDIUM' | 'LARGE'
+                            )
+                          }
+                          className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                          disabled={isGeneratingGif}
+                        >
+                          <option value="SMALL">Small (200px)</option>
+                          <option value="MEDIUM">Medium (800px)</option>
+                          <option value="LARGE">Large (1600px)</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1 sm:col-span-2 lg:col-span-1">
+                        <label className="text-xs font-medium text-gray-700">
+                          &nbsp;
+                        </label>
+                        <button
+                          onClick={handleGenerateGif}
+                          disabled={isGeneratingGif}
+                          className="w-full rounded bg-blue px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isGeneratingGif ? (
+                            <span>Generating...</span>
+                          ) : (
+                            <span>Generate GIF</span>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <label
-                        htmlFor="gif-quality"
-                        className="text-sm text-gray-600"
+                  </div>
+                )}
+
+                {/* Selected Frames */}
+                {selectedSlides.length === 0 ? (
+                  <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+                    <p className="mb-1 text-sm text-gray-600">
+                      No frames selected yet
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Click on any slide below to add it to your GIF timeline
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+                    {selectedSlides.map((selectedSlide, index) => (
+                      <div
+                        key={`${selectedSlide.objectId}-${index}`}
+                        draggable
+                        onDragStart={e => {
+                          setDraggedIndex(index);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragOver={e => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (draggedIndex !== null && draggedIndex !== index) {
+                            e.currentTarget.style.opacity = '0.5';
+                          }
+                        }}
+                        onDragLeave={e => {
+                          e.currentTarget.style.opacity = '1';
+                        }}
+                        onDrop={e => {
+                          e.preventDefault();
+                          e.currentTarget.style.opacity = '1';
+                          if (draggedIndex === null) return;
+                          const newSlides = [...selectedSlides];
+                          const draggedSlide = newSlides[draggedIndex];
+                          newSlides.splice(draggedIndex, 1);
+                          newSlides.splice(index, 0, draggedSlide);
+                          setSelectedSlides(newSlides);
+                          setDraggedIndex(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIndex(null);
+                        }}
+                        className={`group relative flex-shrink-0 cursor-move overflow-hidden rounded-lg border-2 bg-white shadow-sm transition-all duration-200 hover:border-blue hover:shadow-md ${
+                          draggedIndex === index
+                            ? 'border-blue opacity-50'
+                            : 'border-gray-300'
+                        }`}
                       >
-                        Quality:
-                      </label>
-                      <select
-                        id="gif-quality"
-                        value={gifQuality}
-                        onChange={e =>
-                          setGifQuality(e.target.value as 'Best' | 'HQ' | 'LQ')
-                        }
-                        className="rounded border border-gray-300 px-2 py-1 text-sm"
-                        disabled={isGeneratingGif}
-                      >
-                        <option value="Best">Best</option>
-                        <option value="HQ">HQ</option>
-                        <option value="LQ">LQ</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label
-                        htmlFor="thumbnail-size"
-                        className="text-sm text-gray-600"
-                      >
-                        Size:
-                      </label>
-                      <select
-                        id="thumbnail-size"
-                        value={thumbnailSize}
-                        onChange={e =>
-                          setThumbnailSize(
-                            e.target.value as 'SMALL' | 'MEDIUM' | 'LARGE'
-                          )
-                        }
-                        className="rounded border border-gray-300 px-2 py-1 text-sm"
-                        disabled={isGeneratingGif}
-                      >
-                        <option value="SMALL">Small (200px)</option>
-                        <option value="MEDIUM">Medium (800px)</option>
-                        <option value="LARGE">Large (1600px)</option>
-                      </select>
-                    </div>
-                    <button
-                      onClick={handleGenerateGif}
-                      disabled={isGeneratingGif}
-                      className="rounded bg-blue px-4 py-2 text-sm text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isGeneratingGif ? (
-                        <span>Generating...</span>
-                      ) : (
-                        <span>Generate GIF</span>
-                      )}
-                    </button>
+                        {selectedSlide.thumbnailUrl ? (
+                          <img
+                            src={selectedSlide.thumbnailUrl}
+                            alt={`Frame ${index + 1}`}
+                            className="block h-[100px] w-[180px] rounded-lg bg-gray-100 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-[100px] w-[180px] items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-500">
+                            No preview
+                          </div>
+                        )}
+                        <div className="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                          {index + 1}
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setSelectedSlides(
+                              selectedSlides.filter((_, i) => i !== index)
+                            );
+                          }}
+                          className="absolute top-1 right-1 hidden rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100"
+                          aria-label="Remove frame"
+                          type="button"
+                        >
+                          <svg
+                            className="h-3 w-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-              {selectedSlides.length === 0 ? (
-                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-                  <p className="mb-2 text-base text-gray-600">
-                    No frames selected yet
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Click on any slide below to add it to your GIF timeline
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {selectedSlides.map((selectedSlide, index) => (
-                    <div
-                      key={`${selectedSlide.objectId}-${index}`}
-                      draggable
-                      onDragStart={e => {
-                        setDraggedIndex(index);
-                        e.dataTransfer.effectAllowed = 'move';
-                      }}
-                      onDragOver={e => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                        if (draggedIndex !== null && draggedIndex !== index) {
-                          e.currentTarget.style.opacity = '0.5';
-                        }
-                      }}
-                      onDragLeave={e => {
-                        e.currentTarget.style.opacity = '1';
-                      }}
-                      onDrop={e => {
-                        e.preventDefault();
-                        e.currentTarget.style.opacity = '1';
-                        if (draggedIndex === null) return;
-                        const newSlides = [...selectedSlides];
-                        const draggedSlide = newSlides[draggedIndex];
-                        newSlides.splice(draggedIndex, 1);
-                        newSlides.splice(index, 0, draggedSlide);
-                        setSelectedSlides(newSlides);
-                        setDraggedIndex(null);
-                      }}
-                      onDragEnd={() => {
-                        setDraggedIndex(null);
-                      }}
-                      className={`group relative cursor-move overflow-hidden rounded-lg border-2 bg-white shadow-sm transition-all duration-200 hover:border-blue hover:shadow-md ${
-                        draggedIndex === index
-                          ? 'border-blue opacity-50'
-                          : 'border-gray-300'
-                      }`}
-                    >
-                      {selectedSlide.thumbnailUrl ? (
-                        <img
-                          src={selectedSlide.thumbnailUrl}
-                          alt={`Frame ${index + 1}`}
-                          className="block h-[112px] w-[200px] rounded-lg bg-gray-100 object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-[112px] w-[200px] items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-500">
-                          No preview
-                        </div>
-                      )}
-                      <div className="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                        {index + 1}
-                      </div>
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setSelectedSlides(
-                            selectedSlides.filter((_, i) => i !== index)
-                          );
-                        }}
-                        className="absolute top-1 right-1 hidden rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100"
-                        aria-label="Remove frame"
-                        type="button"
-                      >
-                        <svg
-                          className="h-3 w-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* GIF Preview Section - Shows currently generating GIF */}
-            {isGeneratingGif && (
-              <div className="mb-8">
-                <h4 className="mb-5 text-xl text-gray-800">GIF Preview</h4>
-                <div className="rounded-lg border-2 border-gray-300 bg-white p-4 shadow-sm">
-                  <div className="flex min-h-[200px] items-center justify-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <LoadingSpinner size="lg" />
-                      <p className="text-sm text-gray-600">Generating GIF...</p>
-                    </div>
+              {/* Right Column: Generated GIF */}
+              <div className="w-full lg:w-80 lg:flex-shrink-0">
+                <div className="sticky top-5">
+                  <h4 className="mb-4 text-xl text-gray-800">Generated GIF</h4>
+                  <div className="rounded-lg border-2 border-gray-300 bg-white p-4 shadow-sm">
+                    {isGeneratingGif ? (
+                      <div className="flex min-h-[250px] items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <LoadingSpinner size="lg" />
+                          <p className="text-sm text-gray-600">Generating GIF...</p>
+                        </div>
+                      </div>
+                    ) : gifUrl && currentGifConfig ? (
+                      <div>
+                        <div className="mb-3 text-sm text-gray-600">
+                          <div className="font-medium">
+                            {currentGifConfig.frameCount}{' '}
+                            {currentGifConfig.frameCount === 1
+                              ? 'frame'
+                              : 'frames'}
+                          </div>
+                          <div className="text-xs">
+                            {currentGifConfig.thumbnailSize} •{' '}
+                            {currentGifConfig.delay}ms delay •{' '}
+                            {currentGifConfig.quality} quality
+                          </div>
+                        </div>
+                        <img
+                          src={gifUrl}
+                          alt="Generated GIF"
+                          className="w-full rounded"
+                          style={{
+                            maxWidth: '100%',
+                            height: 'auto',
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex min-h-[250px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+                        <div className="text-center px-4">
+                          <p className="mb-2 text-sm text-gray-600">
+                            No GIF generated yet
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Select slides and click "Generate GIF" to create one
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Generated GIFs Section - Shows all generated GIFs */}
-            {generatedGifs.length > 0 && (
-              <div className="mb-8">
-                <h4 className="mb-5 text-xl text-gray-800">Generated GIFs</h4>
-                <div className="space-y-4">
-                  {generatedGifs.map((gif, index) => (
-                    <div
-                      key={`${gif.timestamp}-${index}`}
-                      className="rounded-lg border-2 border-gray-300 bg-white p-4 shadow-sm"
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">
-                            {new Date(gif.timestamp).toLocaleString()}
-                          </span>
-                          <span className="ml-2">
-                            • {gif.frameCount}{' '}
-                            {gif.frameCount === 1 ? 'frame' : 'frames'} •{' '}
-                            {gif.thumbnailSize} • {gif.delay}ms delay •{' '}
-                            {gif.quality} quality
-                          </span>
-                        </div>
-                      </div>
-                      <img
-                        src={gif.gifUrl}
-                        alt={`Generated GIF ${index + 1}`}
-                        className="mx-auto rounded"
-                        style={{
-                          maxWidth:
-                            gif.thumbnailSize === 'LARGE'
-                              ? '1600px'
-                              : gif.thumbnailSize === 'MEDIUM'
-                              ? '800px'
-                              : '200px',
-                          width: '100%',
-                          height: 'auto',
-                        }}
-                        onLoad={e => {
-                          const img = e.target as HTMLImageElement;
-                          console.log('Generated GIF loaded:', {
-                            naturalWidth: img.naturalWidth,
-                            naturalHeight: img.naturalHeight,
-                            thumbnailSize: gif.thumbnailSize,
-                            timestamp: gif.timestamp,
-                          });
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
+            {/* Slides Grid - Full Width */}
+            <div className="mt-6">
               <div className="mb-5 flex items-center justify-between">
                 <h4 className="flex items-center gap-2 text-xl text-gray-800">
                   <span>

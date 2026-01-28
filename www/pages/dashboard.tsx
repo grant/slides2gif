@@ -7,19 +7,11 @@ import {LoadingSpinner} from '../components/LoadingSpinner';
 import {Routes} from '../lib/routes';
 import useSWR from 'swr';
 import React from 'react';
-
-interface DashboardStats {
-  gifsCreated: number;
-  presentationsLoaded: number;
-  totalSlidesProcessed: number;
-  gifs: Array<{
-    url: string;
-    createdAt: number;
-    presentationId?: string;
-  }>;
-}
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import {
+  fetcher,
+  dashboardSWRConfig,
+  DashboardStats,
+} from '../lib/apiFetcher';
 
 export default function Dashboard() {
   const {userData: data, error: authError, isLoading: authLoading} = useAuth();
@@ -27,7 +19,11 @@ export default function Dashboard() {
     data: stats,
     error: statsError,
     isValidating: statsLoading,
-  } = useSWR<DashboardStats>('/api/dashboard', fetcher);
+  } = useSWR<DashboardStats>(
+    data?.isLoggedIn ? '/api/dashboard' : null,
+    fetcher,
+    dashboardSWRConfig
+  );
 
   if (authError) {
     return (
