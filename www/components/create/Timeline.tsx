@@ -88,12 +88,12 @@ export function Timeline({
                 e.stopPropagation();
                 onRemove(index);
               }}
-              className="absolute top-0.5 right-0.5 hidden rounded-full bg-red-500 p-0.5 text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100"
+              className="absolute top-0.5 right-0.5 hidden rounded-full bg-red-500 p-1 text-white opacity-0 transition-all group-hover:block group-hover:opacity-100 hover:scale-110"
               aria-label="Remove frame"
               type="button"
             >
               <svg
-                className="h-2.5 w-2.5"
+                className="h-4 w-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

@@ -22,7 +22,6 @@ import {SlideGridHeader} from '../../../components/create/SlideGridHeader';
 import {SlideGrid} from '../../../components/create/SlideGrid';
 import {GifControls} from '../../../components/create/GifControls';
 import {GifPreview} from '../../../components/create/GifPreview';
-import {Timeline} from '../../../components/create/Timeline';
 
 
 export default function CreatePresentationDetail() {
@@ -272,23 +271,14 @@ export default function CreatePresentationDetail() {
                   gifDimensions={gifDimensions}
                   isGenerating={isGeneratingGif}
                   onImageLoad={setGifDimensions}
+                  selectedSlides={selectedSlides}
+                  draggedIndex={draggedIndex}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDragEnd={onTimelineDragEnd}
+                  onRemove={onTimelineRemove}
                 />
-
-                {/* Timeline */}
-                <div className="px-4 pb-4">
-                  <h4 className="mb-2 text-sm font-medium text-gray-700">
-                    Timeline
-                  </h4>
-                  <Timeline
-                    selectedSlides={selectedSlides}
-                    draggedIndex={draggedIndex}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onDragEnd={onTimelineDragEnd}
-                    onRemove={onTimelineRemove}
-                  />
-                </div>
               </div>
             </>
           )}

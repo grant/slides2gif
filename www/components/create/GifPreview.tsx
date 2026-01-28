@@ -1,5 +1,8 @@
 import React from 'react';
 import {GifConfig} from '../../lib/hooks/useGifGeneration';
+import {Timeline} from './Timeline';
+import {SelectedSlide} from '../../lib/hooks/useSelectedSlides';
+import {LoadingSpinner} from '../LoadingSpinner';
 
 interface GifPreviewProps {
   gifUrl: string | null;
@@ -7,6 +10,13 @@ interface GifPreviewProps {
   gifDimensions: {width: number; height: number} | null;
   isGenerating: boolean;
   onImageLoad?: (dimensions: {width: number; height: number}) => void;
+  selectedSlides: SelectedSlide[];
+  draggedIndex: number | null;
+  onDragStart: (index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: (index: number) => void;
+  onDragEnd: () => void;
+  onRemove: (index: number) => void;
 }
 
 export function GifPreview({
@@ -15,6 +25,13 @@ export function GifPreview({
   gifDimensions,
   isGenerating,
   onImageLoad,
+  selectedSlides,
+  draggedIndex,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onRemove,
 }: GifPreviewProps) {
   return (
     <div className="flex-1 overflow-y-auto p-4">
@@ -26,8 +43,8 @@ export function GifPreview({
           {isGenerating ? (
             <div className="flex min-h-[400px] items-center justify-center">
               <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
-                <p className="text-xs text-gray-600">Generating...</p>
+                <LoadingSpinner size="lg" />
+                <span className="text-xs text-gray-600">Generating GIF...</span>
               </div>
             </div>
           ) : gifUrl && gifConfig ? (
@@ -66,8 +83,7 @@ export function GifPreview({
                     linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)
                   `,
                   backgroundSize: '20px 20px',
-                  backgroundPosition:
-                    '0 0, 0 10px, 10px -10px, -10px 0px',
+                  backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
                 }}
               >
                 <img
@@ -87,11 +103,31 @@ export function GifPreview({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[400px] items-center justify-center text-sm text-gray-500">
+            <div className="flex min-h-[400px] items-center justify-center text-sm text-gray-500 gap-2">
               No GIF generated yet. Select slides and click "GENERATE GIF".
+              <span
+                className="material-icons text-base text-gray-400"
+                aria-hidden="true"
+              >
+                north_east
+              </span>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Timeline */}
+      <div>
+        <h4 className="mb-2 text-sm font-medium text-gray-700">Timeline</h4>
+        <Timeline
+          selectedSlides={selectedSlides}
+          draggedIndex={draggedIndex}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onDragEnd={onDragEnd}
+          onRemove={onRemove}
+        />
       </div>
     </div>
   );

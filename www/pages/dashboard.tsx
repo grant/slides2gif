@@ -64,23 +64,24 @@ export default function Dashboard() {
           <h1 className="mb-8 text-3xl font-bold text-gray-900">Dashboard</h1>
 
           {/* Stats */}
-          {statsLoading ? (
-            <div className="mb-8 flex flex-col items-center justify-center py-12">
-              <LoadingSpinner size="lg" />
-              <p className="mt-4 text-sm text-gray-600">Loading stats...</p>
-            </div>
-          ) : statsError ? (
+          {statsError ? (
             <div className="mb-8 text-red-600">
               Failed to load dashboard stats
             </div>
-          ) : stats ? (
+          ) : (
             <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
               <div className="rounded-lg bg-white p-6 shadow-sm">
                 <div className="text-sm font-medium text-gray-500">
                   GIFs Created
                 </div>
                 <div className="mt-2 text-3xl font-bold text-gray-900">
-                  {stats.gifsCreated}
+                  {statsLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : stats ? (
+                    stats.gifsCreated
+                  ) : (
+                    '–'
+                  )}
                 </div>
               </div>
               <div className="rounded-lg bg-white p-6 shadow-sm">
@@ -88,7 +89,13 @@ export default function Dashboard() {
                   Presentations Loaded
                 </div>
                 <div className="mt-2 text-3xl font-bold text-gray-900">
-                  {stats.presentationsLoaded}
+                  {statsLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : stats ? (
+                    stats.presentationsLoaded
+                  ) : (
+                    '–'
+                  )}
                 </div>
               </div>
               <div className="rounded-lg bg-white p-6 shadow-sm">
@@ -96,11 +103,17 @@ export default function Dashboard() {
                   Total Slides Processed
                 </div>
                 <div className="mt-2 text-3xl font-bold text-gray-900">
-                  {stats.totalSlidesProcessed}
+                  {statsLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : stats ? (
+                    stats.totalSlidesProcessed
+                  ) : (
+                    '–'
+                  )}
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
           {/* GIFs List */}
           {statsLoading ? (
