@@ -81,13 +81,29 @@ The project consists of two main services:
 
 ## Environment Variables
 
-### Local Development
-No environment variables required for basic operation.
+### Local Development (Required)
 
-### Cloud Run
+Create `www/.env.local` with the following variables:
+
+- `SECRET_COOKIE_PASSWORD` - Secret key for encrypting session cookies (32+ characters)
+- `OAUTH_CLIENT_ID` - Google OAuth 2.0 Client ID
+- `OAUTH_CLIENT_SECRET` - Google OAuth 2.0 Client Secret
+- `GCS_CACHE_BUCKET` - Google Cloud Storage bucket name for caching slide thumbnails (defaults to `slides2gif-cache` if not set)
+
+**Optional:**
+- `PNG2GIF_SERVICE_URL` - URL of the png2gif service (defaults to `http://localhost:3001`)
+
+### Cloud Run (Production)
+
+**Required:**
+- `SECRET_COOKIE_PASSWORD` - Secret key for encrypting session cookies
+- `OAUTH_CLIENT_ID` - Google OAuth 2.0 Client ID
+- `OAUTH_CLIENT_SECRET` - Google OAuth 2.0 Client Secret
+- `GCS_CACHE_BUCKET` - Google Cloud Storage bucket name for caching
+
+**Optional:**
 - `PNG2GIF_SERVICE_URL` - URL of the png2gif Cloud Run service
 - `GOOGLE_CLOUD_PROJECT` - Google Cloud project ID (automatically set in Cloud Run)
-- `GCS_CACHE_BUCKET` - Google Cloud Storage bucket name for caching
 
 ## Technologies
 
@@ -115,7 +131,7 @@ See [limits](https://developers.google.com/slides/limits):
 ## Setup Script
 
 ```sh
-gcloud config set project "my-project"
+gcloud config set project "slides2gifcom"
 PROJECT=$(gcloud config get-value core/project 2> /dev/null)
 
 # Enable APIs
@@ -147,16 +163,25 @@ gsutil iam ch allUsers:objectViewer gs://slides2gif-upload-test
 gcloud auth application-default login
 ```
 
-### Create Cookie Secret
+### Create Environment Variables File
 
-Create `www/.env.local`:
+Create `www/.env.local` with all required environment variables:
 
 ```sh
-# ⚠️ The SECRET_COOKIE_PASSWORD should never be inside your repository directly
-# For local development, store it inside a `.env.local` gitignored file
+# ⚠️ These secrets should never be inside your repository directly
+# For local development, store them inside a `.env.local` gitignored file
 # See https://nextjs.org/docs/basic-features/environment-variables#loading-environment-variables
 
+# Session encryption key (32+ characters)
 SECRET_COOKIE_PASSWORD=my-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-secret
+
+# Google OAuth 2.0 credentials
+# Get these from: https://console.cloud.google.com/apis/credentials
+OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+OAUTH_CLIENT_SECRET=your-client-secret
+
+# Google Cloud Storage bucket for caching slide thumbnails
+GCS_CACHE_BUCKET=slides2gif-cache
 ```
 
-OAuth: https://console.cloud.google.com/apis/credentials
+**Get OAuth Credentials:** https://console.cloud.google.com/apis/credentials

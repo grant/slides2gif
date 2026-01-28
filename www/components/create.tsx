@@ -4,21 +4,23 @@
  * - Create: Creating a GIF from slide images
  * - Import: Importing slide images
  */
-import React, { useState } from "react";
-import { APIResUser } from "../types/user";
-import useSWR from "swr";
-import { useRouter } from "next/router";
+import React, {useState} from 'react';
+import {APIResUser} from '../types/user';
+import useSWR from 'swr';
+import {useRouter} from 'next/router';
+import {LoadingScreen} from './LoadingScreen';
+import {LoadingSpinner} from './LoadingSpinner';
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
 
 // The current page.
 enum PAGE_TYPE {
-  CREATE = "CREATE",
-  IMPORT = "IMPORT",
+  CREATE = 'CREATE',
+  IMPORT = 'IMPORT',
 }
 
 interface PageCreateProps {
-  currentPageType: "CREATE" | "IMPORT";
+  currentPageType: 'CREATE' | 'IMPORT';
   user: APIResUser;
 }
 
@@ -26,7 +28,7 @@ interface PageCreateProps {
  * The SPA page for sign-in, create, and import
  */
 export function PageCreate(props: PageCreateProps) {
-  console.log("PAGE props");
+  console.log('PAGE props');
 
   const type = PAGE_TYPE.CREATE;
   // const type = PAGE_TYPE.IMPORT;
@@ -66,7 +68,7 @@ const fetcher = async (url: string) => {
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     const error = new Error(
-      errorData.error || "An error occurred while fetching the data.",
+      errorData.error || 'An error occurred while fetching the data.'
     );
     (error as any).status = res.status;
     (error as any).info = errorData;
@@ -82,11 +84,11 @@ const fetcher = async (url: string) => {
 function PageCreateGIF() {
   const router = useRouter();
   const [loadedThumbnails, setLoadedThumbnails] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
-  const { data, error } = useSWR<{ presentations: Presentation[] }>(
-    "/api/presentations",
-    fetcher,
+  const {data, error} = useSWR<{presentations: Presentation[]}>(
+    '/api/presentations',
+    fetcher
   );
 
   const handlePresentationClick = (fileId: string) => {
@@ -95,36 +97,19 @@ function PageCreateGIF() {
 
   if (!data && !error) {
     return PageWrapper({
-      pageTitle: "Create GIF",
-      pageContents: (
-        <div className="py-5">
-          <h3 className="mb-5 text-2xl">Choose a presentation:</h3>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={`skeleton-${index}`}
-                className="relative overflow-hidden rounded-lg border-2 border-gray-300 bg-white shadow-sm"
-              >
-                <div className="h-[140px] w-full bg-gray-100"></div>
-                <div className="truncate px-3 py-3">
-                  <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
+      pageTitle: 'Create GIF',
+      pageContents: <LoadingScreen message="Loading presentations..." />,
     });
   }
 
   if (error) {
-    console.error("Error loading presentations:", error);
+    console.error('Error loading presentations:', error);
     const errorMessage =
       (error as any)?.info?.error ||
       (error as any)?.message ||
-      "Failed to load presentations";
+      'Failed to load presentations';
     return PageWrapper({
-      pageTitle: "Create GIF",
+      pageTitle: 'Create GIF',
       pageContents: (
         <div className="py-10 px-5 text-center">
           <p className="text-base text-red-600">
@@ -132,7 +117,7 @@ function PageCreateGIF() {
           </p>
           {(error as any)?.status === 401 && (
             <p className="mt-2 text-sm text-gray-600">
-              You may need to{" "}
+              You may need to{' '}
               <a href="/login" className="text-blue underline">
                 log in again
               </a>
@@ -147,7 +132,7 @@ function PageCreateGIF() {
   const presentations = data?.presentations || [];
 
   return PageWrapper({
-    pageTitle: "Create GIF",
+    pageTitle: 'Create GIF',
     pageContents: (
       <div className="py-5">
         <h3 className="mb-5 text-2xl">Choose a presentation:</h3>
@@ -155,7 +140,7 @@ function PageCreateGIF() {
           <p>No presentations found.</p>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
-            {presentations.map((presentation) => {
+            {presentations.map(presentation => {
               const thumbnailUrl =
                 presentation.firstSlidePreview || presentation.thumbnailLink;
               const isLoaded = loadedThumbnails.has(presentation.id);
@@ -172,7 +157,7 @@ function PageCreateGIF() {
                       {showPlaceholder && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
                           <div className="flex flex-col items-center gap-2">
-                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue"></div>
+                            <LoadingSpinner size="md" />
                             <span className="text-xs text-gray-500">
                               Loading...
                             </span>
@@ -185,18 +170,18 @@ function PageCreateGIF() {
                           alt={presentation.name}
                           className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
                             presentation.firstSlidePreview
-                              ? "object-contain"
-                              : "object-cover"
-                          } ${isLoaded ? "opacity-100" : "opacity-0"}`}
+                              ? 'object-contain'
+                              : 'object-cover'
+                          } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                           loading="lazy"
                           onLoad={() => {
-                            setLoadedThumbnails((prev) =>
-                              new Set(prev).add(presentation.id),
+                            setLoadedThumbnails(prev =>
+                              new Set(prev).add(presentation.id)
                             );
                           }}
                           onError={() => {
-                            setLoadedThumbnails((prev) =>
-                              new Set(prev).add(presentation.id),
+                            setLoadedThumbnails(prev =>
+                              new Set(prev).add(presentation.id)
                             );
                           }}
                         />
@@ -231,31 +216,31 @@ function PageImportSlides() {
 
   const presentationData: Presentation[] = [
     {
-      title: "Presentation 1 Name",
-      id: "15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir4",
-      link: "http://google.com",
+      title: 'Presentation 1 Name',
+      id: '15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir4',
+      link: 'http://google.com',
     },
     {
-      title: "Presentation 2 Name",
-      id: "15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir1",
-      link: "http://google.com",
+      title: 'Presentation 2 Name',
+      id: '15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir1',
+      link: 'http://google.com',
     },
     {
-      title: "Presentation 3 Name",
-      id: "15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir2",
-      link: "http://google.com",
+      title: 'Presentation 3 Name',
+      id: '15WQqNciYxvuRu4x0x4LLtUOeTtWlj1nt2Ir2',
+      link: 'http://google.com',
     },
   ];
 
   return PageWrapper({
-    pageTitle: "Import Slides",
+    pageTitle: 'Import Slides',
     pageContents: (
       <form action="">
         <div className="flex">
           <div className="flex-1">
             <h4 className="text-3xl">Select presentation:</h4>
             <ul>
-              {presentationData.map((p) => {
+              {presentationData.map(p => {
                 return (
                   <li>
                     <label className="block" htmlFor={p.id}>
@@ -275,7 +260,7 @@ function PageImportSlides() {
               ID: <input type="text" />
             </span>
           </div>
-          <div className="flex-shrink-0 px-2.5" style={{ flexBasis: "300px" }}>
+          <div className="flex-shrink-0 px-2.5" style={{flexBasis: '300px'}}>
             <h3>Config</h3>
             <button className="cursor-pointer rounded border border-black bg-yellow px-5 py-3.5 text-xl font-bold text-black shadow-[0_5px_10px_rgba(55,55,55,0.12)] opacity-95 transition-colors duration-200 hover:bg-yellow/90">
               Import slides

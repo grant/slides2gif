@@ -1,12 +1,12 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { withIronSessionApiRoute } from "iron-session/next";
-import { sessionOptions } from "lib/session";
-import { google } from "googleapis";
-import { OAuth2Client, Credentials } from "google-auth-library";
+import {NextApiRequest, NextApiResponse} from 'next';
+import {withIronSessionApiRoute} from 'iron-session/next';
+import {sessionOptions} from 'lib/session';
+import {google} from 'googleapis';
+import {OAuth2Client, Credentials} from 'google-auth-library';
 
 // Load env vars (.env)
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../../../.env"),
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../../../.env'),
 });
 
 export default withIronSessionApiRoute(metadataRoute as any, sessionOptions);
@@ -16,18 +16,18 @@ export default withIronSessionApiRoute(metadataRoute as any, sessionOptions);
  * This is faster and allows progressive loading.
  */
 async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'GET') {
+    return res.status(405).json({error: 'Method not allowed'});
   }
 
   const fileId = req.query.fileId as string;
   if (!fileId) {
-    return res.status(400).json({ error: "Missing fileId parameter" });
+    return res.status(400).json({error: 'Missing fileId parameter'});
   }
 
   // Check if user is logged in
   if (!req.session.googleTokens?.access_token) {
-    return res.status(401).json({ error: "Not authenticated" });
+    return res.status(401).json({error: 'Not authenticated'});
   }
 
   try {
@@ -35,7 +35,7 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
     const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
     const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
     if (!CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(500).json({ error: "OAuth credentials not configured" });
+      return res.status(500).json({error: 'OAuth credentials not configured'});
     }
 
     const auth = new OAuth2Client({
@@ -53,7 +53,7 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
 
     // Refresh token if expired
     if (credentials.expiry_date && credentials.expiry_date <= Date.now()) {
-      const { credentials: newCredentials } = await auth.refreshAccessToken();
+      const {credentials: newCredentials} = await auth.refreshAccessToken();
       auth.setCredentials(newCredentials);
 
       // Update session with new tokens
@@ -69,12 +69,12 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Get Slides API client
-    const slides = google.slides({ version: "v1", auth });
+    const slides = google.slides({version: 'v1', auth: auth as any});
 
     // Get presentation metadata only (no slides)
     const presentation = await slides.presentations.get({
       presentationId: fileId,
-      fields: "presentationId,title,locale,revisionId,slides(objectId)",
+      fields: 'presentationId,title,locale,revisionId,slides(objectId)',
     });
 
     const presentationData = presentation.data;
@@ -88,9 +88,9 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
       slideCount,
     });
   } catch (error: any) {
-    console.error("Error fetching presentation metadata:", error);
+    console.error('Error fetching presentation metadata:', error);
     return res.status(500).json({
-      error: "Failed to fetch presentation metadata",
+      error: 'Failed to fetch presentation metadata',
       message: error.message,
     });
   }

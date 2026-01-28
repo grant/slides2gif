@@ -2,6 +2,8 @@
  * The page for Google sign-in.
  */
 
+import Logo from './Logo';
+
 const AUTH_URL = 'http://localhost:3000/api/oauth2';
 
 export default function PageSignin() {
@@ -43,7 +45,9 @@ export default function PageSignin() {
 
   return (
     <div className="mx-auto my-[100px] w-[600px] rounded border-2 border-gray-200 p-5 text-center">
-      <h2>Slides2Gif</h2>
+      <div className="mb-5 flex justify-center">
+        <Logo />
+      </div>
       <p className="py-5 text-xl">
         Access to view Google Slides and metadata to create GIFs.
       </p>
@@ -62,8 +66,7 @@ export default function PageSignin() {
                 <span className="material-icons align-text-bottom pr-1.5">
                   {p.icon}
                 </span>
-                <code className="font-mono">{p.id}</code>:{' '}
-                {p.description}
+                <code className="font-mono">{p.id}</code>: {p.description}
               </li>
             );
           })}

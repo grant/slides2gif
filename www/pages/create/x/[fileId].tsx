@@ -1,15 +1,16 @@
-import Head from "next/head";
-import Layout, { siteTitle } from "../../../components/layout";
-import useSWR from "swr";
-import React, { useState, useEffect } from "react";
-import { APIResUser } from "../../../types/user";
-import { useRouter } from "next/router";
-import { useAuth } from "../../../lib/useAuth";
+import Head from 'next/head';
+import Layout, {siteTitle} from '../../../components/layout';
+import useSWR from 'swr';
+import React, {useState, useEffect} from 'react';
+import {useRouter} from 'next/router';
+import {useAuth} from '../../../lib/useAuth';
+import {LoadingScreen} from '../../../components/LoadingScreen';
+import {LoadingSpinner} from '../../../components/LoadingSpinner';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
-    const error = new Error("An error occurred while fetching the data.");
+    const error = new Error('An error occurred while fetching the data.');
     throw error;
   }
   return res.json();
@@ -48,7 +49,7 @@ interface SelectedSlide {
 
 export default function CreatePresentationDetail() {
   const router = useRouter();
-  const { fileId } = router.query;
+  const {fileId} = router.query;
   const [isRefetching, setIsRefetching] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [imagesReady, setImagesReady] = useState(false);
@@ -57,47 +58,25 @@ export default function CreatePresentationDetail() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isGeneratingGif, setIsGeneratingGif] = useState(false);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
+  const [generatedGifs, setGeneratedGifs] = useState<
+    Array<{
+      gifUrl: string;
+      timestamp: number;
+      thumbnailSize: 'SMALL' | 'MEDIUM' | 'LARGE';
+      delay: number;
+      quality: string;
+      frameCount: number;
+    }>
+  >([]);
   // GIF configuration options
   const [gifDelay, setGifDelay] = useState<number>(1000); // milliseconds between frames
-  const [gifQuality, setGifQuality] = useState<"Best" | "HQ" | "LQ">("Best"); // Quality preset
+  const [gifQuality, setGifQuality] = useState<'Best' | 'HQ' | 'LQ'>('Best'); // Quality preset
   const [thumbnailSize, setThumbnailSize] = useState<
-    "SMALL" | "MEDIUM" | "LARGE"
-  >("MEDIUM"); // Thumbnail size for GIF
+    'SMALL' | 'MEDIUM' | 'LARGE'
+  >('MEDIUM'); // Thumbnail size for GIF
 
   // Check authentication - will redirect to login if not authenticated
-  const { userData, error: userError, isLoading: isLoadingUser } = useAuth();
-
-  // Show loading state while checking authentication
-  if (isLoadingUser) {
-    return (
-      <Layout>
-        <Head>
-          <title>{siteTitle}</title>
-        </Head>
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  // Show redirecting message if not authenticated (useAuth will handle redirect)
-  if (userData && !userData.isLoggedIn) {
-    return (
-      <Layout>
-        <Head>
-          <title>{siteTitle}</title>
-        </Head>
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-600">Redirecting to login...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const {userData, error: userError, isLoading: isLoadingUser} = useAuth();
 
   // Load metadata first
   const {
@@ -106,7 +85,7 @@ export default function CreatePresentationDetail() {
     isValidating: isValidatingMetadata,
   } = useSWR<PresentationMetadata>(
     fileId ? `/api/presentation/${fileId}/metadata` : null,
-    fetcher,
+    fetcher
   );
 
   // Load slides after metadata is loaded
@@ -117,7 +96,7 @@ export default function CreatePresentationDetail() {
     mutate: mutateSlides,
   } = useSWR<SlidesData>(
     fileId && metadata ? `/api/presentation/${fileId}/slides` : null,
-    fetcher,
+    fetcher
   );
 
   // Wait a bit after slides data loads and verify URLs are accessible before showing images
@@ -125,7 +104,7 @@ export default function CreatePresentationDetail() {
     if (slidesData && slidesData.slides.length > 0) {
       // Verify that URLs are accessible before showing images
       const verifyUrls = async () => {
-        const slidesWithUrls = slidesData.slides.filter((s) => s.thumbnailUrl);
+        const slidesWithUrls = slidesData.slides.filter(s => s.thumbnailUrl);
 
         if (slidesWithUrls.length === 0) {
           // No URLs to verify, show immediately
@@ -134,7 +113,7 @@ export default function CreatePresentationDetail() {
         }
 
         // For cached images, wait a bit longer to ensure GCS files are accessible
-        const hasCachedImages = slidesWithUrls.some((s) => s.cached);
+        const hasCachedImages = slidesWithUrls.some(s => s.cached);
         const baseDelay = hasCachedImages ? 800 : 300;
 
         // Check a sample of URLs to verify they're accessible
@@ -142,8 +121,8 @@ export default function CreatePresentationDetail() {
         const sampleSlides = slidesWithUrls.slice(0, sampleSize);
 
         // Try to verify URLs are accessible
-        const verifyPromises = sampleSlides.map((slide) => {
-          return new Promise<boolean>((resolve) => {
+        const verifyPromises = sampleSlides.map(slide => {
+          return new Promise<boolean>(resolve => {
             const img = new Image();
             let resolved = false;
 
@@ -162,7 +141,7 @@ export default function CreatePresentationDetail() {
             };
 
             // Set src to trigger load
-            img.src = slide.thumbnailUrl || "";
+            img.src = slide.thumbnailUrl || '';
 
             // Timeout after 1.5 seconds
             setTimeout(() => {
@@ -175,7 +154,7 @@ export default function CreatePresentationDetail() {
         });
 
         // Wait for base delay first
-        await new Promise((resolve) => setTimeout(resolve, baseDelay));
+        await new Promise(resolve => setTimeout(resolve, baseDelay));
 
         // Then verify URLs
         const results = await Promise.all(verifyPromises);
@@ -197,18 +176,32 @@ export default function CreatePresentationDetail() {
     }
   }, [slidesData]);
 
-  const presentationData =
-    metadata && slidesData
-      ? {
-          ...metadata,
-          slides: slidesData.slides,
-        }
-      : null;
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <Layout>
+        <Head>
+          <title>{siteTitle}</title>
+        </Head>
+        <LoadingScreen fullScreen message="Loading..." />
+      </Layout>
+    );
+  }
+
+  // Show redirecting message if not authenticated (useAuth will handle redirect)
+  if (userData && !userData.isLoggedIn) {
+    return (
+      <Layout>
+        <Head>
+          <title>{siteTitle}</title>
+        </Head>
+        <LoadingScreen fullScreen message="Redirecting to login..." />
+      </Layout>
+    );
+  }
 
   const isLoadingMetadata = !metadata && !metadataError && isValidatingMetadata;
   const isLoadingSlides = !slidesData && !slidesError && isValidatingSlides;
-  const isLoading = isLoadingMetadata || isLoadingSlides;
-  const presentationError = metadataError || slidesError;
 
   const handleRefetch = async () => {
     if (!fileId || isRefetching) return;
@@ -217,12 +210,12 @@ export default function CreatePresentationDetail() {
 
     try {
       const response = await fetch(`/api/presentation/${fileId}/refetch`, {
-        method: "POST",
+        method: 'POST',
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to refetch");
+        throw new Error(error.error || 'Failed to refetch');
       }
 
       const result = await response.json();
@@ -231,10 +224,10 @@ export default function CreatePresentationDetail() {
       await mutateSlides();
 
       alert(
-        `Refetch complete! ${result.succeeded} succeeded, ${result.failed} failed.`,
+        `Refetch complete! ${result.succeeded} succeeded, ${result.failed} failed.`
       );
     } catch (error: any) {
-      console.error("Error refetching:", error);
+      console.error('Error refetching:', error);
       alert(`Error: ${error.message}`);
     } finally {
       setIsRefetching(false);
@@ -243,7 +236,7 @@ export default function CreatePresentationDetail() {
 
   const handleGenerateGif = async () => {
     if (!fileId || selectedSlides.length === 0) {
-      alert("Please select at least one slide to generate a GIF");
+      alert('Please select at least one slide to generate a GIF');
       return;
     }
 
@@ -251,10 +244,10 @@ export default function CreatePresentationDetail() {
     setGifUrl(null);
     try {
       // Use objectIds instead of slide indices, since files are stored by objectId
-      const slideList = selectedSlides.map((slide) => slide.objectId).join(",");
-      console.log("Generating GIF with:", {
+      const slideList = selectedSlides.map(slide => slide.objectId).join(',');
+      console.log('Generating GIF with:', {
         presentationId: fileId,
-        selectedSlides: selectedSlides.map((s) => ({
+        selectedSlides: selectedSlides.map(s => ({
           slideIndex: s.slideIndex,
           objectId: s.objectId,
         })),
@@ -262,41 +255,53 @@ export default function CreatePresentationDetail() {
       });
 
       // Debug: Verify objectIds are not empty
-      if (selectedSlides.some((s) => !s.objectId || s.objectId === "")) {
+      if (selectedSlides.some(s => !s.objectId || s.objectId === '')) {
         console.error(
-          "ERROR: Some selectedSlides have empty or missing objectId!",
-          selectedSlides,
+          'ERROR: Some selectedSlides have empty or missing objectId!',
+          selectedSlides
         );
         alert(
-          "Error: Some slides are missing objectId. Please try selecting slides again.",
+          'Error: Some slides are missing objectId. Please try selecting slides again.'
         );
         setIsGeneratingGif(false);
         return;
       }
 
-      const response = await fetch(`/api/generate-gif`, {
-        method: "POST",
+      const response = await fetch('/api/generate-gif', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           presentationId: fileId,
           slideList,
           delay: gifDelay,
-          quality: gifQuality === "Best" ? 1 : gifQuality === "HQ" ? 5 : 10,
+          quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,
           thumbnailSize,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to generate GIF");
+        throw new Error(error.error || 'Failed to generate GIF');
       }
 
       const result = await response.json();
-      setGifUrl(result.gifUrl);
+      const newGifUrl = result.gifUrl;
+
+      // Add to generated GIFs list
+      const newGif = {
+        gifUrl: newGifUrl,
+        timestamp: Date.now(),
+        thumbnailSize,
+        delay: gifDelay,
+        quality: gifQuality,
+        frameCount: selectedSlides.length,
+      };
+      setGeneratedGifs(prev => [newGif, ...prev]); // Add to beginning of list
+      setGifUrl(newGifUrl);
     } catch (error: any) {
-      console.error("Error generating GIF:", error);
+      console.error('Error generating GIF:', error);
       alert(`Error: ${error.message}`);
     } finally {
       setIsGeneratingGif(false);
@@ -306,14 +311,14 @@ export default function CreatePresentationDetail() {
   if (userError || !userData) {
     return (
       <Layout>
-        <div>Loading...</div>
+        <LoadingScreen fullScreen message="Loading..." />
       </Layout>
     );
   }
 
   if (!userData.isLoggedIn) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
     }
     return (
       <Layout>
@@ -326,40 +331,40 @@ export default function CreatePresentationDetail() {
     <Layout>
       <Head key="head">
         <title>
-          {metadata?.title || "Presentation"} - {siteTitle}
+          {metadata?.title || 'Presentation'} - {siteTitle}
         </title>
         <meta
           name="description"
           content={`View and create GIFs from ${
-            metadata?.title || "this Google Slides presentation"
+            metadata?.title || 'this Google Slides presentation'
           }. ${metadata?.slideCount || 0} slides available.`}
         />
         <meta
           property="og:title"
-          content={`${metadata?.title || "Presentation"} - ${siteTitle}`}
+          content={`${metadata?.title || 'Presentation'} - ${siteTitle}`}
         />
         <meta
           property="og:description"
           content={`View and create GIFs from ${
-            metadata?.title || "this Google Slides presentation"
+            metadata?.title || 'this Google Slides presentation'
           }. ${metadata?.slideCount || 0} slides available.`}
         />
         <meta property="og:type" content="website" />
         <meta
           property="og:url"
           content={`${
-            typeof window !== "undefined" ? window.location.origin : ""
+            typeof window !== 'undefined' ? window.location.origin : ''
           }/create/x/${fileId}`}
         />
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content={`${metadata?.title || "Presentation"} - ${siteTitle}`}
+          content={`${metadata?.title || 'Presentation'} - ${siteTitle}`}
         />
         <meta
           name="twitter:description"
           content={`View and create GIFs from ${
-            metadata?.title || "this Google Slides presentation"
+            metadata?.title || 'this Google Slides presentation'
           }. ${metadata?.slideCount || 0} slides available.`}
         />
         {slidesData?.slides?.[0]?.thumbnailUrl && (
@@ -372,7 +377,7 @@ export default function CreatePresentationDetail() {
       <div className="p-5">
         <div className="mb-4 flex items-center gap-4">
           <button
-            onClick={() => router.push("/create")}
+            onClick={() => router.push('/create')}
             className="flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
           >
             <span className="material-icons text-base">arrow_back</span>
@@ -384,11 +389,7 @@ export default function CreatePresentationDetail() {
         </div>
 
         {isLoadingMetadata && (
-          <div className="py-10 px-5 text-center">
-            <p className="text-base text-gray-600">
-              Loading presentation metadata...
-            </p>
-          </div>
+          <LoadingScreen message="Loading presentation metadata..." />
         )}
 
         {metadataError && (
@@ -454,7 +455,7 @@ export default function CreatePresentationDetail() {
                         max="10000"
                         step="10"
                         value={gifDelay}
-                        onChange={(e) =>
+                        onChange={e =>
                           setGifDelay(parseInt(e.target.value) || 1000)
                         }
                         className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
@@ -471,8 +472,8 @@ export default function CreatePresentationDetail() {
                       <select
                         id="gif-quality"
                         value={gifQuality}
-                        onChange={(e) =>
-                          setGifQuality(e.target.value as "Best" | "HQ" | "LQ")
+                        onChange={e =>
+                          setGifQuality(e.target.value as 'Best' | 'HQ' | 'LQ')
                         }
                         className="rounded border border-gray-300 px-2 py-1 text-sm"
                         disabled={isGeneratingGif}
@@ -492,9 +493,9 @@ export default function CreatePresentationDetail() {
                       <select
                         id="thumbnail-size"
                         value={thumbnailSize}
-                        onChange={(e) =>
+                        onChange={e =>
                           setThumbnailSize(
-                            e.target.value as "SMALL" | "MEDIUM" | "LARGE",
+                            e.target.value as 'SMALL' | 'MEDIUM' | 'LARGE'
                           )
                         }
                         className="rounded border border-gray-300 px-2 py-1 text-sm"
@@ -534,23 +535,23 @@ export default function CreatePresentationDetail() {
                     <div
                       key={`${selectedSlide.objectId}-${index}`}
                       draggable
-                      onDragStart={(e) => {
+                      onDragStart={e => {
                         setDraggedIndex(index);
-                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.effectAllowed = 'move';
                       }}
-                      onDragOver={(e) => {
+                      onDragOver={e => {
                         e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
+                        e.dataTransfer.dropEffect = 'move';
                         if (draggedIndex !== null && draggedIndex !== index) {
-                          e.currentTarget.style.opacity = "0.5";
+                          e.currentTarget.style.opacity = '0.5';
                         }
                       }}
-                      onDragLeave={(e) => {
-                        e.currentTarget.style.opacity = "1";
+                      onDragLeave={e => {
+                        e.currentTarget.style.opacity = '1';
                       }}
-                      onDrop={(e) => {
+                      onDrop={e => {
                         e.preventDefault();
-                        e.currentTarget.style.opacity = "1";
+                        e.currentTarget.style.opacity = '1';
                         if (draggedIndex === null) return;
                         const newSlides = [...selectedSlides];
                         const draggedSlide = newSlides[draggedIndex];
@@ -564,8 +565,8 @@ export default function CreatePresentationDetail() {
                       }}
                       className={`group relative cursor-move overflow-hidden rounded-lg border-2 bg-white shadow-sm transition-all duration-200 hover:border-blue hover:shadow-md ${
                         draggedIndex === index
-                          ? "border-blue opacity-50"
-                          : "border-gray-300"
+                          ? 'border-blue opacity-50'
+                          : 'border-gray-300'
                       }`}
                     >
                       {selectedSlide.thumbnailUrl ? (
@@ -583,10 +584,10 @@ export default function CreatePresentationDetail() {
                         {index + 1}
                       </div>
                       <button
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           setSelectedSlides(
-                            selectedSlides.filter((_, i) => i !== index),
+                            selectedSlides.filter((_, i) => i !== index)
                           );
                         }}
                         className="absolute top-1 right-1 hidden rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100"
@@ -613,34 +614,70 @@ export default function CreatePresentationDetail() {
               )}
             </div>
 
-            {/* GIF Preview Section */}
-            {gifUrl && (
+            {/* GIF Preview Section - Shows currently generating GIF */}
+            {isGeneratingGif && (
               <div className="mb-8">
                 <h4 className="mb-5 text-xl text-gray-800">GIF Preview</h4>
                 <div className="rounded-lg border-2 border-gray-300 bg-white p-4 shadow-sm">
-                  <img
-                    src={gifUrl}
-                    alt="Generated GIF"
-                    className="mx-auto rounded"
-                    style={{
-                      maxWidth:
-                        thumbnailSize === "LARGE"
-                          ? "1600px"
-                          : thumbnailSize === "MEDIUM"
-                          ? "800px"
-                          : "200px",
-                      width: "100%",
-                      height: "auto",
-                    }}
-                    onLoad={(e) => {
-                      const img = e.target as HTMLImageElement;
-                      console.log("GIF Preview loaded:", {
-                        naturalWidth: img.naturalWidth,
-                        naturalHeight: img.naturalHeight,
-                        thumbnailSize,
-                      });
-                    }}
-                  />
+                  <div className="flex min-h-[200px] items-center justify-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <LoadingSpinner size="lg" />
+                      <p className="text-sm text-gray-600">Generating GIF...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Generated GIFs Section - Shows all generated GIFs */}
+            {generatedGifs.length > 0 && (
+              <div className="mb-8">
+                <h4 className="mb-5 text-xl text-gray-800">Generated GIFs</h4>
+                <div className="space-y-4">
+                  {generatedGifs.map((gif, index) => (
+                    <div
+                      key={`${gif.timestamp}-${index}`}
+                      className="rounded-lg border-2 border-gray-300 bg-white p-4 shadow-sm"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">
+                            {new Date(gif.timestamp).toLocaleString()}
+                          </span>
+                          <span className="ml-2">
+                            • {gif.frameCount}{' '}
+                            {gif.frameCount === 1 ? 'frame' : 'frames'} •{' '}
+                            {gif.thumbnailSize} • {gif.delay}ms delay •{' '}
+                            {gif.quality} quality
+                          </span>
+                        </div>
+                      </div>
+                      <img
+                        src={gif.gifUrl}
+                        alt={`Generated GIF ${index + 1}`}
+                        className="mx-auto rounded"
+                        style={{
+                          maxWidth:
+                            gif.thumbnailSize === 'LARGE'
+                              ? '1600px'
+                              : gif.thumbnailSize === 'MEDIUM'
+                              ? '800px'
+                              : '200px',
+                          width: '100%',
+                          height: 'auto',
+                        }}
+                        onLoad={e => {
+                          const img = e.target as HTMLImageElement;
+                          console.log('Generated GIF loaded:', {
+                            naturalWidth: img.naturalWidth,
+                            naturalHeight: img.naturalHeight,
+                            thumbnailSize: gif.thumbnailSize,
+                            timestamp: gif.timestamp,
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -649,9 +686,7 @@ export default function CreatePresentationDetail() {
               <div className="mb-5 flex items-center justify-between">
                 <h4 className="flex items-center gap-2 text-xl text-gray-800">
                   <span>Slides ({metadata.slideCount})</span>
-                  {isLoadingSlides && (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue"></div>
-                  )}
+                  {isLoadingSlides && <LoadingSpinner size="sm" />}
                 </h4>
                 <button
                   onClick={handleRefetch}
@@ -689,7 +724,7 @@ export default function CreatePresentationDetail() {
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 py-5">
                   {isLoadingSlides && !slidesData
                     ? // Show skeleton placeholders while loading
-                      Array.from({ length: metadata.slideCount || 10 }).map(
+                      Array.from({length: metadata.slideCount || 10}).map(
                         (_, index) => (
                           <div
                             key={`skeleton-${index}`}
@@ -697,7 +732,7 @@ export default function CreatePresentationDetail() {
                           >
                             <div className="h-full w-full bg-gray-100 shimmer"></div>
                           </div>
-                        ),
+                        )
                       )
                     : slidesData
                     ? slidesData.slides.map((slide, index) => {
@@ -735,27 +770,27 @@ export default function CreatePresentationDetail() {
                                       }`}
                                       className={`block h-[112px] w-full bg-gray-100 object-cover transition-opacity duration-300 ${
                                         isLoaded
-                                          ? "opacity-100"
-                                          : "opacity-0 shimmer"
+                                          ? 'opacity-100'
+                                          : 'opacity-0 shimmer'
                                       }`}
                                       loading="lazy"
                                       onLoad={() => {
-                                        setLoadedImages((prev) =>
-                                          new Set(prev).add(slide.objectId),
+                                        setLoadedImages(prev =>
+                                          new Set(prev).add(slide.objectId)
                                         );
                                       }}
-                                      onError={(e) => {
+                                      onError={() => {
                                         console.error(
                                           `Failed to load image for slide ${
                                             index + 1
                                           }:`,
-                                          slide.thumbnailUrl,
+                                          slide.thumbnailUrl
                                         );
-                                        setFailedImages((prev) =>
-                                          new Set(prev).add(slide.objectId),
+                                        setFailedImages(prev =>
+                                          new Set(prev).add(slide.objectId)
                                         );
-                                        setLoadedImages((prev) =>
-                                          new Set(prev).add(slide.objectId),
+                                        setLoadedImages(prev =>
+                                          new Set(prev).add(slide.objectId)
                                         );
                                       }}
                                     />

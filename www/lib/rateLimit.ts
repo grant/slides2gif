@@ -35,7 +35,7 @@ export function checkRateLimit(userId: string): {
       resetTime: now + RATE_LIMIT_WINDOW_MS,
     };
     rateLimitStore.set(userId, newEntry);
-    
+
     // Clean up old entries periodically
     if (rateLimitStore.size > 1000) {
       cleanupOldEntries();

@@ -1,11 +1,12 @@
-import { Storage, File } from "@google-cloud/storage";
+import {Storage, File} from '@google-cloud/storage';
 // eslint-disable-next-line node/no-extraneous-import
-import { Metadata } from "@google-cloud/common";
-import mkdirp from "mkdirp";
-import * as fs from "fs";
+import {Metadata} from '@google-cloud/common';
+import mkdirp from 'mkdirp';
+import * as fs from 'fs';
+import {pipeline} from 'stream/promises';
 
 // Use the same bucket as the www service for cached slides
-const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || "slides2gif-cache";
+const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
 
 /**
  * Options for downloading slides from GCS.
@@ -14,7 +15,7 @@ export interface DownloadImagesRequestOptions {
   presentationId: string; // The presentation ID.
   slideList: string; // The slides query. i.e. "1,2,3" or "3,5,9"
   downloadLocation: string; // ?The local relative folder name for the downloads.
-  thumbnailSize?: "SMALL" | "MEDIUM" | "LARGE"; // Thumbnail size to download
+  thumbnailSize?: 'SMALL' | 'MEDIUM' | 'LARGE'; // Thumbnail size to download
 }
 
 /**
@@ -23,13 +24,21 @@ export interface DownloadImagesRequestOptions {
  * @param gcsFilename The name of the file in Cloud Storage, i.e. `myfile.gif`
  */
 export async function uploadFile(localFilepath: string, gcsFilename: string) {
-  const storage = new Storage();
-  const [file]: [File, Metadata] = await storage
-    .bucket(BUCKET_NAME)
-    .upload(localFilepath, {
-      destination: gcsFilename,
-    });
-  return file;
+  try {
+    const storage = new Storage();
+    const [file]: [File, Metadata] = await storage
+      .bucket(BUCKET_NAME)
+      .upload(localFilepath, {
+        destination: gcsFilename,
+      });
+    return file;
+  } catch (error) {
+    console.error(
+      `[png2gif] Error uploading file ${localFilepath} to ${gcsFilename}:`,
+      error
+    );
+    throw error;
+  }
 }
 
 /**
@@ -49,11 +58,9 @@ export async function downloadFiles({
   downloadLocation,
   presentationId,
   slideList,
-  thumbnailSize = "MEDIUM",
-}: DownloadImagesRequestOptions): Promise<
-  { files: string[] } | { error: string }
-> {
-  console.log("DOWNLOADING FILES", {
+  thumbnailSize = 'MEDIUM',
+}: DownloadImagesRequestOptions): Promise<{files: string[]} | {error: string}> {
+  console.log('DOWNLOADING FILES', {
     presentationId,
     slideList,
     thumbnailSize,
@@ -61,79 +68,90 @@ export async function downloadFiles({
 
   // Validate arguments
   if (!slideList) {
-    return { error: "Missing argument: slideList" };
+    return {error: 'Missing argument: slideList'};
   }
 
-  if (slideList === "") {
-    return { error: "slideList cannot be empty" };
+  if (slideList === '') {
+    return {error: 'slideList cannot be empty'};
   }
   const storage = new Storage();
 
   // Files are stored at: presentations/{presentationId}/slides/{objectId}.jpg (SMALL)
   // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg (MEDIUM/LARGE)
   const sizeSuffix =
-    thumbnailSize !== "SMALL" ? `_${thumbnailSize.toLowerCase()}` : "";
+    thumbnailSize !== 'SMALL' ? `_${thumbnailSize.toLowerCase()}` : '';
   const prefix = `presentations/${presentationId}/slides/`;
-  console.log(`Looking for files in bucket: ${BUCKET_NAME}, prefix: ${prefix}`);
-  const [fileList] = await storage.bucket(BUCKET_NAME).getFiles({
-    prefix: prefix,
-  });
   console.log(
-    `FOUND ${fileList.length} FILES with prefix ${prefix} in bucket ${BUCKET_NAME}.`,
+    `[png2gif] Looking for files in bucket: ${BUCKET_NAME}, prefix: ${prefix}`
   );
-
-  // Debug: List all files found with their objectIds
-  console.log("\n=== FILES FOUND IN GCS ===");
-  fileList.forEach((file, index) => {
-    const fileName = file.name.split("/").pop() || "";
-    const objectId = fileName.replace(/\.(jpg|jpeg|png)$/i, "");
-    console.log(`${index + 1}. ${file.name}`);
-    console.log(`   objectId: ${objectId}`);
-  });
-  console.log("========================\n");
-
-  // Generate GCS Console URL for debugging
-  const gcsConsoleUrl =
-    "https://console.cloud.google.com/storage/browser/" +
-    BUCKET_NAME +
-    "/" +
-    encodeURIComponent(prefix);
-  console.log("\nGCS Console URL to view files:");
-  console.log(gcsConsoleUrl);
-  console.log("");
-
-  if (fileList.length === 0) {
-    console.warn(
-      `No files found! Check that bucket ${BUCKET_NAME} exists and contains files with prefix ${prefix}`,
+  let fileList: File[];
+  try {
+    [fileList] = await storage.bucket(BUCKET_NAME).getFiles({
+      prefix: prefix,
+    });
+    console.log(
+      `[png2gif] FOUND ${fileList.length} FILES with prefix ${prefix} in bucket ${BUCKET_NAME}.`
     );
+
+    // Debug: List all files found with their objectIds
+    console.log('\n=== FILES FOUND IN GCS ===');
+    fileList.forEach((file, index) => {
+      const fileName = file.name.split('/').pop() || '';
+      const objectId = fileName.replace(/\.(jpg|jpeg|png)$/i, '');
+      console.log(`${index + 1}. ${file.name}`);
+      console.log(`   objectId: ${objectId}`);
+    });
+    console.log('========================\n');
+
+    // Generate GCS Console URL for debugging
+    const gcsConsoleUrl =
+      'https://console.cloud.google.com/storage/browser/' +
+      BUCKET_NAME +
+      '/' +
+      encodeURIComponent(prefix);
+    console.log('\nGCS Console URL to view files:');
+    console.log(gcsConsoleUrl);
+    console.log('');
+
+    if (fileList.length === 0) {
+      console.warn(
+        `[png2gif] No files found! Check that bucket ${BUCKET_NAME} exists and contains files with prefix ${prefix}`
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[png2gif] Error listing files in bucket ${BUCKET_NAME}:`,
+      error
+    );
+    throw error;
   }
 
   // Parse slideList (comma-separated list of objectIds)
   const slideIds =
-    slideList === "*"
+    slideList === '*'
       ? null // Download all slides
-      : slideList.split(",").map((id) => id.trim());
+      : slideList.split(',').map(id => id.trim());
 
-  console.log("\n=== FILTERING ===");
-  console.log("slideList received:", slideList);
-  console.log("Parsed slideIds:", slideIds);
-  console.log("Total files to filter:", fileList.length);
+  console.log('\n=== FILTERING ===');
+  console.log('slideList received:', slideList);
+  console.log('Parsed slideIds:', slideIds);
+  console.log('Total files to filter:', fileList.length);
 
   // Filter files by slideList if specified
   const filesToDownload = slideIds
-    ? fileList.filter((file) => {
+    ? fileList.filter(file => {
         // Extract objectId from path: presentations/{presentationId}/slides/{objectId}.jpg
         // or: presentations/{presentationId}/slides/{objectId}_{size}.jpg
-        const fileName = file.name.split("/").pop() || "";
+        const fileName = file.name.split('/').pop() || '';
         // Remove size suffix and extension to get objectId
         const objectId = fileName
-          .replace(/_(small|medium|large)\.(jpg|jpeg|png)$/i, "")
-          .replace(/\.(jpg|jpeg|png)$/i, "");
+          .replace(/_(small|medium|large)\.(jpg|jpeg|png)$/i, '')
+          .replace(/\.(jpg|jpeg|png)$/i, '');
         const matches = slideIds.includes(objectId);
 
         // Also check that the file matches the requested size
         const hasCorrectSize =
-          thumbnailSize === "SMALL"
+          thumbnailSize === 'SMALL'
             ? !fileName.match(/_(small|medium|large)\.(jpg|jpeg|png)$/i)
             : fileName.includes(`_${thumbnailSize.toLowerCase()}.`);
 
@@ -142,27 +160,27 @@ export async function downloadFiles({
         // Log matching status
         if (shouldDownload) {
           console.log(
-            "  [MATCHED]",
+            '  [MATCHED]',
             file.name,
-            "(objectId:",
-            objectId + ", size:",
-            thumbnailSize + ")",
+            '(objectId:',
+            objectId + ', size:',
+            thumbnailSize + ')'
           );
         } else {
           if (!matches) {
             console.log(
-              "  [NOT MATCHED - wrong objectId]",
+              '  [NOT MATCHED - wrong objectId]',
               file.name,
-              "(objectId:",
-              objectId + ")",
+              '(objectId:',
+              objectId + ')'
             );
           } else if (!hasCorrectSize) {
             console.log(
-              "  [NOT MATCHED - wrong size]",
+              '  [NOT MATCHED - wrong size]',
               file.name,
-              "(objectId:",
-              objectId + ", expected:",
-              thumbnailSize + ")",
+              '(objectId:',
+              objectId + ', expected:',
+              thumbnailSize + ')'
             );
           }
         }
@@ -171,17 +189,17 @@ export async function downloadFiles({
       })
     : fileList;
 
-  console.log("Files after filtering:", filesToDownload.length);
-  console.log("==================\n");
+  console.log('Files after filtering:', filesToDownload.length);
+  console.log('==================\n');
 
   console.log(
-    `DOWNLOADING ${filesToDownload.length} FILES (filtered from ${fileList.length}).`,
+    `DOWNLOADING ${filesToDownload.length} FILES (filtered from ${fileList.length}).`
   );
 
   // Download filtered files
   const res: {
     files: string[];
-  } = { files: [] };
+  } = {files: []};
   await mkdirp(`${downloadLocation}/${presentationId}`);
 
   for (let i = 0; i < filesToDownload.length; ++i) {
@@ -192,33 +210,30 @@ export async function downloadFiles({
       console.log(`- Downloading ${f.name} to ${destination}`);
 
       // Ensure directory exists
-      const dirPath = destination.substring(0, destination.lastIndexOf("/"));
+      const dirPath = destination.substring(0, destination.lastIndexOf('/'));
       await mkdirp(dirPath);
 
-      // Download file with error handling
-      // Use a promise wrapper to handle the stream properly
-      await new Promise<void>((resolve, reject) => {
-        const writeStream = fs.createWriteStream(destination);
-        const readStream = f.createReadStream();
+      // Download file with error handling using pipeline for robust stream handling
+      const readStream = f.createReadStream();
+      const writeStream = fs.createWriteStream(destination);
 
-        readStream.on("error", (err: Error) => {
-          writeStream.destroy();
-          reject(err);
-        });
-
-        writeStream.on("error", (err: Error) => {
-          readStream.destroy();
-          reject(err);
-        });
-
-        writeStream.on("finish", () => {
-          resolve();
-        });
-
-        readStream.pipe(writeStream);
-      });
-
-      console.log(`  ✓ Successfully downloaded ${f.name}`);
+      try {
+        await pipeline(readStream, writeStream);
+        console.log(`  ✓ Successfully downloaded ${f.name}`);
+      } catch (error: any) {
+        // Clean up streams on error
+        try {
+          if (readStream && typeof (readStream as any).destroy === 'function') {
+            (readStream as any).destroy();
+          }
+          if (writeStream && !writeStream.destroyed) {
+            writeStream.destroy();
+          }
+        } catch (cleanupErr) {
+          // Ignore cleanup errors
+        }
+        throw error;
+      }
       res.files.push(destination);
     } catch (error: any) {
       console.error(`  ✗ Error downloading ${f.name}:`, error);

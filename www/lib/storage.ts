@@ -1,6 +1,6 @@
-import { Storage, File } from "@google-cloud/storage";
+import {Storage} from '@google-cloud/storage';
 
-const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || "slides2gif-cache";
+const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
 
 /**
  * Gets or creates the cache bucket
@@ -18,7 +18,7 @@ function getBucket() {
 export function getSlideCachePath(
   presentationId: string,
   objectId: string,
-  size: "SMALL" | "MEDIUM" | "LARGE" = "SMALL",
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
 ): string {
   const basePath = `presentations/${presentationId}/slides/${objectId}`;
   const sizeSuffix = size.toLowerCase();
@@ -31,7 +31,7 @@ export function getSlideCachePath(
 export async function slideExistsInCache(
   presentationId: string,
   objectId: string,
-  size: "SMALL" | "MEDIUM" | "LARGE" = "SMALL",
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
 ): Promise<boolean> {
   try {
     const bucket = getBucket();
@@ -40,7 +40,7 @@ export async function slideExistsInCache(
     const [exists] = await file.exists();
     return exists;
   } catch (error) {
-    console.error("Error checking cache:", error);
+    console.error('Error checking cache:', error);
     return false;
   }
 }
@@ -53,7 +53,7 @@ export async function slideExistsInCache(
 export async function getCachedSlideUrl(
   presentationId: string,
   objectId: string,
-  size: "SMALL" | "MEDIUM" | "LARGE" = "SMALL",
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
 ): Promise<string | null> {
   try {
     const bucket = getBucket();
@@ -71,7 +71,7 @@ export async function getCachedSlideUrl(
     const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${filePath}`;
     return publicUrl;
   } catch (error) {
-    console.error("Error getting cached slide URL:", error);
+    console.error('Error getting cached slide URL:', error);
     return null;
   }
 }
@@ -83,7 +83,7 @@ export async function cacheSlideThumbnail(
   presentationId: string,
   objectId: string,
   thumbnailUrl: string,
-  size: "SMALL" | "MEDIUM" | "LARGE" = "SMALL",
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
 ): Promise<boolean> {
   try {
     // Download the image from the thumbnail URL
@@ -101,8 +101,8 @@ export async function cacheSlideThumbnail(
 
     await file.save(imageBuffer, {
       metadata: {
-        contentType: "image/jpeg",
-        cacheControl: "public, max-age=31536000", // Cache for 1 year
+        contentType: 'image/jpeg',
+        cacheControl: 'public, max-age=31536000', // Cache for 1 year
       },
     });
 
@@ -112,7 +112,7 @@ export async function cacheSlideThumbnail(
     console.log(`Cached slide thumbnail: ${filePath}`);
     return true;
   } catch (error) {
-    console.error("Error caching slide thumbnail:", error);
+    console.error('Error caching slide thumbnail:', error);
     return false;
   }
 }
@@ -121,19 +121,19 @@ export async function cacheSlideThumbnail(
  * Makes all files in a presentation's cache directory publicly readable
  */
 export async function makePresentationFilesPublic(
-  presentationId: string,
-): Promise<{ succeeded: number; failed: number }> {
+  presentationId: string
+): Promise<{succeeded: number; failed: number}> {
   try {
     const bucket = getBucket();
     const prefix = `presentations/${presentationId}/slides/`;
-    const [files] = await bucket.getFiles({ prefix });
+    const [files] = await bucket.getFiles({prefix});
 
     let succeeded = 0;
     let failed = 0;
 
     // Make each file public
     await Promise.all(
-      files.map(async (file) => {
+      files.map(async file => {
         try {
           await file.makePublic();
           succeeded++;
@@ -141,13 +141,13 @@ export async function makePresentationFilesPublic(
           console.error(`Failed to make ${file.name} public:`, error);
           failed++;
         }
-      }),
+      })
     );
 
-    return { succeeded, failed };
+    return {succeeded, failed};
   } catch (error) {
-    console.error("Error making presentation files public:", error);
-    return { succeeded: 0, failed: 0 };
+    console.error('Error making presentation files public:', error);
+    return {succeeded: 0, failed: 0};
   }
 }
 
@@ -163,8 +163,8 @@ export async function ensureBucketExists(): Promise<void> {
     if (!exists) {
       console.log(`Creating bucket: ${BUCKET_NAME}`);
       await bucket.create({
-        location: "US",
-        storageClass: "STANDARD",
+        location: 'US',
+        storageClass: 'STANDARD',
       });
 
       // Make bucket publicly readable
@@ -184,7 +184,7 @@ export async function ensureBucketExists(): Promise<void> {
   } catch (error: any) {
     // If bucket already exists or we don't have permission, that's okay
     if (error.code !== 409 && error.code !== 403) {
-      console.error("Error ensuring bucket exists:", error);
+      console.error('Error ensuring bucket exists:', error);
       throw error;
     }
   }

@@ -1,12 +1,12 @@
-import { useEffect } from "react";
-import { useRouter } from "next/router";
-import useSWR from "swr";
-import { APIResUser } from "../types/user";
+import {useEffect} from 'react';
+import {useRouter} from 'next/router';
+import useSWR from 'swr';
+import {APIResUser} from '../types/user';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
-    const error = new Error("An error occurred while fetching the data.");
+    const error = new Error('An error occurred while fetching the data.');
     throw error;
   }
   return res.json();
@@ -21,13 +21,13 @@ export function useAuth() {
   const {
     data: userData,
     error,
-    isLoading,
-  } = useSWR<APIResUser>("/api/user", fetcher);
+    isValidating: isLoading,
+  } = useSWR<APIResUser>('/api/user', fetcher);
 
   useEffect(() => {
     // Only redirect if we have data and user is not logged in
     if (userData && !userData.isLoggedIn) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [userData, router]);
 

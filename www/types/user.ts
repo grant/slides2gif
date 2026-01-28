@@ -1,4 +1,4 @@
-import { GoogleOAuthData } from "lib/oauth";
+import {GoogleOAuthData} from 'lib/oauth';
 
 export interface APIResUser {
   auth?: GoogleOAuthData;

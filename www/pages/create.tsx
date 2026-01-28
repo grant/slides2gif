@@ -1,14 +1,15 @@
-import Head from "next/head";
-import Layout, { siteTitle } from "../components/layout";
-import { PageCreate } from "../components/create";
-import { useAuth } from "../lib/useAuth";
+import Head from 'next/head';
+import Layout, {siteTitle} from '../components/layout';
+import {PageCreate} from '../components/create';
+import {useAuth} from '../lib/useAuth';
+import {LoadingScreen} from '../components/LoadingScreen';
 
-export default function Create(props) {
+export default function Create(_props: Record<string, never>) {
   // Check authentication - will redirect to login if not authenticated
-  const { userData: data, error, isLoading } = useAuth();
+  const {userData: data, error, isLoading} = useAuth();
 
   if (error) {
-    console.error("Error loading user:", error);
+    console.error('Error loading user:', error);
     return (
       <Layout>
         <Head>
@@ -25,7 +26,7 @@ export default function Create(props) {
         <Head>
           <title>{siteTitle}</title>
         </Head>
-        <div className="p-5">Loading...</div>
+        <LoadingScreen fullScreen message="Loading..." />
       </Layout>
     );
   }

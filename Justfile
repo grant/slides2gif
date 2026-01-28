@@ -63,6 +63,19 @@ lint-png2gif:
     cd png2gif && npm run lint
 
 # Lint all services
-lint-all:
+lint:
     just lint-www
     just lint-png2gif
+
+# Fix lint errors for www service
+fix-www:
+    cd www && npm run fix
+
+# Fix lint errors for png2gif service
+fix-png2gif:
+    cd png2gif && npm run fix
+
+# Fix lint errors for all services
+fix:
+    just fix-www || true
+    just fix-png2gif || true

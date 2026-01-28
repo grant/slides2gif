@@ -1,9 +1,7 @@
 import {withIronSessionApiRoute} from 'iron-session/next';
-import { GoogleOAuthData } from 'lib/oauth';
 import {sessionOptions} from 'lib/session';
 import {NextApiRequest, NextApiResponse} from 'next';
-import { APIResUser } from 'types/user';
-
+import {APIResUser} from 'types/user';
 
 async function userRoute(req: NextApiRequest, res: NextApiResponse) {
   let resObject: APIResUser;
@@ -21,7 +19,7 @@ async function userRoute(req: NextApiRequest, res: NextApiResponse) {
   } else {
     resObject = {
       isLoggedIn: false,
-    }
+    };
   }
   res.json(resObject);
 }

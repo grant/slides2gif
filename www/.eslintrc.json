@@ -1,0 +1,9 @@
+{
+  "extends": ["./node_modules/gts/.eslintrc.json"],
+  "rules": {
+    "quotes": ["error", "single", {"avoidEscape": true}],
+    "@typescript-eslint/quotes": ["error", "single", {"avoidEscape": true}],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  }
+}
