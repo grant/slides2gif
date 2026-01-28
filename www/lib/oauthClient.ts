@@ -44,10 +44,22 @@ export async function getAuthenticatedClient(
   }
 
   // Setup OAuth2 client
-  const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-  const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
+  // For token refresh, we need to use the same client that issued the original token
+  // Determine environment: prefer PROD in production, LOCAL in development
+  const isProduction = process.env.NODE_ENV === 'production';
+  const CLIENT_ID = isProduction
+    ? process.env.OAUTH_CLIENT_ID_PROD || process.env.OAUTH_CLIENT_ID
+    : process.env.OAUTH_CLIENT_ID_LOCAL || process.env.OAUTH_CLIENT_ID;
+  const CLIENT_SECRET = isProduction
+    ? process.env.OAUTH_CLIENT_SECRET_PROD || process.env.OAUTH_CLIENT_SECRET
+    : process.env.OAUTH_CLIENT_SECRET_LOCAL || process.env.OAUTH_CLIENT_SECRET;
+
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    res.status(500).json({error: 'OAuth credentials not configured'});
+    res.status(500).json({
+      error: `OAuth credentials not configured for ${
+        isProduction ? 'production' : 'development'
+      } environment`,
+    });
     return null;
   }
 
@@ -64,6 +76,31 @@ export async function getAuthenticatedClient(
   };
   auth.setCredentials(credentials);
 
+  // Log session state for debugging
+  console.log('[getAuthenticatedClient] Session token check:');
+  console.log(
+    '[getAuthenticatedClient] Has access_token:',
+    !!credentials.access_token
+  );
+  console.log(
+    '[getAuthenticatedClient] Has refresh_token:',
+    !!credentials.refresh_token
+  );
+  console.log(
+    '[getAuthenticatedClient] Has expiry_date:',
+    !!credentials.expiry_date
+  );
+  if (credentials.expiry_date) {
+    const expiryDate = new Date(credentials.expiry_date);
+    const now = new Date();
+    console.log(
+      '[getAuthenticatedClient] Token expires at:',
+      expiryDate.toISOString()
+    );
+    console.log('[getAuthenticatedClient] Current time:', now.toISOString());
+    console.log('[getAuthenticatedClient] Is expired:', expiryDate <= now);
+  }
+
   // Check if token needs refresh
   // Add a 5-minute buffer to refresh before actual expiry
   const EXPIRY_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
@@ -72,9 +109,19 @@ export async function getAuthenticatedClient(
     credentials.expiry_date <= Date.now() + EXPIRY_BUFFER_MS;
 
   if (isExpired) {
+    console.log(
+      '[getAuthenticatedClient] Token is expired or expiring soon, attempting refresh'
+    );
     // Validate refresh token exists
     if (!credentials.refresh_token) {
-      console.log('Access token expired but no refresh token available');
+      console.error(
+        '[getAuthenticatedClient] Access token expired but no refresh token available'
+      );
+      console.error('[getAuthenticatedClient] Session googleTokens:', {
+        hasAccessToken: !!session.googleTokens?.access_token,
+        hasRefreshToken: !!session.googleTokens?.refresh_token,
+        hasExpiryDate: !!session.googleTokens?.expiry_date,
+      });
       res.status(401).json({
         error: 'Session expired. Please log in again.',
         requiresReauth: true,
@@ -83,9 +130,18 @@ export async function getAuthenticatedClient(
     }
 
     try {
+      console.log('[getAuthenticatedClient] Refreshing access token...');
       // Refresh the access token
       const {credentials: newCredentials} = await auth.refreshAccessToken();
       auth.setCredentials(newCredentials);
+
+      console.log('[getAuthenticatedClient] Token refresh successful');
+      console.log(
+        '[getAuthenticatedClient] New token expires at:',
+        newCredentials.expiry_date
+          ? new Date(newCredentials.expiry_date).toISOString()
+          : 'unknown'
+      );
 
       // Update session with new tokens
       // Preserve refresh_token if not provided in response (it's long-lived)
@@ -98,13 +154,22 @@ export async function getAuthenticatedClient(
         expiry_date: newCredentials.expiry_date || undefined,
       };
       await session.save();
+      console.log('[getAuthenticatedClient] Session updated with new tokens');
 
       return {
         client: auth,
         sessionUpdated: true,
       };
     } catch (refreshError: any) {
-      console.error('Error refreshing access token:', refreshError);
+      console.error(
+        '[getAuthenticatedClient] Error refreshing access token:',
+        refreshError
+      );
+      console.error('[getAuthenticatedClient] Error details:', {
+        message: refreshError?.message,
+        code: refreshError?.code,
+        response: refreshError?.response?.data,
+      });
       res.status(401).json({
         error: 'Failed to refresh session. Please log in again.',
         requiresReauth: true,

@@ -47,34 +47,32 @@ export default function DashboardLayout({
           <div className="flex flex-col items-center gap-2">
             {isCollapsed ? (
               <button
-                onClick={() => router.push(Routes.DASHBOARD)}
-                className="flex items-center justify-center rounded-full bg-white px-3 py-2 shadow-sm"
-                aria-label="Go to Dashboard"
+                onClick={() => setIsCollapsed(false)}
+                className="group relative flex h-14 items-center justify-center rounded-full bg-white px-3 py-3 shadow-sm transition-all"
+                aria-label="Expand sidebar"
               >
-                <span className="text-xl font-black text-[rgb(20,30,50)]">
-                  s2g
-                </span>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-xl font-black text-[rgb(20,30,50)] opacity-100 transition-opacity group-hover:opacity-0">
+                    s2g
+                  </div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-gray-600 text-lg opacity-0 transition-opacity group-hover:opacity-100">
+                    →
+                  </div>
+                </div>
               </button>
             ) : (
               <div className="flex w-full items-center justify-between">
-                <Logo onClick={() => router.push(Routes.DASHBOARD)} />
+                <Logo onClick={() => setIsCollapsed(true)} />
                 <button
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="rounded p-1 text-gray-600 hover:bg-gray-100"
+                  onClick={() => setIsCollapsed(true)}
+                  className="flex items-center rounded p-1 text-gray-600 hover:bg-gray-100"
                   aria-label="Collapse sidebar"
                 >
                   <span className="material-icons">chevron_left</span>
                 </button>
               </div>
-            )}
-            {isCollapsed && (
-              <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="rounded p-1 text-gray-600 hover:bg-gray-100"
-                aria-label="Expand sidebar"
-              >
-                <span className="material-icons">chevron_right</span>
-              </button>
             )}
           </div>
         </div>
@@ -85,7 +83,7 @@ export default function DashboardLayout({
             onClick={() => router.push(Routes.DASHBOARD)}
             className={`flex w-full items-center transition-colors ${
               isCollapsed
-                ? 'h-12 justify-center rounded p-2'
+                ? 'h-14 justify-center rounded p-2'
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
             } ${
               activeTab === 'dashboard'
@@ -101,7 +99,7 @@ export default function DashboardLayout({
             onClick={() => router.push(Routes.CREATE)}
             className={`flex w-full items-center transition-colors ${
               isCollapsed
-                ? 'h-12 justify-center rounded p-2'
+                ? 'h-14 justify-center rounded p-2'
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
             } ${
               activeTab === 'create'
@@ -123,8 +121,8 @@ export default function DashboardLayout({
             onClick={handleLogout}
             className={`flex w-full items-center transition-colors hover:bg-gray-100 ${
               isCollapsed
-                ? 'h-12 justify-center rounded p-2'
-                : 'gap-2 rounded-lg px-4 py-3 text-left text-sm font-medium'
+                ? 'h-14 justify-center rounded p-2'
+                : 'gap-2 rounded-lg px-4 py-4 text-left text-sm font-medium'
             } text-gray-700`}
             title="Logout"
           >

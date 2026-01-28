@@ -5,9 +5,12 @@ import {APIResUser} from 'types/user';
 
 export const sessionOptions: IronSessionOptions = {
   password: process.env.SECRET_COOKIE_PASSWORD as string,
-  cookieName: 'iron-session/examples/next.js',
+  cookieName: 'slides2gif-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30, // 30 days
   },
 };
 

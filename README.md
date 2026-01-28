@@ -97,9 +97,11 @@ Create `www/.env.local` with the following variables:
 
 **Required:**
 - `SECRET_COOKIE_PASSWORD` - Secret key for encrypting session cookies
-- `OAUTH_CLIENT_ID` - Google OAuth 2.0 Client ID
-- `OAUTH_CLIENT_SECRET` - Google OAuth 2.0 Client Secret
+- `OAUTH_CLIENT_ID_PROD` - Google OAuth 2.0 Client ID (production)
+- `OAUTH_CLIENT_SECRET_PROD` - Google OAuth 2.0 Client Secret (production)
 - `GCS_CACHE_BUCKET` - Google Cloud Storage bucket name for caching
+
+**Note:** You can use `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET` as fallback if you prefer a single client for both environments.
 
 **Optional:**
 - `PNG2GIF_SERVICE_URL` - URL of the png2gif Cloud Run service
@@ -177,8 +179,15 @@ SECRET_COOKIE_PASSWORD=my-secretmy-secretmy-secretmy-secretmy-secretmy-secretmy-
 
 # Google OAuth 2.0 credentials
 # Get these from: https://console.cloud.google.com/apis/credentials
-OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
-OAUTH_CLIENT_SECRET=your-client-secret
+# Option 1: Use separate clients for local and production (recommended)
+OAUTH_CLIENT_ID_LOCAL=your-local-client-id.apps.googleusercontent.com
+OAUTH_CLIENT_SECRET_LOCAL=your-local-client-secret
+OAUTH_CLIENT_ID_PROD=your-prod-client-id.apps.googleusercontent.com
+OAUTH_CLIENT_SECRET_PROD=your-prod-client-secret
+
+# Option 2: Use the same client for both (fallback)
+# OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+# OAUTH_CLIENT_SECRET=your-client-secret
 
 # Google Cloud Storage bucket for caching slide thumbnails
 GCS_CACHE_BUCKET=slides2gif-cache

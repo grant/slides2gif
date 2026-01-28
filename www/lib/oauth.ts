@@ -16,11 +16,45 @@ export class Auth {
   static #googleOAuthClient: OAuth2Client;
 
   public static setup(baseurl: string) {
-    const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-    const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
+    // Determine if we're in development or production
+    const isLocalhost =
+      baseurl.includes('localhost') || baseurl.includes('127.0.0.1');
+
+    // Use environment-specific credentials if available, otherwise fall back to generic ones
+    const CLIENT_ID = isLocalhost
+      ? process.env.OAUTH_CLIENT_ID_LOCAL || process.env.OAUTH_CLIENT_ID
+      : process.env.OAUTH_CLIENT_ID_PROD || process.env.OAUTH_CLIENT_ID;
+
+    const CLIENT_SECRET = isLocalhost
+      ? process.env.OAUTH_CLIENT_SECRET_LOCAL || process.env.OAUTH_CLIENT_SECRET
+      : process.env.OAUTH_CLIENT_SECRET_PROD || process.env.OAUTH_CLIENT_SECRET;
+
     if (!CLIENT_ID || !CLIENT_SECRET) {
-      throw new Error('Client ID / Secret missing!!!');
+      throw new Error(
+        `OAuth credentials missing for ${
+          isLocalhost ? 'local' : 'production'
+        } environment! ` +
+          `Required: ${
+            isLocalhost ? 'OAUTH_CLIENT_ID_LOCAL' : 'OAUTH_CLIENT_ID_PROD'
+          } and ` +
+          `${
+            isLocalhost
+              ? 'OAUTH_CLIENT_SECRET_LOCAL'
+              : 'OAUTH_CLIENT_SECRET_PROD'
+          }`
+      );
     }
+
+    console.log('[Auth.setup] Using Client ID:', CLIENT_ID);
+    console.log(
+      '[Auth.setup] Client Secret:',
+      CLIENT_SECRET ? `${CLIENT_SECRET.substring(0, 10)}...` : 'MISSING'
+    );
+    console.log(
+      '[Auth.setup] Redirect URI:',
+      `${baseurl}/${this.OAUTH2_URL_CALLBACK}`
+    );
+
     Auth.#googleOAuthClient = new OAuth2Client({
       clientId: CLIENT_ID,
       clientSecret: CLIENT_SECRET,
@@ -50,6 +84,7 @@ export class Auth {
     ];
     return this.getOAuthClient().generateAuthUrl({
       access_type: 'offline',
+      prompt: 'consent', // Force consent to always get a refresh token
       scope: SCOPES,
     });
   }
@@ -65,7 +100,20 @@ export class Auth {
     try {
       const tokens = (await this.getOAuthClient().getToken(authCode)).tokens;
       return tokens;
-    } catch (e) {
+    } catch (e: any) {
+      console.error(
+        '[Auth.exchangeAuthCodeForTokens] Error exchanging code for tokens:',
+        e
+      );
+      console.error(
+        '[Auth.exchangeAuthCodeForTokens] Error message:',
+        e?.message
+      );
+      console.error('[Auth.exchangeAuthCodeForTokens] Error code:', e?.code);
+      console.error(
+        '[Auth.exchangeAuthCodeForTokens] Error response:',
+        e?.response?.data
+      );
       return null;
     }
   }

@@ -3,10 +3,22 @@ import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
 import {Auth} from 'lib/oauth';
 
-// Load env vars (.env)
+// Load env vars (.env.local)
+// Note: Next.js automatically loads .env.local, but we load it here for API routes
 require('dotenv').config({
-  path: require('path').resolve(__dirname, '../../.env'),
+  path: require('path').resolve(__dirname, '../../.env.local'),
 });
+
+// Also check if env vars are loaded
+console.log('[oauth2callback] Environment check:');
+console.log(
+  '[oauth2callback] OAUTH_CLIENT_ID:',
+  process.env.OAUTH_CLIENT_ID ? 'SET' : 'MISSING'
+);
+console.log(
+  '[oauth2callback] OAUTH_CLIENT_SECRET:',
+  process.env.OAUTH_CLIENT_SECRET ? 'SET' : 'MISSING'
+);
 
 export default withIronSessionApiRoute(oauth2callback as any, sessionOptions);
 
@@ -26,12 +38,38 @@ async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
   const baseURL = req.headers.host?.includes('localhost')
     ? `http://${req.headers.host}`
     : `https://${req.headers.host}`;
-  Auth.setup(baseURL);
+
+  console.log('[oauth2callback] Setting up Auth client with baseURL:', baseURL);
+  console.log(
+    '[oauth2callback] Expected redirect URI:',
+    `${baseURL}/api/oauth2callback`
+  );
+
+  try {
+    Auth.setup(baseURL);
+  } catch (error: any) {
+    console.error('[oauth2callback] Error setting up Auth client:', error);
+    return res.send(`ERROR: Failed to setup OAuth client: ${error.message}`);
+  }
 
   // Exchange code for tokens
+  console.log('[oauth2callback] Exchanging authorization code for tokens...');
   const tokens = await Auth.exchangeAuthCodeForTokens(code);
   if (!tokens) {
-    return res.send('ERROR: Failed to exchange code for tokens');
+    console.error('[oauth2callback] Token exchange returned null');
+    return res.send(
+      'ERROR: Failed to exchange code for tokens. Check server logs for details.'
+    );
+  }
+
+  // Log token details (without exposing sensitive data)
+  console.log('[oauth2callback] Token exchange successful');
+  console.log('[oauth2callback] Has access_token:', !!tokens.access_token);
+  console.log('[oauth2callback] Has refresh_token:', !!tokens.refresh_token);
+  console.log('[oauth2callback] Has expiry_date:', !!tokens.expiry_date);
+  if (tokens.expiry_date) {
+    const expiryDate = new Date(tokens.expiry_date);
+    console.log('[oauth2callback] Token expires at:', expiryDate.toISOString());
   }
 
   // Set session Google OAuth
@@ -48,12 +86,15 @@ async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
     expiry_date: tokens.expiry_date || undefined,
   };
 
-  console.log('SAVED SESSION!!!');
-  console.log(req.session.googleOAuth);
-  console.log('Tokens stored:', !!req.session.googleTokens?.access_token);
+  console.log('[oauth2callback] Session tokens stored');
+  console.log(
+    '[oauth2callback] Session has refresh_token:',
+    !!req.session.googleTokens?.refresh_token
+  );
 
   // Save session
   await req.session.save();
+  console.log('[oauth2callback] Session saved successfully');
 
   // Redirect to dashboard page.
   return res.redirect('/dashboard');
