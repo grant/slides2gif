@@ -137,7 +137,7 @@ export default function Dashboard() {
                         {gif.presentationTitle || `GIF ${index + 1}`}
                       </h3>
 
-                      {/* Footer: Slides icon, Date, Actions */}
+                      {/* Footer: Slides icon, Date, External link */}
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <span className="material-icons text-base">
@@ -148,21 +148,20 @@ export default function Dashboard() {
                           </span>
                         </div>
 
-                        {/* Actions Menu */}
-                        <div className="relative">
-                          <button
-                            className="rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100"
-                            aria-label="Actions"
-                            onClick={e => {
-                              e.stopPropagation();
-                              // TODO: Implement actions menu (download, delete, etc.)
-                            }}
-                          >
-                            <span className="material-icons text-lg">
-                              more_vert
-                            </span>
-                          </button>
-                        </div>
+                        {/* External link button */}
+                        <a
+                          href={gif.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100"
+                          aria-label="Open image in new tab"
+                          onClick={e => e.stopPropagation()}
+                          title="Open image in new tab"
+                        >
+                          <span className="material-icons text-lg">
+                            open_in_new
+                          </span>
+                        </a>
                       </div>
                     </div>
                   </div>

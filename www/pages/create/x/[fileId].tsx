@@ -884,7 +884,7 @@ export default function CreatePresentationDetail() {
                     <h4 className="mb-2 text-sm font-medium text-gray-700">
                       Generated GIF
                     </h4>
-                    <div className="rounded-lg border border-gray-300 bg-white p-4">
+                    <div className="rounded-lg border border-gray-300 bg-white px-4 pb-4 pt-2">
                       {isGeneratingGif ? (
                         <div className="flex min-h-[400px] items-center justify-center">
                           <div className="flex flex-col items-center gap-2">
@@ -896,14 +896,12 @@ export default function CreatePresentationDetail() {
                         </div>
                       ) : gifUrl && currentGifConfig ? (
                         <div>
-                          <div className="mb-2 text-xs text-gray-600">
-                            <div className="font-medium">
+                          <div className="flex items-center justify-between text-xs text-gray-600">
+                            <div>
                               {currentGifConfig.frameCount}{' '}
                               {currentGifConfig.frameCount === 1
                                 ? 'frame'
-                                : 'frames'}
-                            </div>
-                            <div className="text-[10px]">
+                                : 'frames'}{' '}
                               {currentGifConfig.thumbnailSize} •{' '}
                               {currentGifConfig.delay}ms •{' '}
                               {currentGifConfig.quality}
@@ -914,6 +912,18 @@ export default function CreatePresentationDetail() {
                                 </>
                               )}
                             </div>
+                            <a
+                              href={gifUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                              aria-label="Open GIF in new tab"
+                              title="Open GIF in new tab"
+                            >
+                              <span className="material-icons text-lg">
+                                open_in_new
+                              </span>
+                            </a>
                           </div>
                           <div
                             className="flex min-h-[400px] items-center justify-center rounded-lg bg-gray-100"

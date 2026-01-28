@@ -35,8 +35,6 @@ interface PageCreateProps {
  * The SPA page for sign-in, create, and import
  */
 export function PageCreate(props: PageCreateProps) {
-  console.log('PAGE props');
-
   const type = PAGE_TYPE.CREATE;
   // const type = PAGE_TYPE.IMPORT;
   // export default function PageCreate({
@@ -143,7 +141,10 @@ function PageCreateGIF() {
             const presentation = currentData?.presentations.find(
               p => p.id === presentationId
             );
-            if (presentation?.firstSlidePreview || presentation?.thumbnailLink) {
+            if (
+              presentation?.firstSlidePreview ||
+              presentation?.thumbnailLink
+            ) {
               shouldSkip = true;
             }
             return currentData; // Don't modify, just read
@@ -220,109 +221,108 @@ function PageCreateGIF() {
     </div>
   );
 
-  return PageWrapper({
-    pageTitle: 'Create GIF',
-    pageContents: (
-      <div className="py-5">
-        <h3 className="mb-5 text-2xl">Choose a presentation:</h3>
-        {isLoading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
-            {[...Array(6)].map((_, index) => (
-              <PresentationSkeleton key={`skeleton-${index}`} />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="py-10 px-5 text-center">
-            <p className="text-base text-red-600">
-              {(error as any)?.info?.error ||
-                (error as any)?.message ||
-                'Failed to load presentations'}
-              . Please try again.
+  return (
+    <>
+      <h1 className="mb-8 text-3xl font-bold text-gray-900">
+        Choose a presentation
+      </h1>
+      {isLoading ? (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
+          {[...Array(6)].map((_, index) => (
+            <PresentationSkeleton key={`skeleton-${index}`} />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="py-10 px-5 text-center">
+          <p className="text-base text-red-600">
+            {(error as any)?.info?.error ||
+              (error as any)?.message ||
+              'Failed to load presentations'}
+            . Please try again.
+          </p>
+          {(error as any)?.status === 401 && (
+            <p className="mt-2 text-sm text-gray-600">
+              You may need to{' '}
+              <a href="/login" className="text-blue underline">
+                log in again
+              </a>
+              .
             </p>
-            {(error as any)?.status === 401 && (
-              <p className="mt-2 text-sm text-gray-600">
-                You may need to{' '}
-                <a href="/login" className="text-blue underline">
-                  log in again
-                </a>
-                .
-              </p>
-            )}
-          </div>
-        ) : presentations.length === 0 ? (
-          <p>No presentations found.</p>
-        ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 py-5">
-            {presentations.map(presentation => {
-              const thumbnailUrl =
-                presentation.firstSlidePreview || presentation.thumbnailLink;
-              const isLoaded = loadedThumbnails.has(presentation.id);
-              const showPlaceholder = !isLoaded && thumbnailUrl;
+          )}
+        </div>
+      ) : presentations.length === 0 ? (
+        <p>No presentations found.</p>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
+          {presentations.map(presentation => {
+            const thumbnailUrl =
+              presentation.firstSlidePreview || presentation.thumbnailLink;
+            const isLoaded = loadedThumbnails.has(presentation.id);
+            const showPlaceholder = !isLoaded && thumbnailUrl;
 
-              return (
-                <div
-                  key={presentation.id}
-                  className="relative cursor-pointer rounded-lg border-2 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:shadow-md"
-                  onClick={() => handlePresentationClick(presentation.id)}
-                >
-                  {thumbnailUrl ? (
-                    <>
-                      {showPlaceholder && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
-                          <div className="flex flex-col items-center gap-2">
-                            <LoadingSpinner size="md" />
-                            <span className="text-xs text-gray-500">
-                              Loading...
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="relative">
-                        <img
-                          src={thumbnailUrl}
-                          alt={presentation.name}
-                          className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
-                            presentation.firstSlidePreview
-                              ? 'object-contain'
-                              : 'object-cover'
-                          } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                          loading="lazy"
-                          onLoad={() => {
-                            setLoadedThumbnails(prev =>
-                              new Set(prev).add(presentation.id)
-                            );
-                          }}
-                          onError={() => {
-                            setLoadedThumbnails(prev =>
-                              new Set(prev).add(presentation.id)
-                            );
-                          }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
-                      {generatingPreviews.has(presentation.id) ? (
+            return (
+              <div
+                key={presentation.id}
+                className="relative cursor-pointer rounded-lg border-2 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:shadow-md"
+                onClick={() => handlePresentationClick(presentation.id)}
+              >
+                {thumbnailUrl ? (
+                  <>
+                    {showPlaceholder && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
                         <div className="flex flex-col items-center gap-2">
-                          <LoadingSpinner size="sm" />
-                          <span className="text-xs">Generating preview...</span>
+                          <LoadingSpinner size="md" />
+                          <span className="text-xs text-gray-500">
+                            Loading...
+                          </span>
                         </div>
-                      ) : (
-                        <span>No preview</span>
-                      )}
+                      </div>
+                    )}
+                    <div className="relative">
+                      <img
+                        src={thumbnailUrl}
+                        alt={presentation.name}
+                        className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
+                          presentation.firstSlidePreview
+                            ? 'object-contain'
+                            : 'object-cover'
+                        } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        loading="lazy"
+                        onLoad={() => {
+                          setLoadedThumbnails(prev =>
+                            new Set(prev).add(presentation.id)
+                          );
+                        }}
+                        onError={() => {
+                          setLoadedThumbnails(prev =>
+                            new Set(prev).add(presentation.id)
+                          );
+                        }}
+                      />
                     </div>
-                  )}
-                  <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">
-                    {presentation.name}
+                  </>
+                ) : (
+                  <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
+                    {generatingPreviews.has(presentation.id) ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <LoadingSpinner size="sm" />
+                        <span className="text-xs">Generating preview...</span>
+                      </div>
+                    ) : (
+                      <span>No preview</span>
+                    )}
                   </div>
+                )}
+                <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">
+                  {presentation.name}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    ),
-  });
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
 }
 /**
  * Page for importing Slides
