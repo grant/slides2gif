@@ -6,6 +6,7 @@ import {useRouter} from 'next/router';
 import {useAuth} from '../../../lib/useAuth';
 import {LoadingScreen} from '../../../components/LoadingScreen';
 import {LoadingSpinner} from '../../../components/LoadingSpinner';
+import {Routes} from '../../../lib/routes';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -31,6 +32,7 @@ interface PresentationMetadata {
   locale?: string;
   revisionId?: string;
   slideCount: number;
+  slideObjectIds?: string[];
 }
 
 interface SlidesData {
@@ -88,16 +90,134 @@ export default function CreatePresentationDetail() {
     fetcher
   );
 
-  // Load slides after metadata is loaded
-  const {
-    data: slidesData,
-    error: slidesError,
-    isValidating: isValidatingSlides,
-    mutate: mutateSlides,
-  } = useSWR<SlidesData>(
-    fileId && metadata ? `/api/presentation/${fileId}/slides` : null,
-    fetcher
-  );
+  // State for incrementally loaded slides
+  const [incrementalSlides, setIncrementalSlides] = useState<Slide[]>([]);
+  const [isLoadingSlidesIncrementally, setIsLoadingSlidesIncrementally] =
+    useState(false);
+  const [slidesLoadingProgress, setSlidesLoadingProgress] = useState({
+    loaded: 0,
+    total: 0,
+  });
+  const [slideObjectIds, setSlideObjectIds] = useState<string[]>([]);
+
+  // Get slide objectIds from metadata
+  React.useEffect(() => {
+    if (metadata?.slideObjectIds && metadata.slideObjectIds.length > 0) {
+      setSlideObjectIds(metadata.slideObjectIds);
+    }
+  }, [metadata]);
+
+  // Load slides incrementally after we have the objectIds
+  React.useEffect(() => {
+    if (
+      !fileId ||
+      !metadata ||
+      slideObjectIds.length === 0 ||
+      incrementalSlides.length > 0 ||
+      isLoadingSlidesIncrementally
+    )
+      return;
+
+    const loadSlidesIncrementally = async () => {
+      setIsLoadingSlidesIncrementally(true);
+      setIncrementalSlides([]);
+      const totalSlides = slideObjectIds.length;
+      setSlidesLoadingProgress({loaded: 0, total: totalSlides});
+
+      // Initialize with placeholder slides
+      const placeholderSlides: Slide[] = slideObjectIds.map(objectId => ({
+        objectId,
+        thumbnailUrl: null,
+        width: null,
+        height: null,
+      }));
+      setIncrementalSlides(placeholderSlides);
+      setImagesReady(true); // Show placeholders immediately
+
+      // Load slides in batches to avoid rate limits but allow parallel loading
+      const BATCH_SIZE = 5; // Load 5 slides at a time
+      const BATCH_DELAY = 500; // 500ms delay between batches
+
+      for (let batchStart = 0; batchStart < slideObjectIds.length; batchStart += BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE, slideObjectIds.length);
+        const batch = slideObjectIds.slice(batchStart, batchEnd);
+
+        // Load all slides in this batch in parallel
+        const batchPromises = batch.map(async (objectId, batchIndex) => {
+          const i = batchStart + batchIndex;
+          if (!objectId) return;
+
+          try {
+            const slideResponse = await fetch(
+              `/api/presentation/${fileId}/slides/incremental?objectId=${encodeURIComponent(objectId)}&index=${i}`
+            );
+
+            if (slideResponse.ok) {
+              const slideData = await slideResponse.json();
+              // Update the specific slide in the array
+              setIncrementalSlides(prev => {
+                const updated = [...prev];
+                updated[i] = slideData;
+                return updated;
+              });
+              setSlidesLoadingProgress(prev => ({
+                ...prev,
+                loaded: prev.loaded + 1,
+              }));
+            } else {
+              const errorData = await slideResponse.json().catch(() => ({}));
+              // If fetch fails, mark as error
+              setIncrementalSlides(prev => {
+                const updated = [...prev];
+                updated[i] = {
+                  ...updated[i],
+                  error: errorData.error || 'Failed to load',
+                };
+                return updated;
+              });
+              setSlidesLoadingProgress(prev => ({
+                ...prev,
+                loaded: prev.loaded + 1,
+              }));
+            }
+          } catch (error) {
+            console.error(`Error loading slide ${i}:`, error);
+            // Mark as error and continue
+            setIncrementalSlides(prev => {
+              const updated = [...prev];
+              updated[i] = {
+                ...updated[i],
+                error: 'Failed to load',
+              };
+              return updated;
+            });
+            setSlidesLoadingProgress(prev => ({
+              ...prev,
+              loaded: prev.loaded + 1,
+            }));
+          }
+        });
+
+        // Wait for all slides in this batch to complete
+        await Promise.all(batchPromises);
+
+        // Add delay between batches (except after the last batch)
+        if (batchEnd < slideObjectIds.length) {
+          await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+        }
+      }
+
+      setIsLoadingSlidesIncrementally(false);
+    };
+
+    loadSlidesIncrementally();
+  }, [fileId, metadata, slideObjectIds]);
+
+  // Use incremental slides if available
+  const slidesData: SlidesData | undefined =
+    incrementalSlides.length > 0 ? {slides: incrementalSlides} : undefined;
+  const slidesError = undefined; // We handle errors per slide
+  const isValidatingSlides = isLoadingSlidesIncrementally;
 
   // Wait a bit after slides data loads and verify URLs are accessible before showing images
   React.useEffect(() => {
@@ -220,8 +340,10 @@ export default function CreatePresentationDetail() {
 
       const result = await response.json();
 
-      // Refetch the slides data to get updated cached URLs
-      await mutateSlides();
+      // Reload slides after refetch
+      setIncrementalSlides([]);
+      setSlideObjectIds([]);
+      setIsLoadingSlidesIncrementally(false);
 
       alert(
         `Refetch complete! ${result.succeeded} succeeded, ${result.failed} failed.`
@@ -318,7 +440,7 @@ export default function CreatePresentationDetail() {
 
   if (!userData.isLoggedIn) {
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      window.location.href = Routes.LOGIN;
     }
     return (
       <Layout>
@@ -377,7 +499,7 @@ export default function CreatePresentationDetail() {
       <div className="p-5">
         <div className="mb-4 flex items-center gap-4">
           <button
-            onClick={() => router.push('/create')}
+            onClick={() => router.push(Routes.CREATE)}
             className="flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
           >
             <span className="material-icons text-base">arrow_back</span>
@@ -685,8 +807,35 @@ export default function CreatePresentationDetail() {
             <div>
               <div className="mb-5 flex items-center justify-between">
                 <h4 className="flex items-center gap-2 text-xl text-gray-800">
-                  <span>Slides ({metadata.slideCount})</span>
-                  {isLoadingSlides && <LoadingSpinner size="sm" />}
+                  <span>
+                    Slides ({metadata.slideCount})
+                    {isLoadingSlidesIncrementally &&
+                      slidesLoadingProgress.total > 0 && (
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({slidesLoadingProgress.loaded}/
+                          {slidesLoadingProgress.total} loaded)
+                        </span>
+                      )}
+                  </span>
+                  {isLoadingSlidesIncrementally && (
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      {slidesLoadingProgress.total > 0 && (
+                        <div className="h-2 w-32 overflow-hidden rounded-full bg-gray-200">
+                          <div
+                            className="h-full bg-blue transition-all duration-300"
+                            style={{
+                              width: `${
+                                (slidesLoadingProgress.loaded /
+                                  slidesLoadingProgress.total) *
+                                100
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </h4>
                 <button
                   onClick={handleRefetch}
@@ -700,11 +849,13 @@ export default function CreatePresentationDetail() {
                   )}
                 </button>
               </div>
-              {slidesError && (
-                <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-600">
-                  Failed to load slides: {slidesError.message}
-                </div>
-              )}
+              {slidesLoadingProgress.total > 0 &&
+                slidesLoadingProgress.loaded < slidesLoadingProgress.total &&
+                !isLoadingSlidesIncrementally && (
+                  <div className="mb-4 rounded bg-yellow-50 p-3 text-sm text-yellow-700">
+                    Some slides failed to load. Try refreshing the page.
+                  </div>
+                )}
               {isRefetching && (
                 <div className="mb-4">
                   <p className="mb-2 text-sm text-gray-600">

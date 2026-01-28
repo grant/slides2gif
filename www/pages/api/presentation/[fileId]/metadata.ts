@@ -71,7 +71,7 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
     // Get Slides API client
     const slides = google.slides({version: 'v1', auth: auth as any});
 
-    // Get presentation metadata only (no slides)
+    // Get presentation metadata with slide objectIds
     const presentation = await slides.presentations.get({
       presentationId: fileId,
       fields: 'presentationId,title,locale,revisionId,slides(objectId)',
@@ -79,6 +79,8 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
 
     const presentationData = presentation.data;
     const slideCount = presentationData.slides?.length || 0;
+    const slideObjectIds =
+      presentationData.slides?.map(slide => slide.objectId || '') || [];
 
     return res.json({
       id: fileId,
@@ -86,6 +88,7 @@ async function metadataRoute(req: NextApiRequest, res: NextApiResponse) {
       locale: presentationData.locale,
       revisionId: presentationData.revisionId,
       slideCount,
+      slideObjectIds,
     });
   } catch (error: any) {
     console.error('Error fetching presentation metadata:', error);

@@ -55,6 +55,6 @@ async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
   // Save session
   await req.session.save();
 
-  // Redirect to create page.
-  return res.redirect('/create');
+  // Redirect to dashboard page.
+  return res.redirect('/dashboard');
 }

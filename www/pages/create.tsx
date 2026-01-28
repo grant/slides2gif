@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import Layout, {siteTitle} from '../components/layout';
+import DashboardLayout from '../components/DashboardLayout';
 import {PageCreate} from '../components/create';
 import {useAuth} from '../lib/useAuth';
 import {LoadingScreen} from '../components/LoadingScreen';
@@ -46,9 +47,13 @@ export default function Create(_props: Record<string, never>) {
   return (
     <Layout>
       <Head key="head">
-        <title>{siteTitle}</title>
+        <title>Create - {siteTitle}</title>
       </Head>
-      <PageCreate currentPageType="CREATE" user={data} />
+      <DashboardLayout activeTab="create">
+        <div className="p-8">
+          <PageCreate currentPageType="CREATE" user={data} />
+        </div>
+      </DashboardLayout>
     </Layout>
   );
 }

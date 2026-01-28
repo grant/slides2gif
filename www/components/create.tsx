@@ -10,6 +10,7 @@ import useSWR from 'swr';
 import {useRouter} from 'next/router';
 import {LoadingScreen} from './LoadingScreen';
 import {LoadingSpinner} from './LoadingSpinner';
+import {Routes} from '../lib/routes';
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
 
@@ -92,7 +93,7 @@ function PageCreateGIF() {
   );
 
   const handlePresentationClick = (fileId: string) => {
-    router.push(`/create/x/${fileId}`);
+    router.push(Routes.CREATE_PRESENTATION(fileId));
   };
 
   if (!data && !error) {

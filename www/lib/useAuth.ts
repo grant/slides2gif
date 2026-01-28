@@ -2,6 +2,7 @@ import {useEffect} from 'react';
 import {useRouter} from 'next/router';
 import useSWR from 'swr';
 import {APIResUser} from '../types/user';
+import {Routes} from './routes';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -27,7 +28,7 @@ export function useAuth() {
   useEffect(() => {
     // Only redirect if we have data and user is not logged in
     if (userData && !userData.isLoggedIn) {
-      router.push('/login');
+      router.push(Routes.LOGIN);
     }
   }, [userData, router]);
 
