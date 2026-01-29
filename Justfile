@@ -98,6 +98,19 @@ deploy-www:
 deploy-png2gif:
     cd png2gif && ./deploy.sh
 
+# Custom domain (slides2gif.com) — verify, map, then add DNS in Cloudflare
+domain-verify:
+    ./scripts/setup-domain.sh verify
+
+domain-map:
+    ./scripts/setup-domain.sh map
+
+domain-dns:
+    ./scripts/setup-domain.sh dns
+
+domain-dns-records:
+    ./scripts/domain-dns-records.sh
+
 # Secret Management Commands
 verify-secrets:
     ./scripts/verify-secrets.sh

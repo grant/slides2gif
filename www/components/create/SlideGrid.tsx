@@ -59,8 +59,9 @@ export function SlideGrid({
     <div className="grid grid-cols-3 gap-1.5">
       {slides.map((slide, index) => {
         const isLoaded = loadedImages.has(slide.objectId);
-        const showPlaceholder: boolean =
-          ((!isLoaded && slide.thumbnailUrl) || !imagesReady) ?? false;
+        const showPlaceholder = Boolean(
+          ((!isLoaded && slide.thumbnailUrl) || !imagesReady) ?? false
+        );
         const isSelected = selectedSlides.some(
           s => s.objectId === slide.objectId
         );

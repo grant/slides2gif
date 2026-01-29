@@ -2,6 +2,9 @@ import {OAuth2Client, Credentials} from 'google-auth-library';
 import {IronSessionData} from 'iron-session';
 import {NextApiResponse} from 'next';
 
+/** Session object from API route (has save() in addition to IronSessionData) */
+type SessionWithSave = IronSessionData & {save(): Promise<void>};
+
 /**
  * Result of getting an authenticated OAuth2 client
  */
@@ -31,7 +34,7 @@ export interface AuthErrorResponse {
  * @returns Object with authenticated client and whether session was updated, or null if auth failed
  */
 export async function getAuthenticatedClient(
-  session: IronSessionData,
+  session: SessionWithSave,
   res: NextApiResponse
 ): Promise<AuthenticatedClientResult | null> {
   // Check if user has tokens

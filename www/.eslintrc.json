@@ -1,5 +1,5 @@
 {
-  "extends": ["./node_modules/gts/.eslintrc.json"],
+  "extends": ["next/core-web-vitals"],
   "rules": {
     "quotes": ["error", "single", {"avoidEscape": true}],
     "@typescript-eslint/quotes": ["error", "single", {"avoidEscape": true}],

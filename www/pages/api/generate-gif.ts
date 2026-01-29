@@ -189,9 +189,8 @@ export default async function handler(
         scopes: ['https://www.googleapis.com/auth/cloud-platform'],
       });
       const client = await auth.getIdTokenClient(png2gifServiceUrl);
-      const idToken = await client.idTokenProvider.fetchIdToken(
-        png2gifServiceUrl
-      );
+      const idToken =
+        await client.idTokenProvider.fetchIdToken(png2gifServiceUrl);
       authHeaders = {
         Authorization: `Bearer ${idToken}`,
       };
