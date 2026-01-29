@@ -73,10 +73,31 @@ The Cloudflare DNS records look like (with DOMAIN being `slides2gif.com`). Get t
 | AAAA | `@` | `<generated IPv6 (apex from Cloud Run)>` | DNS Only |
 | AAAA | `@` | `<generated IPv6 (apex from Cloud Run)>` | DNS Only |
 | … | (one AAAA per Cloud Run record) | | DNS Only |
-| CNAME | `www` | `<DOMAIN>` | Proxied |
+| CNAME | `www` | `<DOMAIN>` | Proxied or DNS only (see below) |
 | TXT | `@` | `google-site-verification=…` | DNS Only |
 
-The `www` subdomain can redirect `www.DOMAIN` to `DOMAIN` via Cloudflare (e.g. Page Rules or Redirect Rules).
+The `www` subdomain can redirect `www.DOMAIN` to `DOMAIN` via Cloudflare (e.g. Redirect Rules).
+
+#### If www.slides2gif.com doesn’t work (apex works)
+
+Cloud Run has a separate domain mapping for **www.slides2gif.com**. Use one of these:
+
+**Option A – CNAME with DNS only (recommended first)**  
+- In Cloudflare, edit the **www** CNAME record.  
+- Set **Proxy status** to **DNS only** (grey cloud).  
+- Keep **Name** `www`, **Content** `slides2gif.com`.  
+- Save. After DNS propagates, `https://www.slides2gif.com` should hit Cloud Run with `Host: www.slides2gif.com` and use the www mapping/cert.
+
+**Option B – A/AAAA for www (if CNAME still fails)**  
+- In [Cloud Run → Domain mappings](https://console.cloud.google.com/run/domains?project=slides2gifcom), open **⋮** → **DNS records** for **www.slides2gif.com**.  
+- In Cloudflare, **remove** the CNAME for `www` and add **A** and **AAAA** records for **Name** `www` with the **exact** values Cloud Run shows for www (often the same IPs as apex).  
+- Use **DNS only** for those A/AAAA.  
+- This sends www traffic straight to Cloud Run for the www mapping.
+
+**Checklist**  
+- Cloud Run has a mapping for **www.slides2gif.com** (run `just domain-map` if unsure).  
+- In Cloudflare there is either: CNAME `www` → `slides2gif.com` (DNS only or Proxied) or A/AAAA for `www`.  
+- If using Cloudflare proxy (orange cloud) for www, set SSL/TLS to **Full** or **Full (strict)** so the origin cert is used.
 
 ### Setup flow
 

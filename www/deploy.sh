@@ -78,33 +78,85 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Prepare environment variables
+# Prefer Secret Manager for production secrets (same as root deploy.sh)
+USE_SECRETS=false
+if gcloud secrets describe secret-cookie-password --project ${PROJECT_ID} >/dev/null 2>&1 \
+   && gcloud secrets describe oauth-client-id --project ${PROJECT_ID} >/dev/null 2>&1 \
+   && gcloud secrets describe oauth-client-secret --project ${PROJECT_ID} >/dev/null 2>&1; then
+  USE_SECRETS=true
+  echo -e "${GREEN}✅ Using Secret Manager for OAUTH_* and SECRET_COOKIE_PASSWORD${NC}"
+fi
+
+# Base env vars (always set)
 ENV_VARS=(
   "NODE_ENV=production"
   "GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
-  "OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID_FINAL}"
-  "OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET_FINAL}"
-  "SECRET_COOKIE_PASSWORD=${SECRET_COOKIE_PASSWORD}"
   "GCS_CACHE_BUCKET=${GCS_CACHE_BUCKET}"
 )
-
 if [ -n "$PNG2GIF_SERVICE_URL" ]; then
   ENV_VARS+=("PNG2GIF_SERVICE_URL=${PNG2GIF_SERVICE_URL}")
 fi
 
+# When using secrets, grant the www service account access BEFORE deploy so the new revision can read them
+if [ "$USE_SECRETS" = true ]; then
+  WWW_SA=$(gcloud run services describe ${SERVICE_NAME} --region ${REGION} --project ${PROJECT_ID} --format 'value(spec.template.spec.serviceAccountName)' 2>/dev/null || echo "")
+  if [ -z "$WWW_SA" ]; then
+    PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format 'value(projectNumber)' 2>/dev/null || echo "")
+    [ -n "$PROJECT_NUMBER" ] && WWW_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+  fi
+  if [ -n "$WWW_SA" ]; then
+    echo -e "${BLUE}Ensuring ${WWW_SA} can read secrets...${NC}"
+    for secret_name in oauth-client-id oauth-client-secret secret-cookie-password; do
+      if ! gcloud secrets get-iam-policy ${secret_name} --project ${PROJECT_ID} --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SA}"; then
+        echo -e "  Granting access to ${secret_name}"
+        gcloud secrets add-iam-policy-binding ${secret_name} \
+          --member="serviceAccount:${WWW_SA}" \
+          --role="roles/secretmanager.secretAccessor" \
+          --project ${PROJECT_ID} \
+          --quiet 2>/dev/null || true
+      fi
+    done
+  fi
+fi
+
 # Deploy www service
 echo "Deploying to Cloud Run..."
-gcloud run deploy ${SERVICE_NAME} \
-  --source . \
-  --platform managed \
-  --region ${REGION} \
-  --project ${PROJECT_ID} \
-  --allow-unauthenticated \
-  --memory 512Mi \
-  --cpu 1 \
-  --timeout 300 \
-  --max-instances 10 \
-  $(printf -- '--set-env-vars %s ' "${ENV_VARS[@]}")
+if [ "$USE_SECRETS" = true ]; then
+  gcloud run deploy ${SERVICE_NAME} \
+    --source . \
+    --platform managed \
+    --region ${REGION} \
+    --project ${PROJECT_ID} \
+    --allow-unauthenticated \
+    --memory 512Mi \
+    --cpu 1 \
+    --timeout 300 \
+    --max-instances 10 \
+    $(printf -- '--set-env-vars %s ' "${ENV_VARS[@]}") \
+    --update-secrets "OAUTH_CLIENT_ID=oauth-client-id:latest" \
+    --update-secrets "OAUTH_CLIENT_SECRET=oauth-client-secret:latest" \
+    --update-secrets "SECRET_COOKIE_PASSWORD=secret-cookie-password:latest"
+else
+  # No Secret Manager: use .env (iron-session needs SECRET_COOKIE_PASSWORD)
+  if [ -z "$SECRET_COOKIE_PASSWORD" ]; then
+    echo -e "${YELLOW}❌ SECRET_COOKIE_PASSWORD is required for production.${NC}"
+    echo "  Create secrets and re-run, or use: just deploy (root deploy uses Secret Manager)"
+    echo "  To create secrets: ./setup.sh  or  ./scripts/create-secret.sh secret-cookie-password"
+    exit 1
+  fi
+  ENV_VARS+=("OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID_FINAL}" "OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET_FINAL}" "SECRET_COOKIE_PASSWORD=${SECRET_COOKIE_PASSWORD}")
+  gcloud run deploy ${SERVICE_NAME} \
+    --source . \
+    --platform managed \
+    --region ${REGION} \
+    --project ${PROJECT_ID} \
+    --allow-unauthenticated \
+    --memory 512Mi \
+    --cpu 1 \
+    --timeout 300 \
+    --max-instances 10 \
+    $(printf -- '--set-env-vars %s ' "${ENV_VARS[@]}")
+fi
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} \

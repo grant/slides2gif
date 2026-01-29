@@ -4,8 +4,6 @@
 
 import Logo from './Logo';
 
-const AUTH_URL = 'http://localhost:3000/api/oauth2';
-
 export default function PageSignin() {
   // An OAuth permission
   type Permission = {
@@ -37,10 +35,10 @@ export default function PageSignin() {
     },
   ];
 
-  // Handler for when the user clicks.
+  // Handler for when the user clicks. Use current origin so it works on prod (e.g. https://slides2gif.com) and localhost.
   const signInClick = () => {
-    console.log('Redirect');
-    window.location.href = AUTH_URL;
+    const authUrl = `${window.location.origin}/api/oauth2`;
+    window.location.href = authUrl;
   };
 
   return (

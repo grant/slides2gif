@@ -153,16 +153,21 @@ You can run `./setup.sh` multiple times - it's idempotent and will show what's a
 
 ### Deploy Services
 
-After setup, deploy both services:
+After setup, deploy **both** services so they can connect on Cloud Run:
 
 ```bash
+just deploy
+# or
 ./deploy.sh
 ```
 
 This will:
-1. Deploy `png2gif` service
-2. Deploy `www` service (auto-discovers png2gif URL)
-3. Configure IAM permissions for service-to-service communication
+1. **Deploy `png2gif`** first (Cloud Run service that converts slides to GIF).
+2. **Deploy `www`** with `PNG2GIF_SERVICE_URL` set to the png2gif URL (so the "Create GIF" flow works).
+3. **Resolve the www service account** (custom SA or default compute) and grant it **Cloud Run Invoker** on the png2gif service so www can call png2gif with an ID token.
+4. Verify secret access for www.
+
+**Order matters:** png2gif must be deployed before www so the deploy script can discover its URL and pass it to www. Use `just deploy` (root) to do both in one go.
 
 ### Secret Management
 
@@ -206,10 +211,17 @@ GCS_CACHE_BUCKET=slides2gif-cache
 
 ### Individual Service Deployment
 
-```bash
-# Deploy png2gif only
-cd png2gif && ./deploy.sh
+If you deploy services separately:
 
-# Deploy www only
-cd www && ./deploy.sh
+```bash
+# 1. Deploy png2gif first
+just deploy-png2gif
+
+# 2. Grant www permission to invoke png2gif (if not already done)
+./setup-iam.sh
+
+# 3. Deploy www (deploy.sh will discover PNG2GIF_SERVICE_URL from step 1)
+just deploy-www
 ```
+
+Deploying www alone without png2gif deployed will leave `PNG2GIF_SERVICE_URL` unset and "Create GIF" will fail until you redeploy www after png2gif exists.

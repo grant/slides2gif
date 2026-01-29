@@ -118,6 +118,10 @@ verify-secrets:
 sync-secrets:
     ./scripts/sync-secrets.sh
 
+# Grant www Cloud Run SA access to secrets (fix empty OAUTH_* / SECRET_COOKIE_PASSWORD in prod)
+grant-www-secrets:
+    ./scripts/grant-www-secrets.sh
+
 create-secret secret_name:
     ./scripts/create-secret.sh {{secret_name}}
 
