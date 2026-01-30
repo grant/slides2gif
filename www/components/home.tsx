@@ -61,6 +61,17 @@ export default function PageHome() {
             </p>
           </div>
         </div>
+
+        {/* Footer with privacy policy link (required for Google OAuth verification) */}
+        <footer className="mt-16 pb-6 text-center text-xs text-[rgb(20,30,50)]/40">
+          <a href="/privacy" className="hover:text-[rgb(20,30,50)]/60">
+            Privacy
+          </a>
+          {' · '}
+          <a href="/terms" className="hover:text-[rgb(20,30,50)]/60">
+            Terms
+          </a>
+        </footer>
       </main>
     </div>
   );
