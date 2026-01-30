@@ -19,7 +19,8 @@ export default function Layout({children}: {children: React.ReactNode}) {
         rel="stylesheet"
       />
       <Head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
         <meta name="description" content="Create a GIF from slides" />
         <meta name="og:title" content={siteTitle} />
         <meta name="twitter:card" content="summary_large_image" />
