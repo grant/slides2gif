@@ -17,6 +17,10 @@ export default withIronSessionApiRoute(userRoute as any, sessionOptions);
  * - /callback - Get the access / refresh tokens after auth
  */
 async function userRoute(req: NextApiRequest, res: NextApiResponse) {
-  Auth.setup(`http://${req.headers.host}`);
+  const host = req.headers.host ?? '';
+  const baseURL = host.includes('localhost') || host.includes('127.0.0.1')
+    ? `http://${host}`
+    : `https://${host}`;
+  Auth.setup(baseURL);
   res.redirect(Auth.getAuthURL());
 }
