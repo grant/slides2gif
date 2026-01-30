@@ -71,6 +71,13 @@ export default function PageHome() {
           <a href="/terms" className="hover:text-[rgb(20,30,50)]/60">
             Terms
           </a>
+          {' · '}
+          <a
+            href="mailto:slides2gif@googlegroups.com"
+            className="hover:text-[rgb(20,30,50)]/60"
+          >
+            Contact
+          </a>
         </footer>
       </main>
     </div>
