@@ -135,130 +135,87 @@ export async function downloadFiles({
     throw error;
   }
 
-  // Parse slideList (comma-separated list of objectIds)
+  // Parse slideList (comma-separated list of objectIds) — preserve order and duplicates
   const slideIds =
     slideList === '*'
       ? null // Download all slides
       : slideList.split(',').map(id => id.trim());
 
+  const expectedSizeSuffix = `_${thumbnailSize.toLowerCase()}`;
+
   console.log('\n=== FILTERING ===');
   console.log('slideList received:', slideList);
-  console.log('Parsed slideIds:', slideIds);
-  console.log('Total files to filter:', fileList.length);
+  console.log('Parsed slideIds (order preserved):', slideIds?.length, slideIds);
+  console.log('Total files in GCS:', fileList.length);
 
-  // Filter files by slideList if specified
-  const filesToDownload = slideIds
-    ? fileList.filter(file => {
-        // Extract objectId from path: presentations/{presentationId}/slides/{objectId}.png
-        // or: presentations/{presentationId}/slides/{objectId}_{size}.png
-        const fileName = file.name.split('/').pop() || '';
-        // Remove size suffix and extension to get objectId
-        const objectId = fileName
-          .replace(/_(small|medium|large)\.(jpg|jpeg|png)$/i, '')
-          .replace(/\.(jpg|jpeg|png)$/i, '');
-        const matches = slideIds.includes(objectId);
+  // Build map: objectId -> File (for requested size only)
+  const fileByObjectId = new Map<string, File>();
+  for (const file of fileList) {
+    const fileName = file.name.split('/').pop() || '';
+    const hasCorrectSize = fileName
+      .toLowerCase()
+      .endsWith(`${expectedSizeSuffix}.png`);
+    if (!hasCorrectSize) continue;
+    const objectId = fileName
+      .replace(/_(small|medium|large)\.(jpg|jpeg|png)$/i, '')
+      .replace(/\.(jpg|jpeg|png)$/i, '');
+    fileByObjectId.set(objectId, file);
+  }
 
-        // Also check that the file matches the requested size
-        // All sizes now use suffixes: _small, _medium, _large
-        const expectedSizeSuffix = `_${thumbnailSize.toLowerCase()}`;
-        // Check if filename ends with the size suffix followed by .png
-        const hasCorrectSize = fileName
-          .toLowerCase()
-          .endsWith(`${expectedSizeSuffix}.png`);
-
-        // Debug logging
-        if (matches && !hasCorrectSize) {
-          console.log(
-            `  [DEBUG] File matched objectId but wrong size: ${fileName}, expected suffix: ${expectedSizeSuffix}.png, actual ends with: ${fileName.slice(
-              -15
-            )}`
-          );
-        }
-
-        const shouldDownload = matches && hasCorrectSize;
-
-        // Log matching status
-        if (shouldDownload) {
-          console.log(
-            '  [MATCHED]',
-            file.name,
-            '(objectId:',
-            objectId + ', size:',
-            thumbnailSize + ')'
-          );
-        } else {
-          if (!matches) {
-            console.log(
-              '  [NOT MATCHED - wrong objectId]',
-              file.name,
-              '(objectId:',
-              objectId + ')'
-            );
-          } else if (!hasCorrectSize) {
-            console.log(
-              '  [NOT MATCHED - wrong size]',
-              file.name,
-              '(objectId:',
-              objectId + ', expected:',
-              thumbnailSize + ')'
-            );
-          }
-        }
-
-        return shouldDownload;
-      })
-    : fileList;
-
-  console.log('Files after filtering:', filesToDownload.length);
-  console.log('==================\n');
-
-  console.log(
-    `DOWNLOADING ${filesToDownload.length} FILES (filtered from ${fileList.length}).`
-  );
-
-  // Download filtered files
-  const res: {
-    files: string[];
-  } = {files: []};
-  await mkdirp(`${downloadLocation}/${presentationId}`);
-
-  for (let i = 0; i < filesToDownload.length; ++i) {
-    const f = filesToDownload[i];
-    try {
-      // Preserve directory structure: downloads/{presentationId}/presentations/{presentationId}/slides/{objectId}.png
+  // When slideList is '*', download all files (legacy behavior)
+  if (!slideIds) {
+    const filesToDownload = fileList.filter(f => {
+      const fileName = f.name.split('/').pop() || '';
+      return fileName.toLowerCase().endsWith(`${expectedSizeSuffix}.png`);
+    });
+    console.log('Files to download (all):', filesToDownload.length);
+    console.log('==================\n');
+    const res: {files: string[]} = {files: []};
+    await mkdirp(`${downloadLocation}/presentations/${presentationId}/slides`);
+    for (const f of filesToDownload) {
       const destination = `${downloadLocation}/${f.name}`;
-      console.log(`- Downloading ${f.name} to ${destination}`);
-
-      // Ensure directory exists
-      const dirPath = destination.substring(0, destination.lastIndexOf('/'));
-      await mkdirp(dirPath);
-
-      // Download file with error handling using pipeline for robust stream handling
+      await mkdirp(destination.substring(0, destination.lastIndexOf('/')));
       const readStream = f.createReadStream();
       const writeStream = fs.createWriteStream(destination);
-
-      try {
-        await pipeline(readStream, writeStream);
-        console.log(`  ✓ Successfully downloaded ${f.name}`);
-      } catch (error: any) {
-        // Clean up streams on error
-        try {
-          if (readStream && typeof (readStream as any).destroy === 'function') {
-            (readStream as any).destroy();
-          }
-          if (writeStream && !writeStream.destroyed) {
-            writeStream.destroy();
-          }
-        } catch (cleanupErr) {
-          // Ignore cleanup errors
-        }
-        throw error;
-      }
+      await pipeline(readStream, writeStream);
       res.files.push(destination);
+    }
+    return res;
+  }
+
+  // Preserve slideList order and duplicates: one frame per entry
+  const orderedFrames: {file: File; frameIndex: number}[] = [];
+  for (let i = 0; i < slideIds.length; i++) {
+    const objectId = slideIds[i];
+    const file = fileByObjectId.get(objectId);
+    if (!file) {
+      console.warn(`  [SKIP] No file for objectId: ${objectId} (frame ${i})`);
+      continue;
+    }
+    orderedFrames.push({file, frameIndex: i});
+  }
+
+  console.log(
+    `Downloading ${orderedFrames.length} frames (order preserved, duplicates as separate frames)`
+  );
+  console.log('==================\n');
+
+  const res: {files: string[]} = {files: []};
+  const slidesDir = `${downloadLocation}/presentations/${presentationId}/slides`;
+  await mkdirp(slidesDir);
+
+  for (const {file, frameIndex} of orderedFrames) {
+    const frameName = `frame_${String(frameIndex).padStart(3, '0')}${expectedSizeSuffix}.png`;
+    const destination = `${slidesDir}/${frameName}`;
+    try {
+      const readStream = file.createReadStream();
+      const writeStream = fs.createWriteStream(destination);
+      await pipeline(readStream, writeStream);
+      res.files.push(destination);
+      console.log(`  ✓ Frame ${frameIndex}: ${frameName}`);
     } catch (error: any) {
-      console.error(`  ✗ Error downloading ${f.name}:`, error);
-      // Continue with other files even if one fails
-      throw new Error(`Failed to download ${f.name}: ${error.message}`);
+      console.error(`  ✗ Error downloading frame ${frameIndex}:`, error);
+      throw new Error(`Failed to download frame ${frameIndex}: ${error.message}`);
     }
   }
   return res;
