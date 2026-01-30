@@ -1,5 +1,4 @@
 FROM node:24-slim
-ENV NODE_ENV=production
 WORKDIR /usr/app
 
 # Install a ton of dependencies needed for image manipulation (canvas)
@@ -22,14 +21,14 @@ COPY tsconfig.json ./
 # Install all dependencies (including dev dependencies for TypeScript compilation)
 RUN npm ci
 
-# Copy source files
+# Copy source filesgs
 COPY src ./src
 
-# Compile TypeScript
+# Compile TypeScript (needs devDependencies)
 RUN npm run compile
 
 # Remove dev dependencies to reduce image size
 RUN npm prune --production
 
-# Start the server
+ENV NODE_ENV=production
 CMD ["node", "dist/index.js"]

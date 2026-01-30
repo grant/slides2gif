@@ -170,17 +170,23 @@ export default async function handler(
     }
 
     // Get the png2gif service URL
-    // In production (Cloud Run), use the service URL
-    // In local development, use localhost
+    const isProd = !!process.env.GOOGLE_CLOUD_PROJECT;
     const png2gifServiceUrl =
       process.env.PNG2GIF_SERVICE_URL ||
       process.env.NEXT_PUBLIC_PNG2GIF_SERVICE_URL ||
-      'http://localhost:3001';
+      (isProd ? '' : 'http://localhost:3001');
+
+    if (!png2gifServiceUrl) {
+      return res.status(503).json({
+        error:
+          'GIF generation is not configured. Deploy the png2gif service and redeploy www so PNG2GIF_SERVICE_URL is set.',
+      });
+    }
 
     // For Cloud Run, we need to authenticate the request
     // In local development, skip authentication (png2gif will also skip it)
     let authHeaders: Record<string, string> = {};
-    const isCloudRun = !!process.env.GOOGLE_CLOUD_PROJECT;
+    const isCloudRun = isProd;
 
     if (isCloudRun) {
       // We're in Cloud Run, use service-to-service authentication
@@ -256,8 +262,9 @@ export default async function handler(
         error.cause?.code === 'ECONNREFUSED'
       ) {
         return res.status(503).json({
-          error:
-            "png2gif service is not available. Please ensure it's running on port 3001.",
+          error: isProd
+            ? 'png2gif service is unavailable. Ensure the png2gif Cloud Run service is deployed and PNG2GIF_SERVICE_URL is set on the www service.'
+            : "png2gif service is not available. Please ensure it's running on port 3001.",
         });
       }
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
