@@ -2,7 +2,6 @@ import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
 import {google} from 'googleapis';
-import {getCachedSlideUrl} from 'lib/storage';
 import {getAuthenticatedClient} from 'lib/oauthClient';
 
 // Load env vars (.env)
@@ -17,6 +16,9 @@ export default withIronSessionApiRoute(
 
 /**
  * Gets a list of Google Slides presentations from the user's Drive.
+ * Returns only Drive metadata for fast initial load. Cached previews are
+ * fetched incrementally by the client via GET /api/presentation/[fileId]/cached-preview;
+ * missing previews are generated via POST /api/presentation/[fileId]/preview.
  */
 async function presentationsRoute(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -24,19 +26,14 @@ async function presentationsRoute(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    // Get authenticated OAuth2 client (handles token refresh if needed)
     const authResult = await getAuthenticatedClient(req.session, res);
     if (!authResult) {
       return; // Error response already sent by getAuthenticatedClient
     }
 
     const {client: auth} = authResult;
-
-    // Get Drive API client
     const drive = google.drive({version: 'v3', auth: auth as any});
 
-    // List Google Slides presentations
-    // MIME type for Google Slides: application/vnd.google-apps.presentation
     const response = await drive.files.list({
       q: "mimeType='application/vnd.google-apps.presentation' and trashed=false",
       fields: 'files(id, name, thumbnailLink, modifiedTime, createdTime)',
@@ -45,52 +42,16 @@ async function presentationsRoute(req: NextApiRequest, res: NextApiResponse) {
     });
 
     const files = response.data.files || [];
+    const presentations = files.map((file: any) => ({
+      id: file.id || '',
+      name: file.name || '',
+      thumbnailLink: file.thumbnailLink || undefined,
+      firstSlidePreview: undefined as string | undefined,
+      modifiedTime: file.modifiedTime || undefined,
+      createdTime: file.createdTime || undefined,
+    }));
 
-    // Get Slides API client to fetch first slide info for each presentation
-    const slides = google.slides({version: 'v1', auth: auth as any});
-
-    // Get first slide preview from cache for each presentation
-    const presentationsWithPreviews = await Promise.all(
-      files.map(async (file: any) => {
-        const presentationId = file.id || '';
-        let firstSlidePreview: string | null = null;
-
-        try {
-          // Get presentation metadata to find first slide
-          const presentation = await slides.presentations.get({
-            presentationId,
-            fields: 'slides(objectId)',
-          });
-
-          const firstSlide = presentation.data.slides?.[0];
-          if (firstSlide?.objectId) {
-            // Check if first slide is cached (SMALL size for preview)
-            firstSlidePreview = await getCachedSlideUrl(
-              presentationId,
-              firstSlide.objectId,
-              'SMALL'
-            );
-          }
-        } catch (error) {
-          // Silently fail - we'll just use Drive thumbnail or no preview
-          console.warn(
-            `Could not get first slide preview for ${presentationId}:`,
-            error
-          );
-        }
-
-        return {
-          id: presentationId,
-          name: file.name || '',
-          thumbnailLink: file.thumbnailLink || undefined,
-          firstSlidePreview: firstSlidePreview || undefined,
-          modifiedTime: file.modifiedTime || undefined,
-          createdTime: file.createdTime || undefined,
-        };
-      })
-    );
-
-    return res.json({presentations: presentationsWithPreviews});
+    return res.json({presentations});
   } catch (error: any) {
     console.error('Error fetching presentations:', error);
     console.error('Error details:', {

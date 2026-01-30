@@ -10,6 +10,9 @@ function getBucket() {
   return storage.bucket(BUCKET_NAME);
 }
 
+const PRESENTATION_META_PATH = (presentationId: string) =>
+  `presentations/${presentationId}/meta.json`;
+
 /**
  * Gets the cache path for a slide thumbnail
  * Format: presentations/{presentationId}/slides/{objectId}_{size}.png
@@ -72,6 +75,64 @@ export async function getCachedSlideUrl(
     return publicUrl;
   } catch (error) {
     console.error('Error getting cached slide URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Saves presentation meta (first slide objectId) so we can resolve cached preview
+ * without calling the Slides API.
+ */
+export async function savePresentationMeta(
+  presentationId: string,
+  firstSlideObjectId: string
+): Promise<void> {
+  try {
+    const bucket = getBucket();
+    const file = bucket.file(PRESENTATION_META_PATH(presentationId));
+    await file.save(
+      JSON.stringify({firstSlideObjectId}),
+      {contentType: 'application/json'}
+    );
+  } catch (error) {
+    console.error('Error saving presentation meta:', error);
+  }
+}
+
+/**
+ * Gets cached preview URL for a presentation (GCS only, no Slides API).
+ * Uses meta.json if present; otherwise lists slides/ and uses first cached slide.
+ */
+export async function getCachedPresentationPreviewUrl(
+  presentationId: string
+): Promise<string | null> {
+  try {
+    const bucket = getBucket();
+    let objectId: string | null = null;
+
+    // Try meta.json first (written when we generate a preview)
+    const metaFile = bucket.file(PRESENTATION_META_PATH(presentationId));
+    const [metaExists] = await metaFile.exists();
+    if (metaExists) {
+      const [contents] = await metaFile.download();
+      const meta = JSON.parse(contents.toString()) as {firstSlideObjectId?: string};
+      objectId = meta.firstSlideObjectId ?? null;
+    }
+
+    // Fallback: list first slide in cache (for pre-meta cached presentations)
+    if (!objectId) {
+      const prefix = `presentations/${presentationId}/slides/`;
+      const [files] = await bucket.getFiles({prefix, maxResults: 10});
+      const smallFile = files.find(f => f.name.endsWith('_small.png'));
+      if (smallFile) {
+        const match = smallFile.name.match(/\/slides\/(.+)_small\.png$/);
+        if (match) objectId = match[1];
+      }
+    }
+
+    if (!objectId) return null;
+    return getCachedSlideUrl(presentationId, objectId, 'SMALL');
+  } catch (error) {
     return null;
   }
 }

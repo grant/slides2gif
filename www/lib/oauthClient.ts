@@ -79,31 +79,6 @@ export async function getAuthenticatedClient(
   };
   auth.setCredentials(credentials);
 
-  // Log session state for debugging
-  console.log('[getAuthenticatedClient] Session token check:');
-  console.log(
-    '[getAuthenticatedClient] Has access_token:',
-    !!credentials.access_token
-  );
-  console.log(
-    '[getAuthenticatedClient] Has refresh_token:',
-    !!credentials.refresh_token
-  );
-  console.log(
-    '[getAuthenticatedClient] Has expiry_date:',
-    !!credentials.expiry_date
-  );
-  if (credentials.expiry_date) {
-    const expiryDate = new Date(credentials.expiry_date);
-    const now = new Date();
-    console.log(
-      '[getAuthenticatedClient] Token expires at:',
-      expiryDate.toISOString()
-    );
-    console.log('[getAuthenticatedClient] Current time:', now.toISOString());
-    console.log('[getAuthenticatedClient] Is expired:', expiryDate <= now);
-  }
-
   // Check if token needs refresh
   // Add a 5-minute buffer to refresh before actual expiry
   const EXPIRY_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
@@ -112,9 +87,6 @@ export async function getAuthenticatedClient(
     credentials.expiry_date <= Date.now() + EXPIRY_BUFFER_MS;
 
   if (isExpired) {
-    console.log(
-      '[getAuthenticatedClient] Token is expired or expiring soon, attempting refresh'
-    );
     // Validate refresh token exists
     if (!credentials.refresh_token) {
       console.error(
@@ -133,18 +105,8 @@ export async function getAuthenticatedClient(
     }
 
     try {
-      console.log('[getAuthenticatedClient] Refreshing access token...');
-      // Refresh the access token
       const {credentials: newCredentials} = await auth.refreshAccessToken();
       auth.setCredentials(newCredentials);
-
-      console.log('[getAuthenticatedClient] Token refresh successful');
-      console.log(
-        '[getAuthenticatedClient] New token expires at:',
-        newCredentials.expiry_date
-          ? new Date(newCredentials.expiry_date).toISOString()
-          : 'unknown'
-      );
 
       // Update session with new tokens
       // Preserve refresh_token if not provided in response (it's long-lived)
@@ -157,7 +119,6 @@ export async function getAuthenticatedClient(
         expiry_date: newCredentials.expiry_date || undefined,
       };
       await session.save();
-      console.log('[getAuthenticatedClient] Session updated with new tokens');
 
       return {
         client: auth,

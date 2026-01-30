@@ -71,6 +71,9 @@ function PageCreateGIF() {
   const [generatingPreviews, setGeneratingPreviews] = useState<Set<string>>(
     new Set()
   );
+  const [loadingCachedPreviews, setLoadingCachedPreviews] = useState<
+    Set<string>
+  >(new Set());
   const {data, error, mutate} = useSWR<PresentationsResponse>(
     '/api/presentations',
     fetcher,
@@ -79,6 +82,7 @@ function PageCreateGIF() {
   const processingQueueRef = useRef<Set<string>>(new Set());
   const isProcessingRef = useRef(false);
   const hasQueuedRef = useRef(false);
+  const cacheCheckRequestedRef = useRef<Set<string>>(new Set());
 
   const handlePresentationClick = (fileId: string) => {
     router.push(Routes.CREATE_PRESENTATION(fileId));
@@ -87,15 +91,72 @@ function PageCreateGIF() {
   const isLoading = !data && !error;
   const presentations = data?.presentations || [];
 
-  // Queue preview generation for presentations without previews
+  const CACHE_CHECK_BATCH = 5;
+
+  // Queue: fetch cached previews incrementally (GET, no rate limit) so list stays fast
+  useEffect(() => {
+    if (!data?.presentations || data.presentations.length === 0) return;
+
+    const idsToCheck = data.presentations
+      .filter(
+        p =>
+          !p.firstSlidePreview &&
+          !cacheCheckRequestedRef.current.has(p.id)
+      )
+      .map(p => p.id);
+
+    if (idsToCheck.length === 0) return;
+
+    const batch = idsToCheck.slice(0, CACHE_CHECK_BATCH);
+    batch.forEach(id => cacheCheckRequestedRef.current.add(id));
+    setLoadingCachedPreviews(prev => new Set([...prev, ...batch]));
+
+    Promise.all(
+      batch.map(id =>
+        fetch(`/api/presentation/${id}/cached-preview`)
+          .then(res => (res.ok ? res.json() : null))
+          .then(
+            body =>
+              body?.previewUrl ? {id, previewUrl: body.previewUrl} : null
+          )
+      )
+    ).then(results => {
+      setLoadingCachedPreviews(prev => {
+        const next = new Set(prev);
+        batch.forEach(id => next.delete(id));
+        return next;
+      });
+      const updates = results.filter(
+        (r): r is {id: string; previewUrl: string} => r != null
+      );
+      if (updates.length === 0) return;
+      mutate(
+        currentData => {
+          if (!currentData) return currentData;
+          return {
+            presentations: currentData.presentations.map(p => {
+              const u = updates.find(u => u.id === p.id);
+              return u ? {...p, firstSlidePreview: u.previewUrl} : p;
+            }),
+          };
+        },
+        {revalidate: false}
+      );
+    });
+  }, [data, mutate]);
+
+  // Queue preview generation for presentations without previews (POST, rate limited)
   useEffect(() => {
     if (!data?.presentations) {
       return;
     }
 
-    // Find presentations without previews
+    // Find presentations without previews (exclude ones we're still loading cache for)
     const presentationsWithoutPreviews = data.presentations.filter(
-      p => !p.firstSlidePreview && !p.thumbnailLink
+      p =>
+        !p.firstSlidePreview &&
+        !p.thumbnailLink &&
+        !loadingCachedPreviews.has(p.id)
     );
 
     if (presentationsWithoutPreviews.length === 0) {
@@ -183,13 +244,22 @@ function PageCreateGIF() {
             );
           }
         } catch (error) {
-          console.error(
-            `Failed to generate preview for ${presentationId}:`,
-            error
-          );
-          // If rate limited, wait a bit before continuing
-          if ((error as any)?.status === 429) {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+          const err = error as {status?: number; info?: {retryAfter?: number}};
+          if (err?.status === 429) {
+            const waitMs = Math.max(
+              5000,
+              typeof err?.info?.retryAfter === 'number'
+                ? err.info.retryAfter
+                : 60000
+            );
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+            // Re-queue so we retry this presentation after rate limit resets
+            processingQueueRef.current.add(presentationId);
+          } else {
+            console.error(
+              `Failed to generate preview for ${presentationId}:`,
+              error
+            );
           }
         } finally {
           setGeneratingPreviews(prev => {
@@ -197,8 +267,8 @@ function PageCreateGIF() {
             next.delete(presentationId);
             return next;
           });
-          // Small delay between requests to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // ~4s between requests to stay under 15/min
+          await new Promise(resolve => setTimeout(resolve, 4000));
         }
       }
 
@@ -207,7 +277,7 @@ function PageCreateGIF() {
     };
 
     processQueue();
-  }, [data, mutate]);
+  }, [data, mutate, loadingCachedPreviews]);
 
   // Skeleton loader component for presentation cards
   const PresentationSkeleton = () => (
@@ -253,7 +323,15 @@ function PageCreateGIF() {
       ) : presentations.length === 0 ? (
         <p>No presentations found.</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
+        <>
+          {generatingPreviews.size > 0 && (
+            <p className="mb-2 text-sm text-gray-500">
+              Loaded {presentations.length} presentations
+              {' · '}
+              Generating previews… ({generatingPreviews.size} in progress)
+            </p>
+          )}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
           {presentations.map(presentation => {
             const thumbnailUrl =
               presentation.firstSlidePreview || presentation.thumbnailLink;
@@ -308,8 +386,27 @@ function PageCreateGIF() {
                         <LoadingSpinner size="sm" />
                         <span className="text-xs">Generating preview...</span>
                       </div>
+                    ) : loadingCachedPreviews.has(presentation.id) ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <LoadingSpinner size="sm" />
+                        <span className="text-xs">Loading...</span>
+                      </div>
                     ) : (
-                      <span>No preview</span>
+                      <div
+                        className="h-full w-full"
+                        style={{
+                          backgroundColor: '#e8e8e8',
+                          backgroundImage: `
+                            linear-gradient(45deg, #ddd 25%, transparent 25%),
+                            linear-gradient(-45deg, #ddd 25%, transparent 25%),
+                            linear-gradient(45deg, transparent 75%, #ddd 75%),
+                            linear-gradient(-45deg, transparent 75%, #ddd 75%)
+                          `,
+                          backgroundSize: '16px 16px',
+                          backgroundPosition:
+                            '0 0, 0 8px, 8px -8px, -8px 0px',
+                        }}
+                      />
                     )}
                   </div>
                 )}
@@ -319,7 +416,8 @@ function PageCreateGIF() {
               </div>
             );
           })}
-        </div>
+          </div>
+        </>
       )}
     </>
   );

@@ -12,7 +12,7 @@ interface RateLimitEntry {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Configuration
-const MAX_REQUESTS_PER_MINUTE = 5; // Very conservative limit
+const MAX_REQUESTS_PER_MINUTE = 15; // Allow incremental preview loading
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 /**

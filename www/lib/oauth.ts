@@ -45,16 +45,6 @@ export class Auth {
       );
     }
 
-    console.log('[Auth.setup] Using Client ID:', CLIENT_ID);
-    console.log(
-      '[Auth.setup] Client Secret:',
-      CLIENT_SECRET ? `${CLIENT_SECRET.substring(0, 10)}...` : 'MISSING'
-    );
-    console.log(
-      '[Auth.setup] Redirect URI:',
-      `${baseurl}/${this.OAUTH2_URL_CALLBACK}`
-    );
-
     Auth.#googleOAuthClient = new OAuth2Client({
       clientId: CLIENT_ID,
       clientSecret: CLIENT_SECRET,

@@ -6,6 +6,7 @@ import {
   cacheSlideThumbnail,
   makePresentationFilesPublic,
   getCachedSlideUrl,
+  savePresentationMeta,
 } from 'lib/storage';
 import {checkRateLimit} from 'lib/rateLimit';
 import {Auth} from 'lib/oauth';
@@ -70,8 +71,16 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
       'anonymous';
   }
 
+  // Check rate limit first so we don't do auth/Slides API work before returning 429
+  const rateLimit = checkRateLimit(userId);
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      error: 'Rate limit exceeded',
+      retryAfter: rateLimit.resetTime - Date.now(),
+    });
+  }
+
   try {
-    // Get authenticated OAuth2 client (handles token refresh if needed)
     const authResult = await getAuthenticatedClient(req.session, res);
     if (!authResult) {
       return; // Error response already sent by getAuthenticatedClient
@@ -79,10 +88,8 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
 
     const {client: auth} = authResult;
 
-    // Get Slides API client
     const slides = google.slides({version: 'v1', auth: auth as any});
 
-    // Get presentation metadata to find first slide
     const presentation = await slides.presentations.get({
       presentationId: fileId,
       fields: 'slides(objectId)',
@@ -95,17 +102,7 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
       });
     }
 
-    // Check rate limit before request
-    const rateLimit = checkRateLimit(userId);
-    if (!rateLimit.allowed) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        retryAfter: rateLimit.resetTime - Date.now(),
-      });
-    }
-
     try {
-      // Fetch thumbnail from API for first slide only
       const thumbnail = await slides.presentations.pages.getThumbnail({
         presentationId: fileId,
         pageObjectId: firstSlide.objectId,
@@ -115,7 +112,6 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
 
       const thumbnailUrl = thumbnail.data.contentUrl;
 
-      // Cache the thumbnail - SMALL size for previews
       if (thumbnailUrl) {
         await cacheSlideThumbnail(
           fileId,
@@ -124,10 +120,10 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
           'SMALL'
         );
 
-        // Make the file public
+        await savePresentationMeta(fileId, firstSlide.objectId);
+
         await makePresentationFilesPublic(fileId);
 
-        // Return the cached URL
         const cachedUrl = await getCachedSlideUrl(
           fileId,
           firstSlide.objectId,
