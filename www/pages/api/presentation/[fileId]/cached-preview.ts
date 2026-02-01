@@ -8,17 +8,17 @@ require('dotenv').config({
   path: require('path').resolve(__dirname, '../../../../.env'),
 });
 
-export default withIronSessionApiRoute(cachedPreviewRoute as any, sessionOptions);
+export default withIronSessionApiRoute(
+  cachedPreviewRoute as any,
+  sessionOptions
+);
 
 /**
  * GET: Returns cached preview URL for a presentation (GCS only, no Slides API).
  * Used by the client to fill in previews incrementally after the list loads.
  * Returns 404 if not in cache.
  */
-async function cachedPreviewRoute(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+async function cachedPreviewRoute(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({error: 'Method not allowed'});
   }

@@ -99,9 +99,7 @@ function PageCreateGIF() {
 
     const idsToCheck = data.presentations
       .filter(
-        p =>
-          !p.firstSlidePreview &&
-          !cacheCheckRequestedRef.current.has(p.id)
+        p => !p.firstSlidePreview && !cacheCheckRequestedRef.current.has(p.id)
       )
       .map(p => p.id);
 
@@ -115,9 +113,8 @@ function PageCreateGIF() {
       batch.map(id =>
         fetch(`/api/presentation/${id}/cached-preview`)
           .then(res => (res.ok ? res.json() : null))
-          .then(
-            body =>
-              body?.previewUrl ? {id, previewUrl: body.previewUrl} : null
+          .then(body =>
+            body?.previewUrl ? {id, previewUrl: body.previewUrl} : null
           )
       )
     ).then(results => {
@@ -332,90 +329,90 @@ function PageCreateGIF() {
             </p>
           )}
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
-          {presentations.map(presentation => {
-            const thumbnailUrl =
-              presentation.firstSlidePreview || presentation.thumbnailLink;
-            const isLoaded = loadedThumbnails.has(presentation.id);
-            const showPlaceholder = !isLoaded && thumbnailUrl;
+            {presentations.map(presentation => {
+              const thumbnailUrl =
+                presentation.firstSlidePreview || presentation.thumbnailLink;
+              const isLoaded = loadedThumbnails.has(presentation.id);
+              const showPlaceholder = !isLoaded && thumbnailUrl;
 
-            return (
-              <div
-                key={presentation.id}
-                className="relative cursor-pointer rounded-lg border-2 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:shadow-md"
-                onClick={() => handlePresentationClick(presentation.id)}
-              >
-                {thumbnailUrl ? (
-                  <>
-                    {showPlaceholder && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
-                        <div className="flex flex-col items-center gap-2">
-                          <LoadingSpinner size="md" />
-                          <span className="text-xs text-gray-500">
-                            Loading...
-                          </span>
+              return (
+                <div
+                  key={presentation.id}
+                  className="relative cursor-pointer rounded-lg border-2 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:shadow-md"
+                  onClick={() => handlePresentationClick(presentation.id)}
+                >
+                  {thumbnailUrl ? (
+                    <>
+                      {showPlaceholder && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
+                          <div className="flex flex-col items-center gap-2">
+                            <LoadingSpinner size="md" />
+                            <span className="text-xs text-gray-500">
+                              Loading...
+                            </span>
+                          </div>
                         </div>
+                      )}
+                      <div className="relative">
+                        <img
+                          src={thumbnailUrl}
+                          alt={presentation.name}
+                          className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
+                            presentation.firstSlidePreview
+                              ? 'object-contain'
+                              : 'object-cover'
+                          } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          loading="lazy"
+                          onLoad={() => {
+                            setLoadedThumbnails(prev =>
+                              new Set(prev).add(presentation.id)
+                            );
+                          }}
+                          onError={() => {
+                            setLoadedThumbnails(prev =>
+                              new Set(prev).add(presentation.id)
+                            );
+                          }}
+                        />
                       </div>
-                    )}
-                    <div className="relative">
-                      <img
-                        src={thumbnailUrl}
-                        alt={presentation.name}
-                        className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
-                          presentation.firstSlidePreview
-                            ? 'object-contain'
-                            : 'object-cover'
-                        } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                        loading="lazy"
-                        onLoad={() => {
-                          setLoadedThumbnails(prev =>
-                            new Set(prev).add(presentation.id)
-                          );
-                        }}
-                        onError={() => {
-                          setLoadedThumbnails(prev =>
-                            new Set(prev).add(presentation.id)
-                          );
-                        }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
-                    {generatingPreviews.has(presentation.id) ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <LoadingSpinner size="sm" />
-                        <span className="text-xs">Generating preview...</span>
-                      </div>
-                    ) : loadingCachedPreviews.has(presentation.id) ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <LoadingSpinner size="sm" />
-                        <span className="text-xs">Loading...</span>
-                      </div>
-                    ) : (
-                      <div
-                        className="h-full w-full"
-                        style={{
-                          backgroundColor: '#e8e8e8',
-                          backgroundImage: `
+                    </>
+                  ) : (
+                    <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
+                      {generatingPreviews.has(presentation.id) ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <LoadingSpinner size="sm" />
+                          <span className="text-xs">Generating preview...</span>
+                        </div>
+                      ) : loadingCachedPreviews.has(presentation.id) ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <LoadingSpinner size="sm" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      ) : (
+                        <div
+                          className="h-full w-full"
+                          style={{
+                            backgroundColor: '#e8e8e8',
+                            backgroundImage: `
                             linear-gradient(45deg, #ddd 25%, transparent 25%),
                             linear-gradient(-45deg, #ddd 25%, transparent 25%),
                             linear-gradient(45deg, transparent 75%, #ddd 75%),
                             linear-gradient(-45deg, transparent 75%, #ddd 75%)
                           `,
-                          backgroundSize: '16px 16px',
-                          backgroundPosition:
-                            '0 0, 0 8px, 8px -8px, -8px 0px',
-                        }}
-                      />
-                    )}
+                            backgroundSize: '16px 16px',
+                            backgroundPosition:
+                              '0 0, 0 8px, 8px -8px, -8px 0px',
+                          }}
+                        />
+                      )}
+                    </div>
+                  )}
+                  <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">
+                    {presentation.name}
                   </div>
-                )}
-                <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">
-                  {presentation.name}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         </>
       )}

@@ -1,12 +1,21 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {useRouter} from 'next/router';
 import Logo from './Logo';
 import {Routes} from '../lib/routes';
+
+const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
   activeTab?: 'dashboard' | 'create';
   initialCollapsed?: boolean;
+}
+
+function getStoredCollapsed(): boolean | null {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+  if (stored === null) return null;
+  return stored === 'true';
 }
 
 export default function DashboardLayout({
@@ -16,6 +25,23 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [transitionEnabled, setTransitionEnabled] = useState(false);
+
+  useEffect(() => {
+    const stored = getStoredCollapsed();
+    if (stored !== null) setIsCollapsed(stored);
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setTransitionEnabled(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const setCollapsed = (value: boolean) => {
+    setIsCollapsed(value);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(value));
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -38,9 +64,9 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`flex flex-col border-r border-gray-200 bg-white transition-all duration-300 ${
-          isCollapsed ? 'w-16' : 'w-64'
-        }`}
+        className={`flex flex-col border-r border-gray-200 bg-white ${
+          transitionEnabled ? 'transition-all duration-300' : ''
+        } ${isCollapsed ? 'w-16' : 'w-64'}`}
       >
         {/* Logo and Collapse Toggle */}
         <div
@@ -51,7 +77,7 @@ export default function DashboardLayout({
           <div className="flex flex-col items-center gap-2">
             {isCollapsed ? (
               <button
-                onClick={() => setIsCollapsed(false)}
+                onClick={() => setCollapsed(false)}
                 className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-white px-3 py-3 shadow-sm transition-all"
                 aria-label="Expand sidebar"
               >
@@ -68,9 +94,9 @@ export default function DashboardLayout({
               </button>
             ) : (
               <div className="flex w-full items-center justify-between">
-                <Logo onClick={() => setIsCollapsed(true)} />
+                <Logo onClick={() => setCollapsed(true)} />
                 <button
-                  onClick={() => setIsCollapsed(true)}
+                  onClick={() => setCollapsed(true)}
                   className="flex items-center rounded p-1 text-gray-600 hover:bg-gray-100"
                   aria-label="Collapse sidebar"
                 >

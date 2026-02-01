@@ -90,10 +90,9 @@ export async function savePresentationMeta(
   try {
     const bucket = getBucket();
     const file = bucket.file(PRESENTATION_META_PATH(presentationId));
-    await file.save(
-      JSON.stringify({firstSlideObjectId}),
-      {contentType: 'application/json'}
-    );
+    await file.save(JSON.stringify({firstSlideObjectId}), {
+      contentType: 'application/json',
+    });
   } catch (error) {
     console.error('Error saving presentation meta:', error);
   }
@@ -115,7 +114,9 @@ export async function getCachedPresentationPreviewUrl(
     const [metaExists] = await metaFile.exists();
     if (metaExists) {
       const [contents] = await metaFile.download();
-      const meta = JSON.parse(contents.toString()) as {firstSlideObjectId?: string};
+      const meta = JSON.parse(contents.toString()) as {
+        firstSlideObjectId?: string;
+      };
       objectId = meta.firstSlideObjectId ?? null;
     }
 

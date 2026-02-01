@@ -18,9 +18,10 @@ export default withIronSessionApiRoute(userRoute as any, sessionOptions);
  */
 async function userRoute(req: NextApiRequest, res: NextApiResponse) {
   const host = req.headers.host ?? '';
-  const baseURL = host.includes('localhost') || host.includes('127.0.0.1')
-    ? `http://${host}`
-    : `https://${host}`;
+  const baseURL =
+    host.includes('localhost') || host.includes('127.0.0.1')
+      ? `http://${host}`
+      : `https://${host}`;
   Auth.setup(baseURL);
   res.redirect(Auth.getAuthURL());
 }

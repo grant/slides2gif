@@ -205,7 +205,10 @@ export async function downloadFiles({
   await mkdirp(slidesDir);
 
   for (const {file, frameIndex} of orderedFrames) {
-    const frameName = `frame_${String(frameIndex).padStart(3, '0')}${expectedSizeSuffix}.png`;
+    const frameName = `frame_${String(frameIndex).padStart(
+      3,
+      '0'
+    )}${expectedSizeSuffix}.png`;
     const destination = `${slidesDir}/${frameName}`;
     try {
       const readStream = file.createReadStream();
@@ -215,7 +218,9 @@ export async function downloadFiles({
       console.log(`  ✓ Frame ${frameIndex}: ${frameName}`);
     } catch (error: any) {
       console.error(`  ✗ Error downloading frame ${frameIndex}:`, error);
-      throw new Error(`Failed to download frame ${frameIndex}: ${error.message}`);
+      throw new Error(
+        `Failed to download frame ${frameIndex}: ${error.message}`
+      );
     }
   }
   return res;

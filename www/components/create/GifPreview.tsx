@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {GifConfig} from '../../lib/hooks/useGifGeneration';
 import {Timeline} from './Timeline';
 import {SelectedSlide} from '../../lib/hooks/useSelectedSlides';
@@ -33,6 +33,31 @@ export function GifPreview({
   onDragEnd,
   onRemove,
 }: GifPreviewProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!gifUrl) return;
+    setIsDownloading(true);
+    try {
+      const proxyUrl = `/api/download-gif?url=${encodeURIComponent(gifUrl)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'slides.gif';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(gifUrl, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <div className="mb-4">
@@ -62,16 +87,32 @@ export function GifPreview({
                     </>
                   )}
                 </div>
-                <a
-                  href={gifUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                  aria-label="Open GIF in new tab"
-                  title="Open GIF in new tab"
-                >
-                  <span className="material-icons text-lg">open_in_new</span>
-                </a>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                    aria-label="Download GIF"
+                    title="Download GIF"
+                  >
+                    {isDownloading ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <span className="material-icons text-lg">download</span>
+                    )}
+                  </button>
+                  <a
+                    href={gifUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                    aria-label="Open GIF in new tab"
+                    title="Open GIF in new tab"
+                  >
+                    <span className="material-icons text-lg">open_in_new</span>
+                  </a>
+                </div>
               </div>
               <div
                 className="flex min-h-[400px] items-center justify-center rounded-lg bg-gray-100"
