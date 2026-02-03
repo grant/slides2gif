@@ -3,8 +3,12 @@ import {getIronSession} from 'iron-session';
 import {sessionOptions} from '../../lib/session';
 import {GoogleAuth} from 'google-auth-library';
 import {google} from 'googleapis';
-import {cacheSlideThumbnail, getCachedSlideUrl} from '../../lib/storage';
-import {getAuthenticatedClient} from '../../lib/oauthClient';
+import {
+  cacheSlideThumbnail,
+  getCachedSlideUrl,
+  userPrefix,
+} from '../../lib/storage';
+import {getAuthenticatedClient, getSessionUserId} from '../../lib/oauthClient';
 
 interface GenerateGifRequest {
   presentationId: string;
@@ -71,6 +75,14 @@ export default async function handler(
       return res.status(400).json({error: 'slideList is required'});
     }
 
+    const userId = await getSessionUserId(session);
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Could not identify user. Please log out and log in again.',
+      });
+    }
+    const prefix = userPrefix(userId);
+
     // Fetch and cache high-resolution thumbnails for selected slides
     console.log(
       `[www] Fetching ${thumbnailSize} thumbnails for GIF generation`
@@ -108,13 +120,13 @@ export default async function handler(
         // Continue without title
       }
 
-      // Fetch high-res thumbnails for each selected slide
+      // Fetch high-res thumbnails for each selected slide (per-user cache)
       const thumbnailPromises = slideObjectIds.map(async objectId => {
-        // Check if already cached
         const cachedUrl = await getCachedSlideUrl(
           presentationId,
           objectId,
-          thumbnailSize
+          thumbnailSize,
+          prefix
         );
         if (cachedUrl) {
           console.log(
@@ -123,7 +135,6 @@ export default async function handler(
           return {objectId, cached: true};
         }
 
-        // Fetch from API
         try {
           const thumbnail = await slides.presentations.pages.getThumbnail({
             presentationId,
@@ -134,12 +145,12 @@ export default async function handler(
 
           const thumbnailUrl = thumbnail.data.contentUrl;
           if (thumbnailUrl) {
-            // Cache the high-res thumbnail
             await cacheSlideThumbnail(
               presentationId,
               objectId,
               thumbnailUrl,
-              thumbnailSize
+              thumbnailSize,
+              prefix
             );
             console.log(
               `[www] Cached ${thumbnailSize} thumbnail for ${objectId}`
@@ -214,6 +225,7 @@ export default async function handler(
     url.searchParams.set('presentationId', presentationId);
     url.searchParams.set('slideList', slideList);
     url.searchParams.set('thumbnailSize', thumbnailSize);
+    url.searchParams.set('userPrefix', prefix);
     if (presentationTitle) {
       url.searchParams.set('presentationTitle', presentationTitle);
     }
@@ -239,7 +251,7 @@ export default async function handler(
       slideList,
     });
 
-    // Call the png2gif service
+    // Call the png2gif service (pass user prefix in header too so it's not lost by proxies)
     let response: Response;
     try {
       response = await fetch(url.toString(), {
@@ -247,6 +259,7 @@ export default async function handler(
         headers: {
           ...authHeaders,
           'Content-Type': 'application/json',
+          'X-User-Prefix': prefix,
         },
         // Add timeout for local development (5 minutes)
         signal: (() => {

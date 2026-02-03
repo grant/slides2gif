@@ -57,6 +57,8 @@ sync_secret() {
 sync_secret "oauth-client-id" "OAUTH_CLIENT_ID"
 sync_secret "oauth-client-secret" "OAUTH_CLIENT_SECRET"
 sync_secret "secret-cookie-password" "SECRET_COOKIE_PASSWORD"
+sync_secret "google-cloud-project-number" "GOOGLE_CLOUD_PROJECT_NUMBER"
+sync_secret "google-picker-developer-key" "GOOGLE_PICKER_DEVELOPER_KEY"
 
 echo ""
 echo -e "${GREEN}✅ All secrets synced!${NC}"

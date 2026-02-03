@@ -10,12 +10,14 @@ const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
 
 /**
  * Options for downloading slides from GCS.
+ * userPrefix: optional prefix for per-user paths, e.g. "users/123/"
  */
 export interface DownloadImagesRequestOptions {
-  presentationId: string; // The presentation ID.
-  slideList: string; // The slides query. i.e. "1,2,3" or "3,5,9"
-  downloadLocation: string; // ?The local relative folder name for the downloads.
-  thumbnailSize?: 'SMALL' | 'MEDIUM' | 'LARGE'; // Thumbnail size to download
+  presentationId: string;
+  slideList: string;
+  downloadLocation: string;
+  thumbnailSize?: 'SMALL' | 'MEDIUM' | 'LARGE';
+  userPrefix?: string;
 }
 
 /**
@@ -69,6 +71,7 @@ export async function downloadFiles({
   presentationId,
   slideList,
   thumbnailSize = 'MEDIUM',
+  userPrefix: userPrefixOpt,
 }: DownloadImagesRequestOptions): Promise<{files: string[]} | {error: string}> {
   console.log('DOWNLOADING FILES', {
     presentationId,
@@ -76,7 +79,6 @@ export async function downloadFiles({
     thumbnailSize,
   });
 
-  // Validate arguments
   if (!slideList) {
     return {error: 'Missing argument: slideList'};
   }
@@ -86,10 +88,11 @@ export async function downloadFiles({
   }
   const storage = new Storage();
 
-  // Files are stored at: presentations/{presentationId}/slides/{objectId}_{size}.png
-  // All sizes use suffixes: _small, _medium, _large
-  const sizeSuffix = `_${thumbnailSize.toLowerCase()}`;
-  const prefix = `presentations/${presentationId}/slides/`;
+  // Paths: [userPrefix]presentations/{presentationId}/slides/{objectId}_{size}.png
+  const pathPrefix = (userPrefixOpt || '').replace(/\/$/, '');
+  const prefix = pathPrefix
+    ? `${pathPrefix}/presentations/${presentationId}/slides/`
+    : `presentations/${presentationId}/slides/`;
   console.log(
     `[png2gif] Looking for files in bucket: ${BUCKET_NAME}, prefix: ${prefix}`
   );

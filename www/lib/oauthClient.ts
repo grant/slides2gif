@@ -6,6 +6,32 @@ import {NextApiResponse} from 'next';
 type SessionWithSave = IronSessionData & {save(): Promise<void>};
 
 /**
+ * Returns the current user's stable Google ID for per-user storage.
+ * Resolves from session.googleUserId, or from token (and saves to session) if missing.
+ * Returns null if not authenticated or ID cannot be resolved.
+ */
+export async function getSessionUserId(
+  session: SessionWithSave
+): Promise<string | null> {
+  if (session.googleUserId) return session.googleUserId;
+  if (!session.googleTokens?.access_token) return null;
+  try {
+    const client = new OAuth2Client();
+    const info = await client.getTokenInfo(
+      session.googleTokens.access_token as string
+    );
+    if (info?.sub) {
+      session.googleUserId = info.sub;
+      await session.save();
+      return info.sub;
+    }
+  } catch {
+    // Token may be expired or invalid
+  }
+  return null;
+}
+
+/**
  * Result of getting an authenticated OAuth2 client
  */
 export interface AuthenticatedClientResult {
@@ -109,7 +135,6 @@ export async function getAuthenticatedClient(
       auth.setCredentials(newCredentials);
 
       // Update session with new tokens
-      // Preserve refresh_token if not provided in response (it's long-lived)
       session.googleTokens = {
         access_token: newCredentials.access_token || undefined,
         refresh_token:
@@ -118,6 +143,19 @@ export async function getAuthenticatedClient(
           undefined,
         expiry_date: newCredentials.expiry_date || undefined,
       };
+
+      // Resolve and store googleUserId if missing (for per-user workspace)
+      if (!session.googleUserId && newCredentials.access_token) {
+        try {
+          const info = await auth.getTokenInfo(
+            newCredentials.access_token as string
+          );
+          if (info?.sub) session.googleUserId = info.sub;
+        } catch {
+          // ignore
+        }
+      }
+
       await session.save();
 
       return {

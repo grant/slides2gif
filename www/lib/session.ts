@@ -20,6 +20,8 @@ declare module 'iron-session' {
     user?: APIResUser;
     isLoggedIn: boolean;
     count: number;
+    /** Google OAuth2 "sub" (stable user id). Used for per-user GCS paths. */
+    googleUserId?: string;
     googleOAuth?: GoogleOAuthData;
     googleTokens?: {
       access_token?: string;

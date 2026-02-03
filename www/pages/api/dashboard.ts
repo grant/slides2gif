@@ -2,7 +2,8 @@ import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from '../../lib/session';
 import {Storage} from '@google-cloud/storage';
-import {getAuthenticatedClient} from '../../lib/oauthClient';
+import {getAuthenticatedClient, getSessionUserId} from '../../lib/oauthClient';
+import {userPrefix} from '../../lib/storage';
 
 const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
 
@@ -29,30 +30,36 @@ async function dashboardHandler(
   try {
     const session = req.session;
 
-    // Get authenticated OAuth2 client (handles token refresh if needed)
     const authResult = await getAuthenticatedClient(session, res);
     if (!authResult) {
-      return; // Error response already sent by getAuthenticatedClient
+      return;
     }
 
-    // Count presentations and slides from GCS cache (we use drive.file + Picker, so we don't list Drive)
+    // Per-user workspace: only list this user's slides and GIFs
+    const userId = await getSessionUserId(session);
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Could not identify user. Please log out and log in again.',
+      });
+    }
+
+    const prefix = userPrefix(userId);
+
     const storage = new Storage();
     const bucket = storage.bucket(BUCKET_NAME);
+
+    // List only this user's presentation slides (users/{userId}/presentations/...)
     const [files] = await bucket.getFiles({
-      prefix: 'presentations/',
+      prefix: `${prefix}presentations/`,
     });
 
-    // Count unique slides (presentationId + objectId pairs)
-    // Path format: presentations/{presentationId}/slides/{objectId}_{size}.png
-    // We need to count unique (presentationId, objectId) pairs, not total files
-    // since each slide can have multiple sizes cached
     const uniqueSlides = new Set<string>();
     const uniquePresentations = new Set<string>();
 
     files.forEach(file => {
-      // Format: presentations/{presentationId}/slides/{objectId}_{size}.png
+      // Format: users/{userId}/presentations/{presentationId}/slides/{objectId}_{size}.png
       const match = file.name.match(
-        /^presentations\/([^/]+)\/slides\/([^_]+)_/
+        /\/presentations\/([^/]+)\/slides\/([^_]+)_/
       );
       if (match) {
         const presentationId = match[1];
@@ -65,21 +72,16 @@ async function dashboardHandler(
     const totalSlidesProcessed = uniqueSlides.size;
     const presentationsLoaded = uniquePresentations.size;
 
-    // Get list of GIFs from GCS (files ending in .gif)
-    const [gifFiles] = await bucket.getFiles({
-      // GIFs are stored at root level with UUID names
-    });
+    // List only this user's GIFs (users/{userId}/*.gif) — strict per-user
+    const [gifFiles] = await bucket.getFiles({ prefix });
 
     const gifs = gifFiles
-      .filter(file => file.name.endsWith('.gif'))
+      .filter(file => file.name.endsWith('.gif') && file.name.startsWith(prefix))
       .map(file => {
-        // Extract timestamp from metadata or use file creation time
         const createdAt = file.metadata.timeCreated
-          ? new Date(file.metadata.timeCreated).getTime()
+          ? new Date(String(file.metadata.timeCreated)).getTime()
           : Date.now();
-
-        // Extract custom metadata
-        const customMetadata = file.metadata.metadata || {};
+        const customMetadata = (file.metadata.metadata || {}) as Record<string, string>;
         const presentationId =
           typeof customMetadata.presentationId === 'string'
             ? customMetadata.presentationId
@@ -88,7 +90,6 @@ async function dashboardHandler(
           typeof customMetadata.presentationTitle === 'string'
             ? customMetadata.presentationTitle
             : undefined;
-
         return {
           url: `https://storage.googleapis.com/${BUCKET_NAME}/${file.name}`,
           createdAt,
@@ -104,6 +105,13 @@ async function dashboardHandler(
       totalSlidesProcessed,
       gifs: gifs.slice(0, 50), // Limit to 50 most recent
     };
+
+    console.log('[dashboard] GIFs created:', {
+      userId,
+      prefix,
+      gifsCreated: gifs.length,
+      gifNames: gifs.map(g => g.url.replace(`https://storage.googleapis.com/${BUCKET_NAME}/`, '')),
+    });
 
     // Set cache headers to prevent unnecessary refetches
     // Cache for 5 minutes on the client side

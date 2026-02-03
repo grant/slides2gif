@@ -102,6 +102,14 @@ export default function CreatePresentationDetail() {
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [imagesReady, setImagesReady] = useState(false);
 
+  // Reset loaded state when presentation changes so thumbnails remount cleanly
+  useEffect(() => {
+    if (fileId) {
+      setLoadedImages(new Set());
+      setImagesReady(false);
+    }
+  }, [fileId]);
+
   // Use incremental slides if available
   const slidesData: SlidesData | undefined =
     incrementalSlides.length > 0 ? {slides: incrementalSlides} : undefined;
@@ -118,24 +126,7 @@ export default function CreatePresentationDetail() {
     } else if (incrementalSlides.length === 0) {
       setImagesReady(false);
     }
-  }, [isLoadingSlidesIncrementally, allSlidesHaveUrls, incrementalSlides.length]);
-
-  // Verify URLs once when loading is done (stable deps so we don't re-run every render)
-  useEffect(() => {
-    if (
-      !isLoadingSlidesIncrementally &&
-      incrementalSlides.length > 0 &&
-      allSlidesHaveUrls
-    ) {
-      verifySlideUrls(incrementalSlides, () => setImagesReady(true));
-    }
-  }, [
-    isLoadingSlidesIncrementally,
-    incrementalSlides.length,
-    allSlidesHaveUrls,
-    // Use a stable key for "this set of URLs" so we only verify once per load
-    incrementalSlides.map(s => s.thumbnailUrl).join(','),
-  ]);
+  }, [slidesData]);
 
   // Update loaded images when image loads
   const onImageLoad = (objectId: string) => {

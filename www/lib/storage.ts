@@ -10,20 +10,33 @@ function getBucket() {
   return storage.bucket(BUCKET_NAME);
 }
 
-const PRESENTATION_META_PATH = (presentationId: string) =>
-  `presentations/${presentationId}/meta.json`;
+/**
+ * Prefix for per-user GCS paths. All create/list/update of slides and GIFs
+ * must use this prefix so each user only sees their own data.
+ * API routes: getSessionUserId(session) → userPrefix(userId) → pass prefix
+ * to every storage call (getCachedSlideUrl, cacheSlideThumbnail, etc.).
+ */
+export function userPrefix(userId: string): string {
+  return `users/${userId}/`;
+}
+
+const PRESENTATION_META_PATH = (
+  presentationId: string,
+  prefix = ''
+) => `${prefix}presentations/${presentationId}/meta.json`;
 
 /**
  * Gets the cache path for a slide thumbnail
- * Format: presentations/{presentationId}/slides/{objectId}_{size}.png
+ * Format: [prefix]presentations/{presentationId}/slides/{objectId}_{size}.png
  * All sizes use a suffix: _small, _medium, or _large
  */
 export function getSlideCachePath(
   presentationId: string,
   objectId: string,
-  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
+  prefix = ''
 ): string {
-  const basePath = `presentations/${presentationId}/slides/${objectId}`;
+  const basePath = `${prefix}presentations/${presentationId}/slides/${objectId}`;
   const sizeSuffix = size.toLowerCase();
   return `${basePath}_${sizeSuffix}.png`;
 }
@@ -34,11 +47,17 @@ export function getSlideCachePath(
 export async function slideExistsInCache(
   presentationId: string,
   objectId: string,
-  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
+  prefix = ''
 ): Promise<boolean> {
   try {
     const bucket = getBucket();
-    const filePath = getSlideCachePath(presentationId, objectId, size);
+    const filePath = getSlideCachePath(
+      presentationId,
+      objectId,
+      size,
+      prefix
+    );
     const file = bucket.file(filePath);
     const [exists] = await file.exists();
     return exists;
@@ -56,11 +75,17 @@ export async function slideExistsInCache(
 export async function getCachedSlideUrl(
   presentationId: string,
   objectId: string,
-  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
+  prefix = ''
 ): Promise<string | null> {
   try {
     const bucket = getBucket();
-    const filePath = getSlideCachePath(presentationId, objectId, size);
+    const filePath = getSlideCachePath(
+      presentationId,
+      objectId,
+      size,
+      prefix
+    );
     const file = bucket.file(filePath);
     const [exists] = await file.exists();
 
@@ -69,8 +94,6 @@ export async function getCachedSlideUrl(
     }
 
     // Use public URL instead of signed URL
-    // Format: https://storage.googleapis.com/{bucket}/{filePath}
-    // Or: https://{bucket}.storage.googleapis.com/{filePath}
     const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${filePath}`;
     return publicUrl;
   } catch (error) {
@@ -85,11 +108,14 @@ export async function getCachedSlideUrl(
  */
 export async function savePresentationMeta(
   presentationId: string,
-  firstSlideObjectId: string
+  firstSlideObjectId: string,
+  prefix = ''
 ): Promise<void> {
   try {
     const bucket = getBucket();
-    const file = bucket.file(PRESENTATION_META_PATH(presentationId));
+    const file = bucket.file(
+      PRESENTATION_META_PATH(presentationId, prefix)
+    );
     await file.save(JSON.stringify({firstSlideObjectId}), {
       contentType: 'application/json',
     });
@@ -103,14 +129,16 @@ export async function savePresentationMeta(
  * Uses meta.json if present; otherwise lists slides/ and uses first cached slide.
  */
 export async function getCachedPresentationPreviewUrl(
-  presentationId: string
+  presentationId: string,
+  prefix = ''
 ): Promise<string | null> {
   try {
     const bucket = getBucket();
     let objectId: string | null = null;
 
-    // Try meta.json first (written when we generate a preview)
-    const metaFile = bucket.file(PRESENTATION_META_PATH(presentationId));
+    const metaFile = bucket.file(
+      PRESENTATION_META_PATH(presentationId, prefix)
+    );
     const [metaExists] = await metaFile.exists();
     if (metaExists) {
       const [contents] = await metaFile.download();
@@ -120,10 +148,12 @@ export async function getCachedPresentationPreviewUrl(
       objectId = meta.firstSlideObjectId ?? null;
     }
 
-    // Fallback: list first slide in cache (for pre-meta cached presentations)
     if (!objectId) {
-      const prefix = `presentations/${presentationId}/slides/`;
-      const [files] = await bucket.getFiles({prefix, maxResults: 10});
+      const slidesPrefix = `${prefix}presentations/${presentationId}/slides/`;
+      const [files] = await bucket.getFiles({
+        prefix: slidesPrefix,
+        maxResults: 10,
+      });
       const smallFile = files.find(f => f.name.endsWith('_small.png'));
       if (smallFile) {
         const match = smallFile.name.match(/\/slides\/(.+)_small\.png$/);
@@ -132,7 +162,7 @@ export async function getCachedPresentationPreviewUrl(
     }
 
     if (!objectId) return null;
-    return getCachedSlideUrl(presentationId, objectId, 'SMALL');
+    return getCachedSlideUrl(presentationId, objectId, 'SMALL', prefix);
   } catch (error) {
     return null;
   }
@@ -145,10 +175,10 @@ export async function cacheSlideThumbnail(
   presentationId: string,
   objectId: string,
   thumbnailUrl: string,
-  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL'
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
+  prefix = ''
 ): Promise<boolean> {
   try {
-    // Download the image from the thumbnail URL
     const response = await fetch(thumbnailUrl);
     if (!response.ok) {
       throw new Error(`Failed to download thumbnail: ${response.statusText}`);
@@ -156,19 +186,22 @@ export async function cacheSlideThumbnail(
 
     const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-    // Upload to GCS
     const bucket = getBucket();
-    const filePath = getSlideCachePath(presentationId, objectId, size);
+    const filePath = getSlideCachePath(
+      presentationId,
+      objectId,
+      size,
+      prefix
+    );
     const file = bucket.file(filePath);
 
     await file.save(imageBuffer, {
       metadata: {
         contentType: 'image/png',
-        cacheControl: 'public, max-age=31536000', // Cache for 1 year
+        cacheControl: 'public, max-age=31536000',
       },
     });
 
-    // Make file publicly readable after upload
     await file.makePublic();
 
     console.log(`Cached slide thumbnail: ${filePath}`);
@@ -183,17 +216,17 @@ export async function cacheSlideThumbnail(
  * Makes all files in a presentation's cache directory publicly readable
  */
 export async function makePresentationFilesPublic(
-  presentationId: string
+  presentationId: string,
+  prefix = ''
 ): Promise<{succeeded: number; failed: number}> {
   try {
     const bucket = getBucket();
-    const prefix = `presentations/${presentationId}/slides/`;
-    const [files] = await bucket.getFiles({prefix});
+    const slidesPrefix = `${prefix}presentations/${presentationId}/slides/`;
+    const [files] = await bucket.getFiles({prefix: slidesPrefix});
 
     let succeeded = 0;
     let failed = 0;
 
-    // Make each file public
     await Promise.all(
       files.map(async file => {
         try {

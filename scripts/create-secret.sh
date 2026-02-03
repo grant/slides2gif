@@ -16,6 +16,8 @@ if [ -z "$SECRET_NAME" ]; then
   echo "  - oauth-client-id"
   echo "  - oauth-client-secret"
   echo "  - secret-cookie-password"
+  echo "  - google-cloud-project-number"
+  echo "  - google-picker-developer-key"
   exit 1
 fi
 

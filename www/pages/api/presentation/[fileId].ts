@@ -7,10 +7,11 @@ import {
   getCachedSlideUrl,
   cacheSlideThumbnail,
   ensureBucketExists,
+  userPrefix,
 } from 'lib/storage';
 import {checkRateLimit, getRateLimitInfo} from 'lib/rateLimit';
 import {Auth} from 'lib/oauth';
-import {getAuthenticatedClient} from 'lib/oauthClient';
+import {getAuthenticatedClient, getSessionUserId} from 'lib/oauthClient';
 
 // Load env vars (.env)
 require('dotenv').config({
@@ -77,25 +78,28 @@ async function presentationRoute(req: NextApiRequest, res: NextApiResponse) {
     });
   }
 
-  // Ensure bucket exists
   await ensureBucketExists().catch(error => {
     console.warn('Could not ensure bucket exists:', error);
-    // Continue anyway, might not have permissions to create bucket
   });
 
   try {
-    // Get authenticated OAuth2 client (handles token refresh if needed)
     const authResult = await getAuthenticatedClient(req.session, res);
     if (!authResult) {
-      return; // Error response already sent by getAuthenticatedClient
+      return;
     }
+
+    const sessionUserId = await getSessionUserId(req.session);
+    if (!sessionUserId) {
+      return res.status(401).json({
+        error: 'Could not identify user. Please log out and log in again.',
+      });
+    }
+    const prefix = userPrefix(sessionUserId);
 
     const {client: auth} = authResult;
 
-    // Get Slides API client
     const slides = google.slides({version: 'v1', auth: auth as any});
 
-    // Get presentation metadata
     const presentation = await slides.presentations.get({
       presentationId: fileId,
     });
@@ -103,13 +107,16 @@ async function presentationRoute(req: NextApiRequest, res: NextApiResponse) {
     const presentationData = presentation.data;
     const slidePages = presentationData.slides || [];
 
-    // Get thumbnails for each slide (with caching)
     const slideThumbnails = await Promise.all(
       slidePages.map(async page => {
         const objectId = page.objectId || '';
 
-        // Check cache first (SMALL size for previews)
-        const cachedUrl = await getCachedSlideUrl(fileId, objectId, 'SMALL');
+        const cachedUrl = await getCachedSlideUrl(
+          fileId,
+          objectId,
+          'SMALL',
+          prefix
+        );
         if (cachedUrl) {
           console.log(`Using cached thumbnail for ${fileId}/${objectId}`);
           return {
@@ -146,16 +153,19 @@ async function presentationRoute(req: NextApiRequest, res: NextApiResponse) {
 
           const thumbnailUrl = thumbnail.data.contentUrl;
 
-          // Cache the thumbnail asynchronously (don't wait for it) - SMALL size for previews
           if (thumbnailUrl) {
-            cacheSlideThumbnail(fileId, objectId, thumbnailUrl, 'SMALL').catch(
-              error => {
-                console.error(
-                  `Failed to cache thumbnail for ${objectId}:`,
-                  error
-                );
-              }
-            );
+            cacheSlideThumbnail(
+              fileId,
+              objectId,
+              thumbnailUrl,
+              'SMALL',
+              prefix
+            ).catch(error => {
+              console.error(
+                `Failed to cache thumbnail for ${objectId}:`,
+                error
+              );
+            });
           }
 
           return {

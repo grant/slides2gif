@@ -7,10 +7,11 @@ import {
   makePresentationFilesPublic,
   getCachedSlideUrl,
   savePresentationMeta,
+  userPrefix,
 } from 'lib/storage';
 import {checkRateLimit} from 'lib/rateLimit';
 import {Auth} from 'lib/oauth';
-import {getAuthenticatedClient} from 'lib/oauthClient';
+import {getAuthenticatedClient, getSessionUserId} from 'lib/oauthClient';
 import {Credentials} from 'google-auth-library';
 
 // Load env vars (.env)
@@ -83,8 +84,16 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
   try {
     const authResult = await getAuthenticatedClient(req.session, res);
     if (!authResult) {
-      return; // Error response already sent by getAuthenticatedClient
+      return;
     }
+
+    const sessionUserId = await getSessionUserId(req.session);
+    if (!sessionUserId) {
+      return res.status(401).json({
+        error: 'Could not identify user. Please log out and log in again.',
+      });
+    }
+    const prefix = userPrefix(sessionUserId);
 
     const {client: auth} = authResult;
 
@@ -117,17 +126,19 @@ async function previewRoute(req: NextApiRequest, res: NextApiResponse) {
           fileId,
           firstSlide.objectId,
           thumbnailUrl,
-          'SMALL'
+          'SMALL',
+          prefix
         );
 
-        await savePresentationMeta(fileId, firstSlide.objectId);
+        await savePresentationMeta(fileId, firstSlide.objectId, prefix);
 
-        await makePresentationFilesPublic(fileId);
+        await makePresentationFilesPublic(fileId, prefix);
 
         const cachedUrl = await getCachedSlideUrl(
           fileId,
           firstSlide.objectId,
-          'SMALL'
+          'SMALL',
+          prefix
         );
 
         return res.json({

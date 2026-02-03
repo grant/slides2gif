@@ -3,10 +3,14 @@ import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
 import {google} from 'googleapis';
 import {Credentials} from 'google-auth-library';
-import {cacheSlideThumbnail, makePresentationFilesPublic} from 'lib/storage';
+import {
+  cacheSlideThumbnail,
+  makePresentationFilesPublic,
+  userPrefix,
+} from 'lib/storage';
 import {checkRateLimit} from 'lib/rateLimit';
 import {Auth} from 'lib/oauth';
-import {getAuthenticatedClient} from 'lib/oauthClient';
+import {getAuthenticatedClient, getSessionUserId} from 'lib/oauthClient';
 
 // Load env vars (.env)
 require('dotenv').config({
@@ -67,15 +71,21 @@ async function refetchRoute(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    // Get authenticated OAuth2 client (handles token refresh if needed)
     const authResult = await getAuthenticatedClient(req.session, res);
     if (!authResult) {
-      return; // Error response already sent by getAuthenticatedClient
+      return;
     }
+
+    const sessionUserId = await getSessionUserId(req.session);
+    if (!sessionUserId) {
+      return res.status(401).json({
+        error: 'Could not identify user. Please log out and log in again.',
+      });
+    }
+    const prefix = userPrefix(sessionUserId);
 
     const {client: auth} = authResult;
 
-    // Get Slides API client
     const slides = google.slides({version: 'v1', auth: auth as any});
 
     // Get presentation metadata to get slide list
@@ -122,9 +132,14 @@ async function refetchRoute(req: NextApiRequest, res: NextApiResponse) {
 
           const thumbnailUrl = thumbnail.data.contentUrl;
 
-          // Cache the thumbnail - SMALL size for previews
           if (thumbnailUrl) {
-            await cacheSlideThumbnail(fileId, objectId, thumbnailUrl, 'SMALL');
+            await cacheSlideThumbnail(
+              fileId,
+              objectId,
+              thumbnailUrl,
+              'SMALL',
+              prefix
+            );
             results.push({
               objectId,
               success: true,
@@ -163,8 +178,7 @@ async function refetchRoute(req: NextApiRequest, res: NextApiResponse) {
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
 
-    // Make all files public after refetching
-    const publicResult = await makePresentationFilesPublic(fileId);
+    const publicResult = await makePresentationFilesPublic(fileId, prefix);
     console.log(
       `Made ${publicResult.succeeded} files public, ${publicResult.failed} failed`
     );

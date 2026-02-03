@@ -115,6 +115,26 @@ app.get(
       const presentationTitle = req.query.presentationTitle as
         | string
         | undefined;
+      // Prefer header (reliable); query can be stripped or lowercased by proxies
+      const userPrefixParam = (
+        (req.get && req.get('x-user-prefix')) ||
+        (req.query.userPrefix as string) ||
+        (req.query.userprefix as string) ||
+        ''
+      ).trim();
+      if (userPrefixParam) {
+        console.log('[png2gif] userPrefix for GCS:', userPrefixParam);
+      }
+      // In production, require user prefix so we never write to bucket root
+      const isProd = !!process.env.GOOGLE_CLOUD_PROJECT;
+      if (isProd && !userPrefixParam) {
+        res.status(400).json({
+          result: 'FAILURE',
+          error:
+            'userPrefix is required (per-user storage). Call from www with X-User-Prefix header or userPrefix query.',
+        });
+        return;
+      }
 
       if (!presentationId || presentationId === '') {
         res.status(400).json({
@@ -159,12 +179,12 @@ app.get(
         } slide(s): ${slideList}`
       );
 
-      // Download images
       const downloadImagesReq: DownloadImagesRequestOptions = {
         presentationId: presentationId,
         slideList: slideList,
         downloadLocation: GIF_DOWNLOAD_LOCATION,
         thumbnailSize: thumbnailSize as 'SMALL' | 'MEDIUM' | 'LARGE',
+        userPrefix: userPrefixParam || undefined,
       };
       const downloadResult = await downloadFiles(downloadImagesReq);
 
@@ -245,19 +265,21 @@ app.get(
       });
       await createGif(gifReq);
 
-      // Upload GIF to GCS.
-      const gcsPath = getGCSPath(localFilename);
+      // Upload GIF to GCS (under user prefix when provided for per-user workspace)
+      const gcsDestination = userPrefixParam
+        ? `${userPrefixParam.replace(/\/$/, '')}/${tempGCSFilename}`
+        : tempGCSFilename;
+      const gcsPath = getGCSPath(gcsDestination);
       if (fs.existsSync(localFilename)) {
         console.log('Created gif locally!');
 
-        // Upload file with metadata (cleanup happens in finally block)
         const metadata: {[key: string]: string} = {
           presentationId,
         };
         if (presentationTitle) {
           metadata.presentationTitle = presentationTitle;
         }
-        await uploadFile(localFilename, tempGCSFilename, metadata);
+        await uploadFile(localFilename, gcsDestination, metadata);
         console.log(`Uploaded: ${gcsPath} with metadata:`, metadata);
         res.json({
           result: 'SUCCESS',

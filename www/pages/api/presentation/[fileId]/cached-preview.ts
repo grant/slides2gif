@@ -1,8 +1,8 @@
 import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from 'lib/session';
-import {getAuthenticatedClient} from 'lib/oauthClient';
-import {getCachedPresentationPreviewUrl} from 'lib/storage';
+import {getAuthenticatedClient, getSessionUserId} from 'lib/oauthClient';
+import {getCachedPresentationPreviewUrl, userPrefix} from 'lib/storage';
 
 require('dotenv').config({
   path: require('path').resolve(__dirname, '../../../../.env'),
@@ -33,7 +33,15 @@ async function cachedPreviewRoute(req: NextApiRequest, res: NextApiResponse) {
     return;
   }
 
-  const previewUrl = await getCachedPresentationPreviewUrl(fileId);
+  const userId = await getSessionUserId(req.session);
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Could not identify user. Please log out and log in again.',
+    });
+  }
+
+  const prefix = userPrefix(userId);
+  const previewUrl = await getCachedPresentationPreviewUrl(fileId, prefix);
   if (!previewUrl) {
     return res.status(404).json({error: 'Preview not in cache'});
   }

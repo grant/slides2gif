@@ -93,6 +93,7 @@ if gcloud run deploy ${PNG2GIF_SERVICE_NAME} \
   --max-instances 10 \
   --set-env-vars "NODE_ENV=production" \
   --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
+  --set-env-vars "GCS_CACHE_BUCKET=${GCS_CACHE_BUCKET}" \
   --quiet; then
   
   # Get the png2gif service URL
@@ -122,6 +123,19 @@ else
   exit 1
 fi
 
+# Optional Picker secrets (mount if they exist)
+WWW_SECRETS=(
+  "OAUTH_CLIENT_ID=oauth-client-id:latest"
+  "OAUTH_CLIENT_SECRET=oauth-client-secret:latest"
+  "SECRET_COOKIE_PASSWORD=secret-cookie-password:latest"
+)
+for picker_secret in "google-cloud-project-number:GOOGLE_CLOUD_PROJECT_NUMBER" "google-picker-developer-key:GOOGLE_PICKER_DEVELOPER_KEY"; do
+  IFS=':' read -r secret_name env_var <<< "$picker_secret"
+  if gcloud secrets describe "${secret_name}" --project ${PROJECT_ID} > /dev/null 2>&1; then
+    WWW_SECRETS+=("${env_var}=${secret_name}:latest")
+  fi
+done
+
 echo -e "  ${ARROW} Deploying to Cloud Run..."
 if gcloud run deploy ${WWW_SERVICE_NAME} \
   --source . \
@@ -137,9 +151,7 @@ if gcloud run deploy ${WWW_SERVICE_NAME} \
   --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
   --set-env-vars "GCS_CACHE_BUCKET=${GCS_CACHE_BUCKET}" \
   --set-env-vars "PNG2GIF_SERVICE_URL=${PNG2GIF_URL}" \
-  --update-secrets "OAUTH_CLIENT_ID=oauth-client-id:latest" \
-  --update-secrets "OAUTH_CLIENT_SECRET=oauth-client-secret:latest" \
-  --update-secrets "SECRET_COOKIE_PASSWORD=secret-cookie-password:latest" \
+  $(printf -- '--update-secrets %s ' "${WWW_SECRETS[@]}") \
   --quiet; then
   
   # Get the www service URL
@@ -163,7 +175,10 @@ echo -e "${BLUE}3. Verifying secret access...${NC}"
 WWW_SERVICE_ACCOUNT="${WWW_SERVICE_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 SECRETS_OK=true
 
-for secret_name in "oauth-client-id" "oauth-client-secret" "secret-cookie-password"; do
+for secret_name in "oauth-client-id" "oauth-client-secret" "secret-cookie-password" "google-cloud-project-number" "google-picker-developer-key"; do
+  if ! gcloud secrets describe ${secret_name} --project ${PROJECT_ID} > /dev/null 2>&1; then
+    continue
+  fi
   if gcloud secrets get-iam-policy ${secret_name} \
     --project ${PROJECT_ID} \
     --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then

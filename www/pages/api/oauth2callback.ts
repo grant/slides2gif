@@ -86,6 +86,17 @@ async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
     expiry_date: tokens.expiry_date || undefined,
   };
 
+  // Store stable Google user ID for per-user storage isolation
+  try {
+    const userId = await Auth.getUserIDFromCredentials(tokens);
+    if (userId) {
+      req.session.googleUserId = userId;
+      console.log('[oauth2callback] Stored googleUserId for per-user workspace');
+    }
+  } catch (e) {
+    console.warn('[oauth2callback] Could not resolve googleUserId:', e);
+  }
+
   console.log('[oauth2callback] Session tokens stored');
   console.log(
     '[oauth2callback] Session has refresh_token:',

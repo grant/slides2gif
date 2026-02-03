@@ -11,6 +11,7 @@ async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
     // Explicitly clear all session data
     req.session.user = undefined;
     req.session.isLoggedIn = false;
+    req.session.googleUserId = undefined;
     req.session.googleOAuth = undefined;
     req.session.googleTokens = undefined;
 

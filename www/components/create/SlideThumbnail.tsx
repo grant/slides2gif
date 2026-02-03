@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef, useEffect} from 'react';
 import {LoadingSpinner} from '../LoadingSpinner';
 import {Slide} from '../../lib/apiFetcher';
 
@@ -29,8 +29,41 @@ export function SlideThumbnail({
   onLoad,
   onError,
 }: SlideThumbnailProps) {
-  // Don't render image if it has failed - show spinner instead
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const loadReportedRef = useRef(false);
   const shouldShowImage = !hasFailed;
+
+  // When URL or mount key changes, we get a new img; reset so we can report load once
+  useEffect(() => {
+    loadReportedRef.current = false;
+  }, [slide.thumbnailUrl, imageMountKey]);
+
+  // Cached/sync images can complete before React attaches onLoad. Check after paint and once after a tick.
+  useEffect(() => {
+    if (!shouldShowImage || !slide.thumbnailUrl || loadReportedRef.current)
+      return;
+    const checkComplete = () => {
+      if (loadReportedRef.current) return;
+      const img = imgRef.current;
+      if (img?.complete && img.naturalWidth > 0) {
+        loadReportedRef.current = true;
+        onLoad();
+      }
+    };
+    const id = requestAnimationFrame(() => {
+      checkComplete();
+      // Cached image may complete in same tick; check again next tick
+      setTimeout(checkComplete, 0);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [slide.thumbnailUrl, shouldShowImage, onLoad]);
+
+  const handleLoad = () => {
+    if (loadReportedRef.current) return;
+    loadReportedRef.current = true;
+    onLoad();
+  };
+
   return (
     <div
       onClick={onSelect}
@@ -47,7 +80,8 @@ export function SlideThumbnail({
           )}
           {shouldShowImage ? (
             <img
-              key={`${slide.objectId}-${imageMountKey}`}
+              ref={imgRef}
+              key={`${slide.objectId}-${slide.thumbnailUrl ?? 'pending'}-${imageMountKey}`}
               src={`${slide.thumbnailUrl}${
                 slide.thumbnailUrl.includes('?') ? '&' : '?'
               }t=${imageMountKey}`}
@@ -56,7 +90,7 @@ export function SlideThumbnail({
                 isLoaded ? 'opacity-100' : 'opacity-0 shimmer'
               }`}
               loading="lazy"
-              onLoad={onLoad}
+              onLoad={handleLoad}
               onError={onError}
             />
           ) : (
