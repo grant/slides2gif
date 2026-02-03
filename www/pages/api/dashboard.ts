@@ -2,7 +2,6 @@ import {NextApiRequest, NextApiResponse} from 'next';
 import {withIronSessionApiRoute} from 'iron-session/next';
 import {sessionOptions} from '../../lib/session';
 import {Storage} from '@google-cloud/storage';
-import {google} from 'googleapis';
 import {getAuthenticatedClient} from '../../lib/oauthClient';
 
 const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
@@ -36,21 +35,7 @@ async function dashboardHandler(
       return; // Error response already sent by getAuthenticatedClient
     }
 
-    const {client: auth} = authResult;
-
-    // Get Slides API client
-    const slides = google.slides({version: 'v1', auth: auth as any});
-
-    // Get list of presentations
-    const drive = google.drive({version: 'v3', auth: auth as any});
-    const presentationsResponse = await drive.files.list({
-      q: "mimeType='application/vnd.google-apps.presentation'",
-      fields: 'files(id, name)',
-      pageSize: 1000,
-    });
-    const presentationsLoaded = presentationsResponse.data.files?.length || 0;
-
-    // Count total slides processed (from cached thumbnails in GCS)
+    // Count presentations and slides from GCS cache (we use drive.file + Picker, so we don't list Drive)
     const storage = new Storage();
     const bucket = storage.bucket(BUCKET_NAME);
     const [files] = await bucket.getFiles({
@@ -62,9 +47,9 @@ async function dashboardHandler(
     // We need to count unique (presentationId, objectId) pairs, not total files
     // since each slide can have multiple sizes cached
     const uniqueSlides = new Set<string>();
+    const uniquePresentations = new Set<string>();
 
     files.forEach(file => {
-      // Extract presentation ID and object ID from path
       // Format: presentations/{presentationId}/slides/{objectId}_{size}.png
       const match = file.name.match(
         /^presentations\/([^/]+)\/slides\/([^_]+)_/
@@ -72,12 +57,13 @@ async function dashboardHandler(
       if (match) {
         const presentationId = match[1];
         const objectId = match[2];
-        // Create a unique key for this slide
         uniqueSlides.add(`${presentationId}:${objectId}`);
+        uniquePresentations.add(presentationId);
       }
     });
 
     const totalSlidesProcessed = uniqueSlides.size;
+    const presentationsLoaded = uniquePresentations.size;
 
     // Get list of GIFs from GCS (files ending in .gif)
     const [gifFiles] = await bucket.getFiles({

@@ -6,7 +6,7 @@ export default function Privacy() {
   return (
     <Layout>
       <Head>
-        <title>Privacy Policy - {siteTitle}</title>
+        <title>{`Privacy Policy - ${siteTitle}`}</title>
         <meta name="description" content="Privacy Policy for Slides2Gif" />
       </Head>
       <div className="mx-auto max-w-4xl px-4 py-12">

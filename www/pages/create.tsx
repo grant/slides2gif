@@ -47,7 +47,7 @@ export default function Create(_props: Record<string, never>) {
   return (
     <Layout>
       <Head key="head">
-        <title>Create - {siteTitle}</title>
+        <title>{`Create - ${siteTitle}`}</title>
       </Head>
       <DashboardLayout activeTab="create">
         <div className="p-8">

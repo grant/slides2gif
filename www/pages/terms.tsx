@@ -6,7 +6,7 @@ export default function Terms() {
   return (
     <Layout>
       <Head>
-        <title>Terms of Service - {siteTitle}</title>
+        <title>{`Terms of Service - ${siteTitle}`}</title>
         <meta name="description" content="Terms of Service for Slides2Gif" />
       </Head>
       <div className="mx-auto max-w-4xl px-4 py-12">

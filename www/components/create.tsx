@@ -1,22 +1,43 @@
 /**
  * The page for creating GIFs. Holds functionality for multiple page types:
  * - Sign-in: Logging into the app
- * - Create: Creating a GIF from slide images
+ * - Create: Creating a GIF from slide images (via Google Picker + drive.file)
  * - Import: Importing slide images
  */
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {APIResUser} from '../types/user';
-import useSWR from 'swr';
 import {useRouter} from 'next/router';
 import {LoadingSpinner} from './LoadingSpinner';
 import {Routes} from '../lib/routes';
-import {
-  fetcher,
-  presentationsSWRConfig,
-  PresentationsResponse,
-  Presentation,
-  apiPost,
-} from '../lib/apiFetcher';
+
+declare global {
+  interface Window {
+    gapi?: {
+      load: (name: string, callback: () => void) => void;
+    };
+    google?: {
+      picker: {
+        PickerBuilder: new () => {
+          addView: (view: unknown) => unknown;
+          setOAuthToken: (token: string) => unknown;
+          setAppId: (id: string) => unknown;
+          setDeveloperKey: (key: string) => unknown;
+          setCallback: (cb: (data: PickerResponse) => void) => unknown;
+          build: () => { setVisible: (visible: boolean) => void };
+        };
+        ViewId: { DOCS: string; PRESENTATIONS: string };
+        ViewGroup: new (id: string) => {
+          addView: (viewId: string) => unknown;
+        };
+      };
+    };
+  }
+}
+
+interface PickerResponse {
+  [key: string]: unknown;
+  docs?: Array<{ id?: string }>;
+}
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
 
@@ -60,362 +81,122 @@ export function PageCreate(props: PageCreateProps) {
 }
 
 /**
- * Page for creating a GIF from slides
- * Shows a grid of presentations to choose from
+ * Page for creating a GIF from slides.
+ * Uses Google Picker (drive.file scope) so the user selects one presentation.
  */
 function PageCreateGIF() {
   const router = useRouter();
-  const [loadedThumbnails, setLoadedThumbnails] = useState<Set<string>>(
-    new Set()
-  );
-  const [generatingPreviews, setGeneratingPreviews] = useState<Set<string>>(
-    new Set()
-  );
-  const [loadingCachedPreviews, setLoadingCachedPreviews] = useState<
-    Set<string>
-  >(new Set());
-  const {data, error, mutate} = useSWR<PresentationsResponse>(
-    '/api/presentations',
-    fetcher,
-    presentationsSWRConfig
-  );
-  const processingQueueRef = useRef<Set<string>>(new Set());
-  const isProcessingRef = useRef(false);
-  const hasQueuedRef = useRef(false);
-  const cacheCheckRequestedRef = useRef<Set<string>>(new Set());
+  const [pickerReady, setPickerReady] = useState(false);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const [openingPicker, setOpeningPicker] = useState(false);
 
-  const handlePresentationClick = (fileId: string) => {
-    router.push(Routes.CREATE_PRESENTATION(fileId));
-  };
-
-  const isLoading = !data && !error;
-  const presentations = data?.presentations || [];
-
-  const CACHE_CHECK_BATCH = 5;
-
-  // Queue: fetch cached previews incrementally (GET, no rate limit) so list stays fast
+  // Load Google Picker script
   useEffect(() => {
-    if (!data?.presentations || data.presentations.length === 0) return;
-
-    const idsToCheck = data.presentations
-      .filter(
-        p => !p.firstSlidePreview && !cacheCheckRequestedRef.current.has(p.id)
-      )
-      .map(p => p.id);
-
-    if (idsToCheck.length === 0) return;
-
-    const batch = idsToCheck.slice(0, CACHE_CHECK_BATCH);
-    batch.forEach(id => cacheCheckRequestedRef.current.add(id));
-    setLoadingCachedPreviews(prev => new Set([...prev, ...batch]));
-
-    Promise.all(
-      batch.map(id =>
-        fetch(`/api/presentation/${id}/cached-preview`)
-          .then(res => (res.ok ? res.json() : null))
-          .then(body =>
-            body?.previewUrl ? {id, previewUrl: body.previewUrl} : null
-          )
-      )
-    ).then(results => {
-      setLoadingCachedPreviews(prev => {
-        const next = new Set(prev);
-        batch.forEach(id => next.delete(id));
-        return next;
-      });
-      const updates = results.filter(
-        (r): r is {id: string; previewUrl: string} => r != null
-      );
-      if (updates.length === 0) return;
-      mutate(
-        currentData => {
-          if (!currentData) return currentData;
-          return {
-            presentations: currentData.presentations.map(p => {
-              const u = updates.find(u => u.id === p.id);
-              return u ? {...p, firstSlidePreview: u.previewUrl} : p;
-            }),
-          };
-        },
-        {revalidate: false}
-      );
-    });
-  }, [data, mutate]);
-
-  // Queue preview generation for presentations without previews (POST, rate limited)
-  useEffect(() => {
-    if (!data?.presentations) {
+    if (typeof window === 'undefined' || window.gapi) {
+      if (window.gapi) setPickerReady(true);
       return;
     }
-
-    // Find presentations without previews (exclude ones we're still loading cache for)
-    const presentationsWithoutPreviews = data.presentations.filter(
-      p =>
-        !p.firstSlidePreview &&
-        !p.thumbnailLink &&
-        !loadingCachedPreviews.has(p.id)
-    );
-
-    if (presentationsWithoutPreviews.length === 0) {
-      hasQueuedRef.current = false;
-      return;
-    }
-
-    // Add to queue if not already queued
-    let addedToQueue = false;
-    presentationsWithoutPreviews.forEach(p => {
-      if (
-        !processingQueueRef.current.has(p.id) &&
-        !generatingPreviews.has(p.id)
-      ) {
-        processingQueueRef.current.add(p.id);
-        addedToQueue = true;
-      }
-    });
-
-    // Only start processing if we added new items and aren't already processing
-    if (!addedToQueue || isProcessingRef.current || hasQueuedRef.current) {
-      return;
-    }
-
-    hasQueuedRef.current = true;
-
-    // Process queue one at a time
-    const processQueue = async () => {
-      if (isProcessingRef.current) {
-        return;
-      }
-
-      isProcessingRef.current = true;
-
-      while (processingQueueRef.current.size > 0) {
-        const presentationId = Array.from(processingQueueRef.current)[0];
-        processingQueueRef.current.delete(presentationId);
-
-        // Check current state using mutate to get fresh data
-        let shouldSkip = false;
-        await mutate(
-          currentData => {
-            const presentation = currentData?.presentations.find(
-              p => p.id === presentationId
-            );
-            if (
-              presentation?.firstSlidePreview ||
-              presentation?.thumbnailLink
-            ) {
-              shouldSkip = true;
-            }
-            return currentData; // Don't modify, just read
-          },
-          {revalidate: false}
-        );
-
-        if (shouldSkip) {
-          continue;
-        }
-
-        setGeneratingPreviews(prev => new Set(prev).add(presentationId));
-
-        try {
-          // Generate preview
-          const response = await apiPost<{
-            success: boolean;
-            previewUrl: string;
-            presentationId: string;
-          }>(`/api/presentation/${presentationId}/preview`, {});
-
-          if (response.success && response.previewUrl) {
-            // Update the SWR cache with the new preview
-            mutate(
-              currentData => {
-                if (!currentData) return currentData;
-                return {
-                  presentations: currentData.presentations.map(p =>
-                    p.id === presentationId
-                      ? {...p, firstSlidePreview: response.previewUrl}
-                      : p
-                  ),
-                };
-              },
-              {revalidate: false}
-            );
-          }
-        } catch (error) {
-          const err = error as {status?: number; info?: {retryAfter?: number}};
-          if (err?.status === 429) {
-            const waitMs = Math.max(
-              5000,
-              typeof err?.info?.retryAfter === 'number'
-                ? err.info.retryAfter
-                : 60000
-            );
-            await new Promise(resolve => setTimeout(resolve, waitMs));
-            // Re-queue so we retry this presentation after rate limit resets
-            processingQueueRef.current.add(presentationId);
-          } else {
-            console.error(
-              `Failed to generate preview for ${presentationId}:`,
-              error
-            );
-          }
-        } finally {
-          setGeneratingPreviews(prev => {
-            const next = new Set(prev);
-            next.delete(presentationId);
-            return next;
-          });
-          // ~4s between requests to stay under 15/min
-          await new Promise(resolve => setTimeout(resolve, 4000));
-        }
-      }
-
-      isProcessingRef.current = false;
-      hasQueuedRef.current = false;
+    const script = document.createElement('script');
+    script.src = 'https://apis.google.com/js/api.js';
+    script.async = true;
+    script.onload = () => setPickerReady(true);
+    script.onerror = () => setPickerError('Failed to load Google Picker');
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
     };
+  }, []);
 
-    processQueue();
-  }, [data, mutate, loadingCachedPreviews]);
-
-  // Skeleton loader component for presentation cards
-  const PresentationSkeleton = () => (
-    <div className="relative rounded-lg border-2 border-gray-200 bg-white shadow-sm">
-      {/* Image skeleton */}
-      <div className="h-[140px] w-full animate-pulse bg-gray-200" />
-      {/* Title skeleton */}
-      <div className="px-3 py-3">
-        <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
-      </div>
-    </div>
-  );
+  const openPicker = useCallback(async () => {
+    if (!window.gapi) {
+      setPickerError('Google Picker not loaded. Refresh the page and try again.');
+      return;
+    }
+    setOpeningPicker(true);
+    setPickerError(null);
+    try {
+      const res = await fetch('/api/picker-token');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Token failed: ${res.status}`);
+      }
+      const {accessToken, appId, developerKey} = (await res.json()) as {
+        accessToken: string;
+        appId: string;
+        developerKey: string;
+      };
+      if (!accessToken || !appId || !developerKey) {
+        throw new Error('Picker not configured');
+      }
+      // Picker API is loaded on demand; google.picker is only set after this callback runs
+      window.gapi.load('picker', () => {
+        const g = (window as any).google?.picker;
+        if (!g) {
+          setOpeningPicker(false);
+          setPickerError('Failed to load Picker. Refresh and try again.');
+          return;
+        }
+        const picker = new g.PickerBuilder()
+          .addView(g.ViewId.PRESENTATIONS)
+          .setOAuthToken(accessToken)
+          .setAppId(appId)
+          .setDeveloperKey(developerKey)
+          .setCallback((data: PickerResponse) => {
+            setOpeningPicker(false);
+            const action = data['action'] as string | undefined;
+            const docs = (data['docs'] ?? data['documents']) as Array<{ id?: string }> | undefined;
+            if (action === 'picked' && docs?.length && docs[0]?.id) {
+              router.push(Routes.CREATE_PRESENTATION(docs[0].id));
+            }
+          })
+          .build();
+        picker.setVisible(true);
+      });
+    } catch (err) {
+      setOpeningPicker(false);
+      setPickerError(err instanceof Error ? err.message : 'Failed to open Picker');
+    }
+  }, [router]);
 
   return (
     <>
       <h1 className="mb-8 text-3xl font-bold text-gray-900">
         Choose a presentation
       </h1>
-      {isLoading ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
-          {[...Array(6)].map((_, index) => (
-            <PresentationSkeleton key={`skeleton-${index}`} />
-          ))}
-        </div>
-      ) : error ? (
-        <div className="py-10 px-5 text-center">
-          <p className="text-base text-red-600">
-            {(error as any)?.info?.error ||
-              (error as any)?.message ||
-              'Failed to load presentations'}
-            . Please try again.
-          </p>
-          {(error as any)?.status === 401 && (
-            <p className="mt-2 text-sm text-gray-600">
-              You may need to{' '}
-              <a href="/login" className="text-blue underline">
-                log in again
+      <p className="mb-6 text-gray-600">
+        Open a Google Slides file from your Drive. We only access files you
+        choose.
+      </p>
+      {pickerError && (
+        <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">
+          {pickerError}
+          {pickerError.includes('log in') || pickerError.includes('401') ? (
+            <span className="ml-1">
+              <a href="/login" className="underline">
+                Log in again
               </a>
-              .
-            </p>
-          )}
+            </span>
+          ) : null}
         </div>
-      ) : presentations.length === 0 ? (
-        <p>No presentations found.</p>
-      ) : (
-        <>
-          {generatingPreviews.size > 0 && (
-            <p className="mb-2 text-sm text-gray-500">
-              Loaded {presentations.length} presentations
-              {' · '}
-              Generating previews… ({generatingPreviews.size} in progress)
-            </p>
-          )}
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
-            {presentations.map(presentation => {
-              const thumbnailUrl =
-                presentation.firstSlidePreview || presentation.thumbnailLink;
-              const isLoaded = loadedThumbnails.has(presentation.id);
-              const showPlaceholder = !isLoaded && thumbnailUrl;
-
-              return (
-                <div
-                  key={presentation.id}
-                  className="relative cursor-pointer rounded-lg border-2 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:shadow-md"
-                  onClick={() => handlePresentationClick(presentation.id)}
-                >
-                  {thumbnailUrl ? (
-                    <>
-                      {showPlaceholder && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100">
-                          <div className="flex flex-col items-center gap-2">
-                            <LoadingSpinner size="md" />
-                            <span className="text-xs text-gray-500">
-                              Loading...
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="relative">
-                        <img
-                          src={thumbnailUrl}
-                          alt={presentation.name}
-                          className={`block h-[140px] w-full bg-gray-100 transition-opacity duration-300 ${
-                            presentation.firstSlidePreview
-                              ? 'object-contain'
-                              : 'object-cover'
-                          } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                          loading="lazy"
-                          onLoad={() => {
-                            setLoadedThumbnails(prev =>
-                              new Set(prev).add(presentation.id)
-                            );
-                          }}
-                          onError={() => {
-                            setLoadedThumbnails(prev =>
-                              new Set(prev).add(presentation.id)
-                            );
-                          }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex h-[140px] w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
-                      {generatingPreviews.has(presentation.id) ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <LoadingSpinner size="sm" />
-                          <span className="text-xs">Generating preview...</span>
-                        </div>
-                      ) : loadingCachedPreviews.has(presentation.id) ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <LoadingSpinner size="sm" />
-                          <span className="text-xs">Loading...</span>
-                        </div>
-                      ) : (
-                        <div
-                          className="h-full w-full"
-                          style={{
-                            backgroundColor: '#e8e8e8',
-                            backgroundImage: `
-                            linear-gradient(45deg, #ddd 25%, transparent 25%),
-                            linear-gradient(-45deg, #ddd 25%, transparent 25%),
-                            linear-gradient(45deg, transparent 75%, #ddd 75%),
-                            linear-gradient(-45deg, transparent 75%, #ddd 75%)
-                          `,
-                            backgroundSize: '16px 16px',
-                            backgroundPosition:
-                              '0 0, 0 8px, 8px -8px, -8px 0px',
-                          }}
-                        />
-                      )}
-                    </div>
-                  )}
-                  <div className="truncate px-3 py-3 text-sm font-medium text-gray-800">
-                    {presentation.name}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
       )}
+      <button
+        type="button"
+        onClick={openPicker}
+        disabled={!pickerReady || openingPicker}
+        className="inline-flex items-center gap-2 rounded-lg bg-blue px-5 py-3 font-medium text-white shadow-sm transition hover:bg-blue/90 disabled:opacity-50"
+      >
+        {openingPicker ? (
+          <>
+            <LoadingSpinner size="sm" />
+            Opening…
+          </>
+        ) : (
+          <>
+            <span className="material-icons text-xl">folder_open</span>
+            Choose from Google Drive
+          </>
+        )}
+      </button>
     </>
   );
 }

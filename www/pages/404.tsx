@@ -7,7 +7,7 @@ export default function Custom404() {
   return (
     <Layout>
       <Head>
-        <title>404 - Page Not Found - {siteTitle}</title>
+        <title>{`404 - Page Not Found - ${siteTitle}`}</title>
       </Head>
       <div className="min-h-screen bg-gradient-to-b from-[rgba(255,186,68,1)] to-[rgba(254,160,3,1)]">
         {/* Header */}

@@ -36,7 +36,7 @@ export default function Login(_props: Record<string, never>) {
     return (
       <Layout>
         <Head key="head">
-          <title>Login - {siteTitle}</title>
+          <title>{`Login - ${siteTitle}`}</title>
         </Head>
         <LoadingScreen fullScreen message="Loading..." />
       </Layout>
@@ -48,7 +48,7 @@ export default function Login(_props: Record<string, never>) {
     return (
       <Layout>
         <Head key="head">
-          <title>Login - {siteTitle}</title>
+          <title>{`Login - ${siteTitle}`}</title>
         </Head>
         <LoadingScreen fullScreen message="Redirecting..." />
       </Layout>
@@ -58,7 +58,7 @@ export default function Login(_props: Record<string, never>) {
   return (
     <Layout>
       <Head key="head">
-        <title>Login - {siteTitle}</title>
+        <title>{`Login - ${siteTitle}`}</title>
       </Head>
       <PageLogin />
     </Layout>

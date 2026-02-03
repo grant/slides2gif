@@ -25,7 +25,7 @@ export default function Dashboard() {
     return (
       <Layout>
         <Head>
-          <title>Dashboard - {siteTitle}</title>
+          <title>{`Dashboard - ${siteTitle}`}</title>
         </Head>
         <div className="p-5">Failed to load user data. Please try again.</div>
       </Layout>
@@ -36,7 +36,7 @@ export default function Dashboard() {
     return (
       <Layout>
         <Head>
-          <title>Dashboard - {siteTitle}</title>
+          <title>{`Dashboard - ${siteTitle}`}</title>
         </Head>
         <LoadingScreen fullScreen message="Loading..." />
       </Layout>
@@ -47,7 +47,7 @@ export default function Dashboard() {
     return (
       <Layout>
         <Head>
-          <title>Dashboard - {siteTitle}</title>
+          <title>{`Dashboard - ${siteTitle}`}</title>
         </Head>
         <div className="p-5">Redirecting to login...</div>
       </Layout>
@@ -57,7 +57,7 @@ export default function Dashboard() {
   return (
     <Layout>
       <Head>
-        <title>Dashboard - {siteTitle}</title>
+        <title>{`Dashboard - ${siteTitle}`}</title>
       </Head>
       <DashboardLayout activeTab="dashboard">
         <div className="p-8">
@@ -150,15 +150,36 @@ export default function Dashboard() {
                         {gif.presentationTitle || `GIF ${index + 1}`}
                       </h3>
 
-                      {/* Footer: Slides icon, Date, External link */}
+                      {/* Footer: Open presentation (bottom left), Date, Open GIF (right) */}
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className="material-icons text-base">
-                            slideshow
-                          </span>
-                          <span>
-                            {new Date(gif.createdAt).toLocaleDateString()}
-                          </span>
+                          {gif.presentationId ? (
+                            <a
+                              href={`https://docs.google.com/presentation/d/${gif.presentationId}/edit`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 rounded p-1 hover:bg-gray-100 hover:text-gray-700"
+                              aria-label="Open presentation in Google Slides"
+                              onClick={e => e.stopPropagation()}
+                              title="Open presentation in Google Slides"
+                            >
+                              <span className="material-icons text-base">
+                                slideshow
+                              </span>
+                              <span>
+                                {new Date(gif.createdAt).toLocaleDateString()}
+                              </span>
+                            </a>
+                          ) : (
+                            <>
+                              <span className="material-icons text-base">
+                                slideshow
+                              </span>
+                              <span>
+                                {new Date(gif.createdAt).toLocaleDateString()}
+                              </span>
+                            </>
+                          )}
                         </div>
 
                         {/* External link button */}

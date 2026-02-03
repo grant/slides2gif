@@ -21,17 +21,12 @@ export default function PageSignin() {
     {
       id: 'presentations.readonly',
       icon: 'slideshow',
-      description: 'Access your Slides images',
+      description: 'View the Slides you choose to open',
     },
     {
-      id: 'drive.metadata.readonly',
-      icon: 'description',
-      description: 'Access metadata about selected Slides',
-    },
-    {
-      id: 'drive.activity.readonly',
-      icon: 'preview',
-      description: 'Recommend recent presentations',
+      id: 'drive.file',
+      icon: 'folder_open',
+      description: 'Access only the presentations you select (via Google Picker)',
     },
   ];
 

@@ -107,14 +107,35 @@ export default function CreatePresentationDetail() {
     incrementalSlides.length > 0 ? {slides: incrementalSlides} : undefined;
   const isValidatingSlides = isLoadingSlidesIncrementally;
 
-  // Verify URLs are accessible before showing images
+  // Set imagesReady when incremental loading is done and all slides have URLs
+  // (avoids spinners sticking due to verifySlideUrls running on every render)
+  const allSlidesHaveUrls =
+    incrementalSlides.length > 0 &&
+    incrementalSlides.every(s => Boolean(s.thumbnailUrl));
   useEffect(() => {
-    if (slidesData && slidesData.slides.length > 0) {
-      verifySlideUrls(slidesData.slides, () => setImagesReady(true));
-    } else {
+    if (!isLoadingSlidesIncrementally && allSlidesHaveUrls) {
+      setImagesReady(true);
+    } else if (incrementalSlides.length === 0) {
       setImagesReady(false);
     }
-  }, [slidesData]);
+  }, [isLoadingSlidesIncrementally, allSlidesHaveUrls, incrementalSlides.length]);
+
+  // Verify URLs once when loading is done (stable deps so we don't re-run every render)
+  useEffect(() => {
+    if (
+      !isLoadingSlidesIncrementally &&
+      incrementalSlides.length > 0 &&
+      allSlidesHaveUrls
+    ) {
+      verifySlideUrls(incrementalSlides, () => setImagesReady(true));
+    }
+  }, [
+    isLoadingSlidesIncrementally,
+    incrementalSlides.length,
+    allSlidesHaveUrls,
+    // Use a stable key for "this set of URLs" so we only verify once per load
+    incrementalSlides.map(s => s.thumbnailUrl).join(','),
+  ]);
 
   // Update loaded images when image loads
   const onImageLoad = (objectId: string) => {
@@ -172,9 +193,7 @@ export default function CreatePresentationDetail() {
   return (
     <Layout>
       <Head>
-        <title>
-          {metadata ? `${metadata.title} - ${siteTitle}` : siteTitle}
-        </title>
+        <title>{metadata ? `${metadata.title} - ${siteTitle}` : siteTitle}</title>
         {slidesData &&
           slidesData.slides.length > 0 &&
           slidesData.slides[0].thumbnailUrl && (

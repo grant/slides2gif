@@ -68,9 +68,8 @@ export class Auth {
   public static getAuthURL(): string {
     const SCOPES = [
       'https://www.googleapis.com/auth/userinfo.profile', // User info for storing tokens
-      'https://www.googleapis.com/auth/presentations.readonly', // View Slides
-      'https://www.googleapis.com/auth/drive.metadata.readonly', // View Drive metadata
-      'https://www.googleapis.com/auth/drive.activity.readonly', // View Activity for recent Slides
+      'https://www.googleapis.com/auth/presentations.readonly', // View Slides (for selected file)
+      'https://www.googleapis.com/auth/drive.file', // Access only files user opens/selects via Picker
     ];
     return this.getOAuthClient().generateAuthUrl({
       access_type: 'offline',

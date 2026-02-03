@@ -7,7 +7,7 @@ export default function Custom500() {
   return (
     <Layout>
       <Head>
-        <title>500 - Server Error - {siteTitle}</title>
+        <title>{`500 - Server Error - ${siteTitle}`}</title>
       </Head>
       <div className="min-h-screen bg-gradient-to-b from-[rgba(255,186,68,1)] to-[rgba(254,160,3,1)]">
         {/* Header */}
