@@ -27,10 +27,10 @@ export default function Terms() {
               1. Acceptance of Terms
             </h2>
             <p className="mb-4 text-gray-700">
-              By accessing and using Slides2Gif (&quot;the Service&quot;), you accept and
-              agree to be bound by the terms and provision of this agreement. If
-              you do not agree to these Terms of Service, please do not use the
-              Service.
+              By accessing and using Slides2Gif (&quot;the Service&quot;), you
+              accept and agree to be bound by the terms and provision of this
+              agreement. If you do not agree to these Terms of Service, please
+              do not use the Service.
             </p>
           </section>
 
@@ -151,8 +151,8 @@ export default function Terms() {
               8. Limitation of Liability
             </h2>
             <p className="mb-4 text-gray-700">
-              Slides2Gif is provided &quot;as is&quot; without warranties of any kind. We
-              are not liable for:
+              Slides2Gif is provided &quot;as is&quot; without warranties of any
+              kind. We are not liable for:
             </p>
             <ul className="mb-4 list-disc pl-6 text-gray-700">
               <li>Loss or corruption of data</li>

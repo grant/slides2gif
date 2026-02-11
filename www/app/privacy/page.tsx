@@ -27,10 +27,11 @@ export default function Privacy() {
               1. Introduction
             </h2>
             <p className="mb-4 text-gray-700">
-              Slides2Gif (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to protecting your
-              privacy. This Privacy Policy explains how we collect, use, and
-              safeguard your information when you use our service to create
-              animated GIFs from Google Slides presentations.
+              Slides2Gif (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is
+              committed to protecting your privacy. This Privacy Policy explains
+              how we collect, use, and safeguard your information when you use
+              our service to create animated GIFs from Google Slides
+              presentations.
             </p>
           </section>
 

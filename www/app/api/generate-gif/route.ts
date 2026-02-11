@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
     const session = await getSession();
 
     if (!session.googleTokens?.access_token && !session.googleOAuth) {
-      return NextResponse.json(
-        {error: 'Unauthorized'},
-        {status: 401}
-      );
+      return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
 
     const body = (await request.json()) as GenerateGifRequest;
@@ -48,18 +45,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!slideList) {
-      return NextResponse.json(
-        {error: 'slideList is required'},
-        {status: 400}
-      );
+      return NextResponse.json({error: 'slideList is required'}, {status: 400});
     }
 
     const userId = await getSessionUserId(session);
     if (!userId) {
       return NextResponse.json(
         {
-          error:
-            'Could not identify user. Please log out and log in again.',
+          error: 'Could not identify user. Please log out and log in again.',
         },
         {status: 401}
       );
@@ -76,10 +69,16 @@ export async function POST(request: NextRequest) {
 
     try {
       const {client: auth} = authResult;
-      const slides = google.slides({version: 'v1', auth: auth as google.auth.OAuth2Client});
+      const slides = google.slides({
+        version: 'v1',
+        auth: auth as google.auth.OAuth2Client,
+      });
 
       try {
-        const drive = google.drive({version: 'v3', auth: auth as google.auth.OAuth2Client});
+        const drive = google.drive({
+          version: 'v3',
+          auth: auth as google.auth.OAuth2Client,
+        });
         const fileData = await drive.files.get({
           fileId: presentationId,
           fields: 'name',

@@ -2,7 +2,10 @@ import {NextResponse} from 'next/server';
 import {getSession} from '../../../../../lib/sessionApp';
 import {getAuthenticatedClientApp} from '../../../../../lib/oauthClientApp';
 import {getSessionUserId} from '../../../../../lib/oauthClient';
-import {getCachedPresentationPreviewUrl, userPrefix} from '../../../../../lib/storage';
+import {
+  getCachedPresentationPreviewUrl,
+  userPrefix,
+} from '../../../../../lib/storage';
 
 export async function GET(
   _request: Request,
@@ -28,8 +31,7 @@ export async function GET(
   if (!userId) {
     return NextResponse.json(
       {
-        error:
-          'Could not identify user. Please log out and log in again.',
+        error: 'Could not identify user. Please log out and log in again.',
       },
       {status: 401}
     );
@@ -39,10 +41,7 @@ export async function GET(
   const previewUrl = await getCachedPresentationPreviewUrl(fileId, prefix);
 
   if (!previewUrl) {
-    return NextResponse.json(
-      {error: 'Preview not in cache'},
-      {status: 404}
-    );
+    return NextResponse.json({error: 'Preview not in cache'}, {status: 404});
   }
 
   return NextResponse.json({previewUrl});

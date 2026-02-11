@@ -6,8 +6,13 @@ import Logo from '../../components/Logo';
 export default function HowItWorksClient() {
   useEffect(() => {
     const loadMermaid = async () => {
-      if (typeof window !== 'undefined' && (window as unknown as {mermaid?: unknown}).mermaid) {
-        (window as unknown as {mermaid: {initialize: (opts: unknown) => void}}).mermaid.initialize({startOnLoad: true});
+      if (
+        typeof window !== 'undefined' &&
+        (window as unknown as {mermaid?: unknown}).mermaid
+      ) {
+        (
+          window as unknown as {mermaid: {initialize: (opts: unknown) => void}}
+        ).mermaid.initialize({startOnLoad: true});
         return;
       }
 
@@ -17,8 +22,18 @@ export default function HowItWorksClient() {
           'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
         script.async = true;
         script.onload = () => {
-          if ((window as unknown as {mermaid?: {initialize: (opts: unknown) => void}}).mermaid) {
-            (window as unknown as {mermaid: {initialize: (opts: unknown) => void}}).mermaid.initialize({
+          if (
+            (
+              window as unknown as {
+                mermaid?: {initialize: (opts: unknown) => void};
+              }
+            ).mermaid
+          ) {
+            (
+              window as unknown as {
+                mermaid: {initialize: (opts: unknown) => void};
+              }
+            ).mermaid.initialize({
               startOnLoad: true,
               theme: 'default',
             });
@@ -98,8 +113,8 @@ export default function HowItWorksClient() {
                 </h3>
                 <p className="text-[rgb(20,30,50)]">
                   React-based UI where users select slides and configure GIF
-                  options (delay, quality, repeat). Makes API calls to
-                  generate GIFs.
+                  options (delay, quality, repeat). Makes API calls to generate
+                  GIFs.
                 </p>
               </div>
 
@@ -109,9 +124,9 @@ export default function HowItWorksClient() {
                 </h3>
                 <p className="text-[rgb(20,30,50)]">
                   Next.js API route that handles authentication, fetches slide
-                  thumbnails from Google Slides API, caches them in Google
-                  Cloud Storage, and orchestrates the GIF generation by
-                  calling the png2gif service.
+                  thumbnails from Google Slides API, caches them in Google Cloud
+                  Storage, and orchestrates the GIF generation by calling the
+                  png2gif service.
                 </p>
                 <ul className="ml-6 mt-2 list-disc text-[rgb(20,30,50)]">
                   <li>Uses Google OAuth2 for authentication</li>
@@ -123,8 +138,8 @@ export default function HowItWorksClient() {
                     _medium, _large)
                   </li>
                   <li>
-                    Authenticates requests to png2gif service using Google
-                    Auth ID tokens
+                    Authenticates requests to png2gif service using Google Auth
+                    ID tokens
                   </li>
                 </ul>
               </div>
@@ -134,10 +149,9 @@ export default function HowItWorksClient() {
                   3. png2gif Service (Express)
                 </h3>
                 <p className="text-[rgb(20,30,50)]">
-                  Separate Express.js service deployed on Cloud Run that
-                  handles the actual GIF generation. Downloads cached images
-                  from GCS, converts them to a GIF, and uploads the result
-                  back to GCS.
+                  Separate Express.js service deployed on Cloud Run that handles
+                  the actual GIF generation. Downloads cached images from GCS,
+                  converts them to a GIF, and uploads the result back to GCS.
                 </p>
                 <ul className="ml-6 mt-2 list-disc text-[rgb(20,30,50)]">
                   <li>
@@ -156,8 +170,8 @@ export default function HowItWorksClient() {
                     Uploads generated GIF to GCS and returns the public URL
                   </li>
                   <li>
-                    Uses service-to-service authentication in production
-                    (Cloud Run)
+                    Uses service-to-service authentication in production (Cloud
+                    Run)
                   </li>
                 </ul>
               </div>
@@ -167,9 +181,8 @@ export default function HowItWorksClient() {
                   4. Google Cloud Storage
                 </h3>
                 <p className="text-[rgb(20,30,50)]">
-                  Stores cached slide thumbnails and generated GIFs.
-                  Thumbnails are cached to reduce API calls and improve
-                  performance.
+                  Stores cached slide thumbnails and generated GIFs. Thumbnails
+                  are cached to reduce API calls and improve performance.
                 </p>
                 <ul className="ml-6 mt-2 list-disc text-[rgb(20,30,50)]">
                   <li>
@@ -188,9 +201,9 @@ export default function HowItWorksClient() {
                   5. Google Slides API
                 </h3>
                 <p className="text-[rgb(20,30,50)]">
-                  Provides access to presentation metadata and slide
-                  thumbnails. Supports three thumbnail sizes: SMALL (200×112),
-                  MEDIUM (800×450), and LARGE (1600×900).
+                  Provides access to presentation metadata and slide thumbnails.
+                  Supports three thumbnail sizes: SMALL (200×112), MEDIUM
+                  (800×450), and LARGE (1600×900).
                 </p>
               </div>
             </div>
@@ -202,7 +215,8 @@ export default function HowItWorksClient() {
             </h2>
             <ol className="ml-6 list-decimal space-y-4 text-[rgb(20,30,50)]">
               <li>
-                User selects slides and clicks &quot;Generate GIF&quot; in the frontend
+                User selects slides and clicks &quot;Generate GIF&quot; in the
+                frontend
               </li>
               <li>
                 Frontend sends POST request to /api/generate-gif with
@@ -230,8 +244,8 @@ export default function HowItWorksClient() {
                 requested size
               </li>
               <li>
-                Images are converted to GIF using gifencoder and
-                png-file-stream libraries
+                Images are converted to GIF using gifencoder and png-file-stream
+                libraries
               </li>
               <li>Generated GIF is uploaded back to GCS</li>
               <li>Public URL is returned to the API route</li>

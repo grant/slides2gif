@@ -13,10 +13,7 @@ export async function GET() {
   const credentials = authResult.client.credentials;
   const accessToken = credentials.access_token;
   if (!accessToken) {
-    return NextResponse.json(
-      {error: 'No access token'},
-      {status: 401}
-    );
+    return NextResponse.json({error: 'No access token'}, {status: 401});
   }
 
   const appId = process.env.GOOGLE_CLOUD_PROJECT_NUMBER || '';

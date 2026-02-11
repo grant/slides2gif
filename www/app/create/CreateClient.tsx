@@ -20,9 +20,7 @@ export default function CreateClient() {
   }
 
   if (!data.isLoggedIn) {
-    return (
-      <div className="p-5">Redirecting to login...</div>
-    );
+    return <div className="p-5">Redirecting to login...</div>;
   }
 
   return (

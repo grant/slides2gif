@@ -25,7 +25,10 @@ export async function GET(
 
   try {
     const {client: auth} = authResult;
-    const slides = google.slides({version: 'v1', auth: auth as google.auth.OAuth2Client});
+    const slides = google.slides({
+      version: 'v1',
+      auth: auth as google.auth.OAuth2Client,
+    });
 
     const presentation = await slides.presentations.get({
       presentationId: fileId,

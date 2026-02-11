@@ -49,10 +49,7 @@ export async function POST(
 
     const accessToken = session.googleTokens?.access_token;
     if (!accessToken) {
-      return NextResponse.json(
-        {error: 'Not authenticated'},
-        {status: 401}
-      );
+      return NextResponse.json({error: 'Not authenticated'}, {status: 401});
     }
 
     const fetchedUserId = await Auth.getUserIDFromCredentials({
@@ -93,8 +90,7 @@ export async function POST(
   if (!sessionUserId) {
     return NextResponse.json(
       {
-        error:
-          'Could not identify user. Please log out and log in again.',
+        error: 'Could not identify user. Please log out and log in again.',
       },
       {status: 401}
     );
@@ -104,7 +100,10 @@ export async function POST(
 
   try {
     const {client: auth} = authResult;
-    const slides = google.slides({version: 'v1', auth: auth as google.auth.OAuth2Client});
+    const slides = google.slides({
+      version: 'v1',
+      auth: auth as google.auth.OAuth2Client,
+    });
 
     const presentation = await slides.presentations.get({
       presentationId: fileId,
@@ -166,7 +165,9 @@ export async function POST(
       {
         error: 'Failed to generate preview',
         message:
-          err.code === 429 ? 'API rate limit exceeded' : err.message || 'Unknown error',
+          err.code === 429
+            ? 'API rate limit exceeded'
+            : err.message || 'Unknown error',
       },
       {status: 500}
     );

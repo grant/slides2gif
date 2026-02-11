@@ -31,8 +31,7 @@ export async function GET() {
   if (!userId) {
     return NextResponse.json(
       {
-        error:
-          'Could not identify user. Please log out and log in again.',
+        error: 'Could not identify user. Please log out and log in again.',
       },
       {status: 401}
     );
@@ -112,8 +111,7 @@ export async function GET() {
     console.error('Error fetching dashboard stats:', error);
     return NextResponse.json(
       {
-        error:
-          (error as Error).message || 'Failed to fetch dashboard stats',
+        error: (error as Error).message || 'Failed to fetch dashboard stats',
       },
       {status: 500}
     );

@@ -110,7 +110,12 @@ export default function CreatePresentationClient() {
     } else if (incrementalSlides.length === 0) {
       setImagesReady(false);
     }
-  }, [slidesData, isLoadingSlidesIncrementally, allSlidesHaveUrls, incrementalSlides.length]);
+  }, [
+    slidesData,
+    isLoadingSlidesIncrementally,
+    allSlidesHaveUrls,
+    incrementalSlides.length,
+  ]);
 
   const onImageLoad = (objectId: string) => {
     setLoadedImages(prev => new Set(prev).add(objectId));

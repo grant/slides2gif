@@ -12,8 +12,7 @@ type SessionWithSave = IronSessionData & {save(): Promise<void>};
 export async function getAuthenticatedClientApp(
   session: SessionWithSave
 ): Promise<
-  | {client: OAuth2Client; sessionUpdated: boolean}
-  | {error: NextResponse}
+  {client: OAuth2Client; sessionUpdated: boolean} | {error: NextResponse}
 > {
   if (!session.googleTokens?.access_token) {
     return {

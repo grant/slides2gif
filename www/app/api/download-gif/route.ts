@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json(
       {
-        error:
-          'Could not identify user. Please log out and log in again.',
+        error: 'Could not identify user. Please log out and log in again.',
       },
       {status: 401}
     );
@@ -61,9 +60,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('[download-gif] Error proxying GIF:', error);
-    return NextResponse.json(
-      {error: 'Failed to download GIF'},
-      {status: 500}
-    );
+    return NextResponse.json({error: 'Failed to download GIF'}, {status: 500});
   }
 }

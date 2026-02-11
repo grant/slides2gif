@@ -6,7 +6,11 @@ import {LoadingScreen} from '../../components/LoadingScreen';
 import {LoadingSpinner} from '../../components/LoadingSpinner';
 import {Routes} from '../../lib/routes';
 import useSWR from 'swr';
-import {fetcher, dashboardSWRConfig, DashboardStats} from '../../lib/apiFetcher';
+import {
+  fetcher,
+  dashboardSWRConfig,
+  DashboardStats,
+} from '../../lib/apiFetcher';
 
 export default function DashboardClient() {
   const {userData: data, error: authError, isLoading: authLoading} = useAuth();
@@ -31,9 +35,7 @@ export default function DashboardClient() {
   }
 
   if (!data.isLoggedIn) {
-    return (
-      <div className="p-5">Redirecting to login...</div>
-    );
+    return <div className="p-5">Redirecting to login...</div>;
   }
 
   return (
@@ -101,9 +103,7 @@ export default function DashboardClient() {
           <div className="text-red-600">Failed to load GIFs</div>
         ) : stats && stats.gifs.length > 0 ? (
           <div>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">
-              Your GIFs
-            </h2>
+            <h2 className="mb-4 text-2xl font-bold text-gray-900">Your GIFs</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {stats.gifs.map((gif, index) => (
                 <div

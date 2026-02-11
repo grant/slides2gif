@@ -18,10 +18,7 @@ export async function GET(
 ) {
   const {fileId} = await params;
   const objectId = request.nextUrl.searchParams.get('objectId');
-  const index = parseInt(
-    request.nextUrl.searchParams.get('index') ?? '0',
-    10
-  );
+  const index = parseInt(request.nextUrl.searchParams.get('index') ?? '0', 10);
 
   if (!fileId || !objectId || isNaN(index)) {
     return NextResponse.json(
@@ -52,10 +49,7 @@ export async function GET(
 
     const accessToken = session.googleTokens?.access_token;
     if (!accessToken) {
-      return NextResponse.json(
-        {error: 'Not authenticated'},
-        {status: 401}
-      );
+      return NextResponse.json({error: 'Not authenticated'}, {status: 401});
     }
 
     const fetchedUserId = await Auth.getUserIDFromCredentials({
@@ -85,8 +79,7 @@ export async function GET(
   if (!sessionUserId) {
     return NextResponse.json(
       {
-        error:
-          'Could not identify user. Please log out and log in again.',
+        error: 'Could not identify user. Please log out and log in again.',
       },
       {status: 401}
     );
@@ -96,7 +89,10 @@ export async function GET(
 
   try {
     const {client: auth} = authResult;
-    const slides = google.slides({version: 'v1', auth: auth as google.auth.OAuth2Client});
+    const slides = google.slides({
+      version: 'v1',
+      auth: auth as google.auth.OAuth2Client,
+    });
 
     const cachedUrl = await getCachedSlideUrl(
       fileId,
@@ -137,11 +133,15 @@ export async function GET(
     const thumbnailUrl = thumbnail.data.contentUrl;
 
     if (thumbnailUrl) {
-      cacheSlideThumbnail(fileId, objectId, thumbnailUrl, 'SMALL', prefix).catch(
-        error => {
-          console.error(`Failed to cache thumbnail for ${objectId}:`, error);
-        }
-      );
+      cacheSlideThumbnail(
+        fileId,
+        objectId,
+        thumbnailUrl,
+        'SMALL',
+        prefix
+      ).catch(error => {
+        console.error(`Failed to cache thumbnail for ${objectId}:`, error);
+      });
     }
 
     return NextResponse.json({
