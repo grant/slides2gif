@@ -1,7 +1,7 @@
 module.exports = {
   webpack5: true,
   eslint: {
-    // TODO: fix lint errors, then set to false
+    // Skip ESLint during build (Docker/CI); lint runs separately via `just lint`
     ignoreDuringBuilds: true,
   },
 };

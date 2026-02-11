@@ -1,5 +1,6 @@
 {
   "extends": ["next/core-web-vitals"],
+  "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
     "quotes": ["error", "single", {"avoidEscape": true}],
     "@typescript-eslint/quotes": ["error", "single", {"avoidEscape": true}],
