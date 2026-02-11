@@ -4,6 +4,11 @@
     "quotes": ["error", "single", {"avoidEscape": true}],
     "@typescript-eslint/quotes": ["error", "single", {"avoidEscape": true}],
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn"
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-html-link-for-pages": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "prettier/prettier": "warn",
+    "react/no-unescaped-entities": "warn"
   }
 }
