@@ -1,6 +1,8 @@
 # slides2gif
 
-[![CI](https://github.com/grant/slides2gif/actions/workflows/ci.yml/badge.svg)](https://github.com/grant/slides2gif/actions/workflows/ci.yml)
+[![Lint](https://github.com/grant/slides2gif/actions/workflows/lint.yml/badge.svg)](https://github.com/grant/slides2gif/actions/workflows/lint.yml)
+[![Build](https://github.com/grant/slides2gif/actions/workflows/build.yml/badge.svg)](https://github.com/grant/slides2gif/actions/workflows/build.yml)
+[![Docker](https://github.com/grant/slides2gif/actions/workflows/docker.yml/badge.svg)](https://github.com/grant/slides2gif/actions/workflows/docker.yml)
 
 Create animated GIFs from Google Slides presentations.
 
