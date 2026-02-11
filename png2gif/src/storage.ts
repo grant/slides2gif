@@ -1,6 +1,4 @@
 import {Storage, File} from '@google-cloud/storage';
-// eslint-disable-next-line node/no-extraneous-import
-import {Metadata} from '@google-cloud/common';
 import mkdirp from 'mkdirp';
 import * as fs from 'fs';
 import {pipeline} from 'stream/promises';
@@ -33,16 +31,14 @@ export async function uploadFile(
 ) {
   try {
     const storage = new Storage();
-    const [file]: [File, Metadata] = await storage
-      .bucket(BUCKET_NAME)
-      .upload(localFilepath, {
-        destination: gcsFilename,
-        metadata: metadata
-          ? {
-              metadata,
-            }
-          : undefined,
-      });
+    const [file] = await storage.bucket(BUCKET_NAME).upload(localFilepath, {
+      destination: gcsFilename,
+      metadata: metadata
+        ? {
+            metadata,
+          }
+        : undefined,
+    });
     return file;
   } catch (error) {
     console.error(
