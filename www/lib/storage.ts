@@ -20,10 +20,8 @@ export function userPrefix(userId: string): string {
   return `users/${userId}/`;
 }
 
-const PRESENTATION_META_PATH = (
-  presentationId: string,
-  prefix = ''
-) => `${prefix}presentations/${presentationId}/meta.json`;
+const PRESENTATION_META_PATH = (presentationId: string, prefix = '') =>
+  `${prefix}presentations/${presentationId}/meta.json`;
 
 /**
  * Gets the cache path for a slide thumbnail
@@ -52,12 +50,7 @@ export async function slideExistsInCache(
 ): Promise<boolean> {
   try {
     const bucket = getBucket();
-    const filePath = getSlideCachePath(
-      presentationId,
-      objectId,
-      size,
-      prefix
-    );
+    const filePath = getSlideCachePath(presentationId, objectId, size, prefix);
     const file = bucket.file(filePath);
     const [exists] = await file.exists();
     return exists;
@@ -80,12 +73,7 @@ export async function getCachedSlideUrl(
 ): Promise<string | null> {
   try {
     const bucket = getBucket();
-    const filePath = getSlideCachePath(
-      presentationId,
-      objectId,
-      size,
-      prefix
-    );
+    const filePath = getSlideCachePath(presentationId, objectId, size, prefix);
     const file = bucket.file(filePath);
     const [exists] = await file.exists();
 
@@ -113,9 +101,7 @@ export async function savePresentationMeta(
 ): Promise<void> {
   try {
     const bucket = getBucket();
-    const file = bucket.file(
-      PRESENTATION_META_PATH(presentationId, prefix)
-    );
+    const file = bucket.file(PRESENTATION_META_PATH(presentationId, prefix));
     await file.save(JSON.stringify({firstSlideObjectId}), {
       contentType: 'application/json',
     });
@@ -187,12 +173,7 @@ export async function cacheSlideThumbnail(
     const imageBuffer = Buffer.from(await response.arrayBuffer());
 
     const bucket = getBucket();
-    const filePath = getSlideCachePath(
-      presentationId,
-      objectId,
-      size,
-      prefix
-    );
+    const filePath = getSlideCachePath(presentationId, objectId, size, prefix);
     const file = bucket.file(filePath);
 
     await file.save(imageBuffer, {

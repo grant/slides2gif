@@ -21,7 +21,8 @@ export default function PageSignin() {
     {
       id: 'drive.file',
       icon: 'folder_open',
-      description: 'Access only the presentations you select (via Google Picker)',
+      description:
+        'Access only the presentations you select (via Google Picker)',
     },
   ];
 

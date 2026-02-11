@@ -184,7 +184,9 @@ export default function CreatePresentationDetail() {
   return (
     <Layout>
       <Head>
-        <title>{metadata ? `${metadata.title} - ${siteTitle}` : siteTitle}</title>
+        <title>
+          {metadata ? `${metadata.title} - ${siteTitle}` : siteTitle}
+        </title>
         {slidesData &&
           slidesData.slides.length > 0 &&
           slidesData.slides[0].thumbnailUrl && (

@@ -23,9 +23,9 @@ declare global {
           setAppId: (id: string) => unknown;
           setDeveloperKey: (key: string) => unknown;
           setCallback: (cb: (data: PickerResponse) => void) => unknown;
-          build: () => { setVisible: (visible: boolean) => void };
+          build: () => {setVisible: (visible: boolean) => void};
         };
-        ViewId: { DOCS: string; PRESENTATIONS: string };
+        ViewId: {DOCS: string; PRESENTATIONS: string};
         ViewGroup: new (id: string) => {
           addView: (viewId: string) => unknown;
         };
@@ -36,7 +36,7 @@ declare global {
 
 interface PickerResponse {
   [key: string]: unknown;
-  docs?: Array<{ id?: string }>;
+  docs?: Array<{id?: string}>;
 }
 
 // const DEFAULT_REDIRECT_URL = 'http://localhost:3000/';
@@ -109,7 +109,9 @@ function PageCreateGIF() {
 
   const openPicker = useCallback(async () => {
     if (!window.gapi) {
-      setPickerError('Google Picker not loaded. Refresh the page and try again.');
+      setPickerError(
+        'Google Picker not loaded. Refresh the page and try again.'
+      );
       return;
     }
     setOpeningPicker(true);
@@ -144,7 +146,9 @@ function PageCreateGIF() {
           .setCallback((data: PickerResponse) => {
             setOpeningPicker(false);
             const action = data['action'] as string | undefined;
-            const docs = (data['docs'] ?? data['documents']) as Array<{ id?: string }> | undefined;
+            const docs = (data['docs'] ?? data['documents']) as
+              | Array<{id?: string}>
+              | undefined;
             if (action === 'picked' && docs?.length && docs[0]?.id) {
               router.push(Routes.CREATE_PRESENTATION(docs[0].id));
             }
@@ -154,7 +158,9 @@ function PageCreateGIF() {
       });
     } catch (err) {
       setOpeningPicker(false);
-      setPickerError(err instanceof Error ? err.message : 'Failed to open Picker');
+      setPickerError(
+        err instanceof Error ? err.message : 'Failed to open Picker'
+      );
     }
   }, [router]);
 

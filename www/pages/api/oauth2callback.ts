@@ -91,7 +91,9 @@ async function oauth2callback(req: NextApiRequest, res: NextApiResponse) {
     const userId = await Auth.getUserIDFromCredentials(tokens);
     if (userId) {
       req.session.googleUserId = userId;
-      console.log('[oauth2callback] Stored googleUserId for per-user workspace');
+      console.log(
+        '[oauth2callback] Stored googleUserId for per-user workspace'
+      );
     }
   } catch (e) {
     console.warn('[oauth2callback] Could not resolve googleUserId:', e);

@@ -73,15 +73,20 @@ async function dashboardHandler(
     const presentationsLoaded = uniquePresentations.size;
 
     // List only this user's GIFs (users/{userId}/*.gif) — strict per-user
-    const [gifFiles] = await bucket.getFiles({ prefix });
+    const [gifFiles] = await bucket.getFiles({prefix});
 
     const gifs = gifFiles
-      .filter(file => file.name.endsWith('.gif') && file.name.startsWith(prefix))
+      .filter(
+        file => file.name.endsWith('.gif') && file.name.startsWith(prefix)
+      )
       .map(file => {
         const createdAt = file.metadata.timeCreated
           ? new Date(String(file.metadata.timeCreated)).getTime()
           : Date.now();
-        const customMetadata = (file.metadata.metadata || {}) as Record<string, string>;
+        const customMetadata = (file.metadata.metadata || {}) as Record<
+          string,
+          string
+        >;
         const presentationId =
           typeof customMetadata.presentationId === 'string'
             ? customMetadata.presentationId
@@ -110,7 +115,9 @@ async function dashboardHandler(
       userId,
       prefix,
       gifsCreated: gifs.length,
-      gifNames: gifs.map(g => g.url.replace(`https://storage.googleapis.com/${BUCKET_NAME}/`, '')),
+      gifNames: gifs.map(g =>
+        g.url.replace(`https://storage.googleapis.com/${BUCKET_NAME}/`, '')
+      ),
     });
 
     // Set cache headers to prevent unnecessary refetches

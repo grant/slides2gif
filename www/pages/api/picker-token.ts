@@ -9,7 +9,9 @@ import {getAuthenticatedClient} from '../../lib/oauthClient';
  */
 async function pickerTokenHandler(
   req: NextApiRequest,
-  res: NextApiResponse<{accessToken: string; appId: string; developerKey: string} | {error: string}>
+  res: NextApiResponse<
+    {accessToken: string; appId: string; developerKey: string} | {error: string}
+  >
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({error: 'Method not allowed'});
@@ -27,7 +29,8 @@ async function pickerTokenHandler(
   }
 
   const appId = process.env.GOOGLE_CLOUD_PROJECT_NUMBER || '';
-  const developerKey = process.env.GOOGLE_PICKER_DEVELOPER_KEY || process.env.GOOGLE_API_KEY || '';
+  const developerKey =
+    process.env.GOOGLE_PICKER_DEVELOPER_KEY || process.env.GOOGLE_API_KEY || '';
   if (!appId || !developerKey) {
     console.error(
       '[picker-token] Missing GOOGLE_CLOUD_PROJECT_NUMBER or GOOGLE_PICKER_DEVELOPER_KEY/GOOGLE_API_KEY. See www/.env.example.'
@@ -45,4 +48,7 @@ async function pickerTokenHandler(
   });
 }
 
-export default withIronSessionApiRoute(pickerTokenHandler as any, sessionOptions);
+export default withIronSessionApiRoute(
+  pickerTokenHandler as any,
+  sessionOptions
+);
