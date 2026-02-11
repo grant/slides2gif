@@ -1,5 +1,4 @@
 import React from 'react';
-import {LoadingSpinner} from '../LoadingSpinner';
 import {Slide} from '../../lib/apiFetcher';
 import {SlideThumbnail} from './SlideThumbnail';
 import {SelectedSlide} from '../../lib/hooks/useSelectedSlides';

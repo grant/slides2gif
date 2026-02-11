@@ -24,7 +24,7 @@ export function SlideThumbnail({
   showPlaceholder,
   imageMountKey,
   hasFailed,
-  retryAttempt,
+  retryAttempt: _retryAttempt,
   onSelect,
   onLoad,
   onError,
@@ -79,6 +79,7 @@ export function SlideThumbnail({
             <div className="absolute inset-0 bg-gray-100"></div>
           )}
           {shouldShowImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- dynamic thumbnail URL
             <img
               ref={imgRef}
               key={`${slide.objectId}-${slide.thumbnailUrl ?? 'pending'}-${imageMountKey}`}

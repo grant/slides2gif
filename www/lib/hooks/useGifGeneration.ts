@@ -102,9 +102,9 @@ export function useGifGeneration(): UseGifGenerationReturn {
         quality: gifQuality,
         frameCount: selectedSlides.length,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error generating GIF:', error);
-      alert(`Error: ${error.message}`);
+      alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsGeneratingGif(false);
     }

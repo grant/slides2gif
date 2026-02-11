@@ -3,7 +3,7 @@
 import {useParams} from 'next/navigation';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import useSWR from 'swr';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useMemo} from 'react';
 import {useAuth} from '../../../../lib/useAuth';
 import {LoadingScreen} from '../../../../components/LoadingScreen';
 import {
@@ -25,7 +25,7 @@ export default function CreatePresentationClient() {
   const resolvedParams = useParams();
   const fileId = resolvedParams?.fileId as string | undefined;
 
-  const {userData, error: userError, isLoading: isLoadingUser} = useAuth();
+  const {userData, error: _userError, isLoading: isLoadingUser} = useAuth();
 
   const {
     data: metadata,
@@ -97,9 +97,11 @@ export default function CreatePresentationClient() {
     }
   }, [fileId]);
 
-  const slidesData: SlidesData | undefined =
-    incrementalSlides.length > 0 ? {slides: incrementalSlides} : undefined;
-  const isValidatingSlides = isLoadingSlidesIncrementally;
+  const slidesData: SlidesData | undefined = useMemo(
+    () =>
+      incrementalSlides.length > 0 ? {slides: incrementalSlides} : undefined,
+    [incrementalSlides]
+  );
 
   const allSlidesHaveUrls =
     incrementalSlides.length > 0 &&

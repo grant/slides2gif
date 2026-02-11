@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 
 interface LogoProps {
   onClick?: () => void;
@@ -25,8 +26,8 @@ export default function Logo({onClick}: LogoProps) {
   }
 
   return (
-    <a href="/" className="inline-block">
+    <Link href="/" className="inline-block">
       {content}
-    </a>
+    </Link>
   );
 }

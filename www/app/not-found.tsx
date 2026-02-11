@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Layout from '../components/layout';
 import Logo from '../components/Logo';
 import {siteTitle} from '../components/layout';
@@ -21,12 +22,12 @@ export default function NotFound() {
           <p className="mt-8 text-2xl font-semibold text-white">
             Page not found
           </p>
-          <a
+          <Link
             href="/"
             className="mt-8 text-lg text-white underline hover:text-white/80"
           >
             Go back home →
-          </a>
+          </Link>
         </main>
       </div>
     </Layout>

@@ -213,7 +213,7 @@ export async function makePresentationFilesPublic(
         try {
           await file.makePublic();
           succeeded++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(`Failed to make ${file.name} public:`, error);
           failed++;
         }
@@ -250,16 +250,18 @@ export async function ensureBucketExists(): Promise<void> {
       // Ensure existing bucket is public
       try {
         await bucket.makePublic();
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as {code?: number; message?: string};
         // Ignore if already public or no permission
-        if (error.code !== 409) {
-          console.warn(`Could not make bucket public: ${error.message}`);
+        if (err.code !== 409) {
+          console.warn(`Could not make bucket public: ${err.message}`);
         }
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as {code?: number};
     // If bucket already exists or we don't have permission, that's okay
-    if (error.code !== 409 && error.code !== 403) {
+    if (err.code !== 409 && err.code !== 403) {
       console.error('Error ensuring bucket exists:', error);
       throw error;
     }

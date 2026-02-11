@@ -75,7 +75,7 @@ export function SlideGridHeader({
         failedSlideCount > 0 && (
           <div className="mb-3 rounded bg-yellow-50 p-2 text-xs text-yellow-700">
             {failedSlideCount} slide{failedSlideCount !== 1 ? 's' : ''} failed
-            to load. Click "Retry" to reload them.
+            to load. Click &quot;Retry&quot; to reload them.
           </div>
         )}
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import Layout from '../components/layout';
 import Logo from '../components/Logo';
 
@@ -31,12 +32,12 @@ export default function Error({
           >
             Try again
           </button>
-          <a
+          <Link
             href="/"
             className="mt-4 text-lg text-white underline hover:text-white/80"
           >
             Go back home →
-          </a>
+          </Link>
         </main>
       </div>
     </Layout>

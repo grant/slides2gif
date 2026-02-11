@@ -206,6 +206,7 @@ export function useSlideLoading(
     };
 
     loadSlidesIncrementally();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- incrementalSlides/isLoading excluded to avoid re-running during load
   }, [fileId, metadata, slideObjectIds]);
 
   const handleRefetch = useCallback(async () => {
@@ -306,7 +307,7 @@ export function useSlideLoading(
 
         batchStart = batchEnd;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error refetching:', error);
     } finally {
       setIsRefetching(false);

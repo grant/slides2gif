@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Create a GIF from Google Slides",
   "main": "index.js",
+  "engines": {"node": ">=18.0.0"},
   "scripts": {
     "dev": "next dev",
     "dev:www": "next dev",
@@ -11,9 +12,8 @@
     "start": "next start -p ${PORT:-8080}",
     "deploy": "RUN_ENV=PROD ./deploy.sh",
     "stage": "./deploy.sh",
-    "lint": "prettier --check --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore",
-    "lint:eslint": "eslint \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore --max-warnings 0",
-    "fix": "prettier --write --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore"
+    "lint": "prettier --check --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore --max-warnings 0",
+    "fix": "prettier --write --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
   },
   "repository": {
     "type": "git",

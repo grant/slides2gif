@@ -55,7 +55,7 @@ interface PageCreateProps {
 /**
  * The SPA page for sign-in, create, and import
  */
-export function PageCreate(props: PageCreateProps) {
+export function PageCreate(_props: PageCreateProps) {
   const type = PAGE_TYPE.CREATE;
   // const type = PAGE_TYPE.IMPORT;
   // export default function PageCreate({
@@ -132,6 +132,7 @@ function PageCreateGIF() {
       }
       // Picker API is loaded on demand; google.picker is only set after this callback runs
       window.gapi.load('picker', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Google Picker API types
         const g = (window as any).google?.picker;
         if (!g) {
           setOpeningPicker(false);
@@ -244,7 +245,7 @@ function PageImportSlides() {
             <ul>
               {presentationData.map(p => {
                 return (
-                  <li>
+                  <li key={p.id}>
                     <label className="block" htmlFor={p.id}>
                       <input
                         id={p.id}

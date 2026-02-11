@@ -72,6 +72,7 @@ export function Timeline({
             }`}
           >
             {selectedSlide.thumbnailUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dynamic thumbnail URL
               <img
                 src={selectedSlide.thumbnailUrl}
                 alt={`Frame ${index + 1}`}

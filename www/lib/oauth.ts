@@ -88,19 +88,24 @@ export class Auth {
     try {
       const tokens = (await this.getOAuthClient().getToken(authCode)).tokens;
       return tokens;
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e as {
+        message?: string;
+        code?: string;
+        response?: {data?: unknown};
+      };
       console.error(
         '[Auth.exchangeAuthCodeForTokens] Error exchanging code for tokens:',
         e
       );
       console.error(
         '[Auth.exchangeAuthCodeForTokens] Error message:',
-        e?.message
+        err?.message
       );
-      console.error('[Auth.exchangeAuthCodeForTokens] Error code:', e?.code);
+      console.error('[Auth.exchangeAuthCodeForTokens] Error code:', err?.code);
       console.error(
         '[Auth.exchangeAuthCodeForTokens] Error response:',
-        e?.response?.data
+        err?.response?.data
       );
       return null;
     }

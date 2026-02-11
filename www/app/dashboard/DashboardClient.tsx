@@ -111,6 +111,7 @@ export default function DashboardClient() {
                   className="group relative flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="flex aspect-video items-center justify-center bg-gray-50">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- dynamic GIF URL */}
                     <img
                       src={gif.url}
                       alt={gif.presentationTitle || `GIF ${index + 1}`}

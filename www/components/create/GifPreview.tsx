@@ -127,6 +127,7 @@ export function GifPreview({
                   backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element -- dynamic GIF URL */}
                 <img
                   src={gifUrl}
                   alt="Generated GIF"
@@ -145,7 +146,8 @@ export function GifPreview({
             </div>
           ) : (
             <div className="flex min-h-[400px] items-center justify-center text-sm text-gray-500 gap-2">
-              No GIF generated yet. Select slides and click "GENERATE GIF".
+              No GIF generated yet. Select slides and click &quot;GENERATE
+              GIF&quot;.
               <span
                 className="material-icons text-base text-gray-400"
                 aria-hidden="true"

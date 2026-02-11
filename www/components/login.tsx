@@ -130,7 +130,7 @@ export default function PageSignin() {
 
           {/* Footer Note */}
           <p className="mt-6 whitespace-nowrap text-center text-xs text-[rgb(20,30,50)]/60">
-            Your data is secure and private. We only access what's needed.
+            Your data is secure and private. We only access what&apos;s needed.
           </p>
         </div>
       </main>

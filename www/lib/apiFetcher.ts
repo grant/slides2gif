@@ -4,16 +4,20 @@ import {SWRConfiguration} from 'swr';
  * Base fetcher function for API requests
  * Handles errors and provides consistent error structure
  */
-export async function apiFetcher<T = any>(url: string): Promise<T> {
+export async function apiFetcher<T = unknown>(url: string): Promise<T> {
   const res = await fetch(url);
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
+    const errorData = (await res.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
     const error = new Error(
-      errorData.error || 'An error occurred while fetching the data.'
+      (errorData.error as string) ||
+        'An error occurred while fetching the data.'
     );
-    (error as any).status = res.status;
-    (error as any).info = errorData;
+    (error as Error & {status?: number}).status = res.status;
+    (error as Error & {info?: unknown}).info = errorData;
     throw error;
   }
 
@@ -24,14 +28,17 @@ export async function apiFetcher<T = any>(url: string): Promise<T> {
  * Simple fetcher for basic API requests (used by SWR)
  * Compatible with SWR's fetcher signature
  */
-export const fetcher = <T = any>(url: string): Promise<T> => {
+export const fetcher = <T = unknown>(url: string): Promise<T> => {
   return apiFetcher<T>(url);
 };
 
 /**
  * POST request helper for API calls
  */
-export async function apiPost<T = any>(url: string, body: any): Promise<T> {
+export async function apiPost<T = unknown>(
+  url: string,
+  body: unknown
+): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -41,12 +48,16 @@ export async function apiPost<T = any>(url: string, body: any): Promise<T> {
   });
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
+    const errorData = (await res.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
     const error = new Error(
-      errorData.error || 'An error occurred while making the request.'
+      (errorData.error as string) ||
+        'An error occurred while making the request.'
     );
-    (error as any).status = res.status;
-    (error as any).info = errorData;
+    (error as Error & {status?: number}).status = res.status;
+    (error as Error & {info?: unknown}).info = errorData;
     throw error;
   }
 

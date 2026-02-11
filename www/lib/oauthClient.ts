@@ -162,15 +162,20 @@ export async function getAuthenticatedClient(
         client: auth,
         sessionUpdated: true,
       };
-    } catch (refreshError: any) {
+    } catch (refreshError: unknown) {
+      const err = refreshError as {
+        message?: string;
+        code?: string;
+        response?: {data?: unknown};
+      };
       console.error(
         '[getAuthenticatedClient] Error refreshing access token:',
         refreshError
       );
       console.error('[getAuthenticatedClient] Error details:', {
-        message: refreshError?.message,
-        code: refreshError?.code,
-        response: refreshError?.response?.data,
+        message: err?.message,
+        code: err?.code,
+        response: err?.response?.data,
       });
       res.status(401).json({
         error: 'Failed to refresh session. Please log in again.',

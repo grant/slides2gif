@@ -64,7 +64,7 @@ export function useSelectedSlides(): UseSelectedSlidesReturn {
     setDraggedIndex(index);
   };
 
-  const handleDrop = (index: number) => {
+  const handleDrop = (_index: number) => {
     setDraggedIndex(null);
   };
 
