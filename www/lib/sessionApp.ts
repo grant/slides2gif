@@ -4,9 +4,10 @@
  */
 import {cookies} from 'next/headers';
 import {getIronSession} from 'iron-session';
+import type {IronSessionData} from 'iron-session';
 import {sessionOptions} from './session';
 
 export async function getSession() {
   const cookieStore = await cookies();
-  return getIronSession(cookieStore, sessionOptions);
+  return getIronSession<IronSessionData>(cookieStore, sessionOptions);
 }
