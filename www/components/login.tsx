@@ -19,11 +19,6 @@ export default function PageSignin() {
       description: 'Read public profile, for storing user ID',
     },
     {
-      id: 'presentations.readonly',
-      icon: 'slideshow',
-      description: 'View the Slides you choose to open',
-    },
-    {
       id: 'drive.file',
       icon: 'folder_open',
       description: 'Access only the presentations you select (via Google Picker)',
