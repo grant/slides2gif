@@ -42,6 +42,15 @@ build-www:
 build-png2gif:
     cd png2gif && npm run compile
 
+# Build Docker images locally (requires Docker running)
+# Use: DOCKER_BUILDKIT=1 just docker-build   for faster builds
+docker-build:
+    @echo "Building png2gif (canvas + native deps = slowest)..."
+    time docker build -t slides2gif-png2gif ./png2gif
+    @echo ""
+    @echo "Building www (Next.js)..."
+    time docker build -t slides2gif-www ./www
+
 # Build all services
 build-all:
     just build-www

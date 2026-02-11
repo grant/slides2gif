@@ -1,0 +1,23 @@
+# Dependencies (reinstalled in container)
+node_modules
+.pnp
+.pnp.js
+
+# Build output (rebuilt in container)
+.next
+out
+build
+
+# Env files (secrets, not for image)
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Misc
+.DS_Store
+*.log
+coverage
+README.md
