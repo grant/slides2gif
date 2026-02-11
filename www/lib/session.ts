@@ -1,9 +1,9 @@
 // This file is a wrapper with defaults to be used in both API routes and `getServerSideProps` functions
-import type {IronSessionOptions} from 'iron-session';
+import type {SessionOptions} from 'iron-session';
 import {GoogleOAuthData} from 'lib/oauth';
 import {APIResUser} from 'types/user';
 
-export const sessionOptions: IronSessionOptions = {
+export const sessionOptions: SessionOptions = {
   password: process.env.SECRET_COOKIE_PASSWORD as string,
   cookieName: 'slides2gif-session',
   cookieOptions: {

@@ -69,21 +69,17 @@ export async function POST(request: NextRequest) {
 
     try {
       const {client: auth} = authResult;
-      const slides = google.slides({
-        version: 'v1',
-        auth: auth as google.auth.OAuth2Client,
-      });
-
+      /* eslint-disable @typescript-eslint/no-explicit-any -- @google-cloud/storage bundles different google-auth-library */
+      const slides = google.slides({version: 'v1', auth: auth as any});
       try {
-        const drive = google.drive({
-          version: 'v3',
-          auth: auth as google.auth.OAuth2Client,
-        });
+        const drive = google.drive({version: 'v3', auth: auth as any});
+        /* eslint-enable @typescript-eslint/no-explicit-any */
         const fileData = await drive.files.get({
           fileId: presentationId,
           fields: 'name',
         });
-        presentationTitle = fileData.data.name || undefined;
+        presentationTitle =
+          (fileData.data as {name?: string}).name || undefined;
       } catch {
         // Continue without title
       }
@@ -193,7 +189,10 @@ export async function POST(request: NextRequest) {
         })(),
       });
     } catch (error: unknown) {
-      const err = error as NodeJS.ErrnoException & {name?: string};
+      const err = error as NodeJS.ErrnoException & {
+        name?: string;
+        cause?: {code?: string};
+      };
       if (err.code === 'ECONNREFUSED' || err.cause?.code === 'ECONNREFUSED') {
         return NextResponse.json(
           {

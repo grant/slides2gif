@@ -108,10 +108,8 @@ export async function GET(
 
   try {
     const {client: auth} = authResult;
-    const slides = google.slides({
-      version: 'v1',
-      auth: auth as google.auth.OAuth2Client,
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @google-cloud/storage bundles different google-auth-library
+    const slides = google.slides({version: 'v1', auth: auth as any});
 
     const presentation = await slides.presentations.get({
       presentationId: fileId,

@@ -8,9 +8,7 @@ export const metadata: Metadata = {
     template: `%s - ${siteTitle}`,
   },
   description: 'Create a GIF from slides',
-  alternates: {
-    icons: ['/logo.svg'],
-  },
+  icons: ['/logo.svg'],
   openGraph: {
     title: siteTitle,
   },

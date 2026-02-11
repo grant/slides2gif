@@ -142,7 +142,7 @@ export default function CreatePresentationClient() {
   };
 
   const isLoadingMetadata = !metadata && !metadataError && isValidatingMetadata;
-  const isLoadingSlides = !slidesData && !isValidatingSlides;
+  const isLoadingSlides = !slidesData && isLoadingSlidesIncrementally;
 
   if (isLoadingUser) {
     return <LoadingScreen fullScreen message="Loading..." />;
