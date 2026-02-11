@@ -76,6 +76,12 @@ lint:
     just lint-www
     just lint-png2gif
 
+# Run full CI locally (lint + build + docker)
+ci:
+    just lint
+    just build-all
+    just docker-build
+
 # Fix lint errors for www service
 fix-www:
     cd www && npm run fix

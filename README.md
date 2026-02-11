@@ -1,5 +1,7 @@
 # slides2gif
 
+[![CI](https://github.com/grant/slides2gif/actions/workflows/ci.yml/badge.svg)](https://github.com/grant/slides2gif/actions/workflows/ci.yml)
+
 Create animated GIFs from Google Slides presentations.
 
 Check it out at [slides2gif.com](https://slides2gif.com)!
@@ -48,9 +50,12 @@ This will start:
 - `just build-png2gif` - Build png2gif service
 
 ### Linting
-- `just lint-all` - Lint all services
+- `just lint` - Lint all services
 - `just lint-www` - Lint www service
 - `just lint-png2gif` - Lint png2gif service
+
+### CI (local)
+- `just ci` - Run full CI locally (lint + build + Docker build)
 
 ### Cleanup
 - `just clean` - Remove build artifacts
