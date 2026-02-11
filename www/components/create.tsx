@@ -4,9 +4,9 @@
  * - Create: Creating a GIF from slide images (via Google Picker + drive.file)
  * - Import: Importing slide images
  */
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, JSX} from 'react';
 import {APIResUser} from '../types/user';
-import {useRouter} from 'next/router';
+import {useRouter} from 'next/navigation';
 import {LoadingSpinner} from './LoadingSpinner';
 import {Routes} from '../lib/routes';
 

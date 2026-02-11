@@ -21,11 +21,17 @@
     "outDir": ".",
     "sourceMap": false,
     "declaration": false,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
