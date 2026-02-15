@@ -1,30 +1,94 @@
 'use client';
 
+import {useState} from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import {useAuth} from '../../lib/useAuth';
 import {LoadingScreen} from '../../components/LoadingScreen';
 import {LoadingSpinner} from '../../components/LoadingSpinner';
 import {useGooglePicker} from '../../lib/hooks/useGooglePicker';
+import {useToast} from '../../components/ToastContext';
 import useSWR from 'swr';
 import {
   fetcher,
   dashboardSWRConfig,
   DashboardStats,
+  apiPost,
 } from '../../lib/apiFetcher';
+
+type GifToDelete = {url: string; title: string};
 
 export default function DashboardClient() {
   const {userData: data, error: authError, isLoading: authLoading} = useAuth();
   const {openPicker, pickerReady, pickerError, openingPicker} =
     useGooglePicker();
+  const {toast} = useToast();
   const {
     data: stats,
     error: statsError,
     isValidating: statsLoading,
+    mutate,
   } = useSWR<DashboardStats>(
     data?.isLoggedIn ? '/api/dashboard' : null,
     fetcher,
     dashboardSWRConfig
   );
+  const [gifToDelete, setGifToDelete] = useState<GifToDelete | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  /** Force refetch with cache bypass so newly created GIFs are shown */
+  async function refreshGifList() {
+    setRefreshing(true);
+    try {
+      const res = await fetch('/api/dashboard', {
+        cache: 'no-store',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as {error?: string};
+        throw new Error(err.error || 'Failed to refresh');
+      }
+      const fresh = (await res.json()) as DashboardStats;
+      mutate(fresh, {revalidate: false});
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : 'Failed to refresh list',
+        'default'
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!gifToDelete) return;
+    const urlToRemove = gifToDelete.url;
+    setDeleting(true);
+    try {
+      await apiPost('/api/gif/delete', {gifUrl: urlToRemove});
+      setGifToDelete(null);
+      // Update cache immediately so the deleted GIF disappears from the UI
+      mutate(
+        prev =>
+          prev
+            ? {
+                ...prev,
+                gifs: prev.gifs.filter(g => g.url !== urlToRemove),
+                gifsCreated: prev.gifsCreated - 1,
+              }
+            : undefined,
+        {revalidate: true}
+      );
+      toast('GIF deleted', 'success');
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : 'Failed to delete GIF',
+        'default'
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (authError) {
     return (
@@ -105,7 +169,24 @@ export default function DashboardClient() {
           <div className="text-red-600">Failed to load GIFs</div>
         ) : stats && stats.gifs.length > 0 ? (
           <div>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">Your GIFs</h2>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold text-gray-900">Your GIFs</h2>
+              <button
+                type="button"
+                onClick={refreshGifList}
+                disabled={refreshing}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                title="Refresh list to show newly created GIFs"
+                aria-label="Refresh GIF list"
+              >
+                {refreshing ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <span className="material-icons text-lg">refresh</span>
+                )}
+                <span>Refresh</span>
+              </button>
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {stats.gifs.map((gif, index) => (
                 <div
@@ -124,49 +205,57 @@ export default function DashboardClient() {
                     <h3 className="mb-2 line-clamp-2 text-sm font-medium text-gray-900">
                       {gif.presentationTitle || `GIF ${index + 1}`}
                     </h3>
-                    <div className="mt-auto flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="mt-auto flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-gray-500">
+                        <a
+                          href={gif.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex shrink-0 items-center gap-1 rounded p-1 hover:bg-gray-100 hover:text-gray-700"
+                          aria-label="Open GIF in new tab"
+                          onClick={e => e.stopPropagation()}
+                          title="Open GIF"
+                        >
+                          <span className="material-icons text-base">
+                            image
+                          </span>
+                          <span>GIF</span>
+                        </a>
                         {gif.presentationId ? (
                           <a
                             href={`https://docs.google.com/presentation/d/${gif.presentationId}/edit`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 rounded p-1 hover:bg-gray-100 hover:text-gray-700"
+                            className="flex shrink-0 items-center gap-1 rounded p-1 hover:bg-gray-100 hover:text-gray-700"
                             aria-label="Open presentation in Google Slides"
                             onClick={e => e.stopPropagation()}
-                            title="Open presentation in Google Slides"
+                            title="Open presentation"
                           >
                             <span className="material-icons text-base">
                               slideshow
                             </span>
-                            <span>
-                              {new Date(gif.createdAt).toLocaleDateString()}
-                            </span>
+                            <span>Slides</span>
                           </a>
-                        ) : (
-                          <>
-                            <span className="material-icons text-base">
-                              slideshow
-                            </span>
-                            <span>
-                              {new Date(gif.createdAt).toLocaleDateString()}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <a
-                        href={gif.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100"
-                        aria-label="Open image in new tab"
-                        onClick={e => e.stopPropagation()}
-                        title="Open image in new tab"
-                      >
-                        <span className="material-icons text-lg">
-                          open_in_new
+                        ) : null}
+                        <span className="shrink-0">
+                          {new Date(gif.createdAt).toLocaleDateString()}
                         </span>
-                      </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setGifToDelete({
+                            url: gif.url,
+                            title: gif.presentationTitle || `GIF ${index + 1}`,
+                          });
+                        }}
+                        className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                        aria-label="Delete GIF"
+                        title="Delete GIF"
+                      >
+                        <span className="material-icons text-lg">delete</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -179,23 +268,78 @@ export default function DashboardClient() {
             {pickerError && (
               <p className="mt-2 text-sm text-red-600">{pickerError}</p>
             )}
-            <button
-              type="button"
-              onClick={openPicker}
-              disabled={!pickerReady || openingPicker}
-              className="mt-4 inline-flex items-center gap-2 rounded bg-blue px-4 py-2 font-medium text-white hover:bg-blue/90 disabled:opacity-50"
-            >
-              {openingPicker ? (
-                <>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={openPicker}
+                disabled={!pickerReady || openingPicker}
+                className="inline-flex items-center gap-2 rounded bg-blue px-4 py-2 font-medium text-white hover:bg-blue/90 disabled:opacity-50"
+              >
+                {openingPicker ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    Opening…
+                  </>
+                ) : (
+                  'Create your first GIF'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={refreshGifList}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                title="Refresh list to show newly created GIFs"
+              >
+                {refreshing ? (
                   <LoadingSpinner size="sm" />
-                  Opening…
-                </>
-              ) : (
-                'Create your first GIF'
-              )}
-            </button>
+                ) : (
+                  <span className="material-icons text-lg">refresh</span>
+                )}
+                Refresh
+              </button>
+            </div>
           </div>
         )}
+
+        {gifToDelete ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+          >
+            <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+              <h2
+                id="delete-dialog-title"
+                className="text-lg font-semibold text-gray-900"
+              >
+                Delete GIF?
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Are you sure you want to delete this GIF? This cannot be undone.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setGifToDelete(null)}
+                  disabled={deleting}
+                  className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? <LoadingSpinner size="sm" /> : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </DashboardLayout>
   );
