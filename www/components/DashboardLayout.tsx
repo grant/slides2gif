@@ -2,6 +2,8 @@ import React, {useState, useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import Logo from './Logo';
 import {Routes} from '../lib/routes';
+import {useGooglePicker} from '../lib/hooks/useGooglePicker';
+import {LoadingSpinner} from './LoadingSpinner';
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
 
@@ -24,6 +26,7 @@ export default function DashboardLayout({
   initialCollapsed = false,
 }: DashboardLayoutProps) {
   const router = useRouter();
+  const {openPicker, pickerReady, openingPicker} = useGooglePicker();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [transitionEnabled, setTransitionEnabled] = useState(false);
 
@@ -117,7 +120,7 @@ export default function DashboardLayout({
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
             } ${
               activeTab === 'dashboard'
-                ? 'bg-[rgba(255,186,68,1)] text-[rgb(20,30,50)]'
+                ? 'bg-gray-100 text-gray-800'
                 : 'bg-transparent text-gray-700 hover:bg-gray-100'
             }`}
             title="Dashboard"
@@ -126,19 +129,20 @@ export default function DashboardLayout({
             {!isCollapsed && <span>Dashboard</span>}
           </button>
           <button
-            onClick={() => router.push(Routes.CREATE)}
+            onClick={openPicker}
+            disabled={!pickerReady || openingPicker}
             className={`flex w-full items-center transition-colors ${
               isCollapsed
                 ? 'h-14 justify-center rounded p-2'
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
-            } ${
-              activeTab === 'create'
-                ? 'bg-[rgba(255,186,68,1)] text-[rgb(20,30,50)]'
-                : 'bg-transparent text-gray-700 hover:bg-gray-100'
-            }`}
+            } bg-[rgba(255,186,68,1)] text-[rgb(20,30,50)] disabled:opacity-60 disabled:cursor-not-allowed`}
             title="Create GIF"
           >
-            <span className="material-icons text-2xl">add</span>
+            {openingPicker ? (
+              <LoadingSpinner size="sm" />
+            ) : (
+              <span className="material-icons text-2xl">add</span>
+            )}
             {!isCollapsed && <span>Create GIF</span>}
           </button>
         </nav>

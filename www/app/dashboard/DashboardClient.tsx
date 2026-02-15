@@ -4,7 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import {useAuth} from '../../lib/useAuth';
 import {LoadingScreen} from '../../components/LoadingScreen';
 import {LoadingSpinner} from '../../components/LoadingSpinner';
-import {Routes} from '../../lib/routes';
+import {useGooglePicker} from '../../lib/hooks/useGooglePicker';
 import useSWR from 'swr';
 import {
   fetcher,
@@ -14,6 +14,8 @@ import {
 
 export default function DashboardClient() {
   const {userData: data, error: authError, isLoading: authLoading} = useAuth();
+  const {openPicker, pickerReady, pickerError, openingPicker} =
+    useGooglePicker();
   const {
     data: stats,
     error: statsError,
@@ -174,12 +176,24 @@ export default function DashboardClient() {
         ) : (
           <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
             <p className="text-gray-600">No GIFs created yet</p>
-            <a
-              href={Routes.CREATE}
-              className="mt-4 inline-block rounded bg-blue px-4 py-2 text-white hover:bg-blue/90"
+            {pickerError && (
+              <p className="mt-2 text-sm text-red-600">{pickerError}</p>
+            )}
+            <button
+              type="button"
+              onClick={openPicker}
+              disabled={!pickerReady || openingPicker}
+              className="mt-4 inline-flex items-center gap-2 rounded bg-blue px-4 py-2 font-medium text-white hover:bg-blue/90 disabled:opacity-50"
             >
-              Create your first GIF
-            </a>
+              {openingPicker ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Opening…
+                </>
+              ) : (
+                'Create your first GIF'
+              )}
+            </button>
           </div>
         )}
       </div>

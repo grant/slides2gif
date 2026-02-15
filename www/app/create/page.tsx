@@ -1,15 +1,6 @@
-import Layout from '../../components/layout';
-import {siteTitle} from '../../components/layout';
-import CreateClient from './CreateClient';
+import {redirect} from 'next/navigation';
+import {Routes} from '../../lib/routes';
 
-export const metadata = {
-  title: `Create - ${siteTitle}`,
-};
-
-export default function Create() {
-  return (
-    <Layout>
-      <CreateClient />
-    </Layout>
-  );
+export default function CreatePage() {
+  redirect(Routes.DASHBOARD);
 }
