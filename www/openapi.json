@@ -1,0 +1,248 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Slides2Gif API",
+    "version": "1.0.0",
+    "description": "API for creating GIFs from Google Slides"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Same-origin API"
+    }
+  ],
+  "components": {
+    "schemas": {},
+    "parameters": {}
+  },
+  "paths": {
+    "/stats": {
+      "get": {
+        "summary": "Get dashboard stats and GIF list",
+        "tags": [
+          "stats"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "gifsCreated": {
+                      "type": "number"
+                    },
+                    "presentationsLoaded": {
+                      "type": "number"
+                    },
+                    "totalSlidesProcessed": {
+                      "type": "number"
+                    },
+                    "gifs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "createdAt": {
+                            "type": "number"
+                          },
+                          "presentationId": {
+                            "type": "string"
+                          },
+                          "presentationTitle": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "url",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "gifsCreated",
+                    "presentationsLoaded",
+                    "totalSlidesProcessed",
+                    "gifs"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gifs": {
+      "post": {
+        "summary": "Create a GIF from selected slides",
+        "tags": [
+          "gifs"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "presentationId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "slideList": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "delay": {
+                    "type": "number"
+                  },
+                  "quality": {
+                    "type": "number"
+                  },
+                  "repeat": {
+                    "type": "number"
+                  },
+                  "thumbnailSize": {
+                    "type": "string",
+                    "enum": [
+                      "SMALL",
+                      "MEDIUM",
+                      "LARGE"
+                    ]
+                  }
+                },
+                "required": [
+                  "presentationId",
+                  "slideList"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "gifUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "required": [
+                    "gifUrl"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a GIF",
+        "tags": [
+          "gifs"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gifUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "gifUrl"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Get current user / auth state",
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "isLoggedIn": {
+                      "type": "boolean"
+                    },
+                    "auth": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "scope": {
+                          "type": "string"
+                        },
+                        "authDate": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "scope",
+                        "authDate"
+                      ]
+                    },
+                    "count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "isLoggedIn"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

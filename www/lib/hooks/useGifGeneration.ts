@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {apiPost} from '../apiFetcher';
+import {api} from '../api/client';
+import {PATHS} from '../api/definition';
 
 export interface GifConfig {
   thumbnailSize: 'SMALL' | 'MEDIUM' | 'LARGE';
@@ -83,8 +84,9 @@ export function useGifGeneration(): UseGifGenerationReturn {
         return;
       }
 
-      const result = await apiPost<{gifUrl: string}>('/api/generate-gif', {
-        presentationId: fileId,
+      const presentationId = typeof fileId === 'string' ? fileId : fileId[0];
+      const result = await api.post(PATHS.gifs, {
+        presentationId,
         slideList,
         delay: gifDelay,
         quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,

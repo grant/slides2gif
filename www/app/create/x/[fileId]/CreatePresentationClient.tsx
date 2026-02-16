@@ -32,7 +32,7 @@ export default function CreatePresentationClient() {
     error: metadataError,
     isValidating: isValidatingMetadata,
   } = useSWR<PresentationMetadata>(
-    fileId ? `/api/presentation/${fileId}/metadata` : null,
+    fileId ? `/api/presentations/${fileId}/metadata` : null,
     fetcher,
     presentationMetadataSWRConfig
   );

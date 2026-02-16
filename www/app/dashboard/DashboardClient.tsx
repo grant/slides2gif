@@ -8,12 +8,12 @@ import {LoadingSpinner} from '../../components/LoadingSpinner';
 import {useGooglePicker} from '../../lib/hooks/useGooglePicker';
 import {useToast} from '../../components/ToastContext';
 import useSWR from 'swr';
-import {
-  fetcher,
-  dashboardSWRConfig,
-  DashboardStats,
-  apiPost,
-} from '../../lib/apiFetcher';
+import {dashboardSWRConfig} from '../../lib/apiFetcher';
+import {api, deleteGif} from '../../lib/api/client';
+import {PATHS} from '../../lib/api/definition';
+import {API_BASE} from '../../lib/api/endpoints';
+import type {DashboardStats} from '../../lib/api/schemas';
+import {dashboardStatsSchema} from '../../lib/api/schemas';
 
 type GifToDelete = {url: string; title: string};
 
@@ -28,8 +28,8 @@ export default function DashboardClient() {
     isValidating: statsLoading,
     mutate,
   } = useSWR<DashboardStats>(
-    data?.isLoggedIn ? '/api/dashboard' : null,
-    fetcher,
+    data?.isLoggedIn ? `${API_BASE}${PATHS.stats}` : null,
+    () => api.get(PATHS.stats),
     dashboardSWRConfig
   );
   const [gifToDelete, setGifToDelete] = useState<GifToDelete | null>(null);
@@ -40,7 +40,7 @@ export default function DashboardClient() {
   async function refreshGifList() {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/dashboard', {
+      const res = await fetch(`${API_BASE}${PATHS.stats}`, {
         cache: 'no-store',
         credentials: 'include',
       });
@@ -48,8 +48,12 @@ export default function DashboardClient() {
         const err = (await res.json().catch(() => ({}))) as {error?: string};
         throw new Error(err.error || 'Failed to refresh');
       }
-      const fresh = (await res.json()) as DashboardStats;
-      mutate(fresh, {revalidate: false});
+      const json = await res.json();
+      const parsed = dashboardStatsSchema.safeParse(json);
+      if (!parsed.success) {
+        throw new Error('Invalid dashboard response');
+      }
+      mutate(parsed.data as DashboardStats, {revalidate: false});
     } catch (err) {
       toast(
         err instanceof Error ? err.message : 'Failed to refresh list',
@@ -65,11 +69,11 @@ export default function DashboardClient() {
     const urlToRemove = gifToDelete.url;
     setDeleting(true);
     try {
-      await apiPost('/api/gif/delete', {gifUrl: urlToRemove});
+      await deleteGif({gifUrl: urlToRemove});
       setGifToDelete(null);
       // Update cache immediately so the deleted GIF disappears from the UI
       mutate(
-        prev =>
+        (prev: DashboardStats | undefined) =>
           prev
             ? {
                 ...prev,

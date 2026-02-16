@@ -73,6 +73,11 @@ token.json
 creds.json
 .env
 
+# www/docs: do not commit generated diffs or generated output
+www/docs/generated/
+www/docs/**/*.diff
+www/docs/**/*-diff.*
+
 # Ignore downloads
 downloads/
 *.png

@@ -17,9 +17,9 @@ dev-www:
 dev-png2gif:
     cd png2gif && npm run dev
 
-# Run both services in parallel using concurrently
+# Run www, png2gif, and OpenAPI/types watcher in parallel
 dev-all:
-    npx concurrently --names "www,png2gif" --prefix-colors "blue,green" "cd www && npm run dev" "cd png2gif && npm run dev"
+    npx concurrently --names "www,png2gif,openapi" --prefix-colors "blue,green,magenta" "cd www && npm run dev" "cd png2gif && npm run dev" "cd www && npm run openapi:watch"
 
 # Install dependencies for www
 install-www:
@@ -94,6 +94,22 @@ fix-png2gif:
 fix:
     just fix-www || true
     just fix-png2gif || true
+
+# Generate OpenAPI spec from www/lib/api definition
+openapi:
+    cd www && npm run openapi
+
+# Generate TypeScript types from openapi.json (for fetch client)
+openapi-types:
+    cd www && npm run openapi:types
+
+# Generate OpenAPI spec and types (spec + openapi.d.ts)
+openapi-all:
+    cd www && npm run openapi:all
+
+# Generate OpenAPI spec and fail if openapi.json has uncommitted changes (for CI)
+openapi-check:
+    cd www && npm run openapi:check
 
 # Setup and Deployment Commands
 setup:

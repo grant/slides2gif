@@ -9,15 +9,14 @@ import {
 } from '../../../lib/storage';
 import {getAuthenticatedClientApp} from '../../../lib/oauthClientApp';
 import {getSessionUserId} from '../../../lib/oauthClient';
+import {Storage} from '@google-cloud/storage';
+import {
+  gifDeleteBodySchema,
+  generateGifBodySchema,
+} from '../../../lib/api/schemas';
 
-interface GenerateGifRequest {
-  presentationId: string;
-  slideList: string;
-  delay?: number;
-  quality?: number;
-  repeat?: number;
-  thumbnailSize?: 'SMALL' | 'MEDIUM' | 'LARGE';
-}
+const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
+const ALLOWED_PREFIX = `https://storage.googleapis.com/${BUCKET_NAME}/`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +26,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
 
-    const body = (await request.json()) as GenerateGifRequest;
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json({error: 'Invalid JSON body'}, {status: 400});
+    }
+
+    const parsed = generateGifBodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {error: 'Invalid request', issues: parsed.error.issues},
+        {status: 400}
+      );
+    }
+
     const {
       presentationId,
       slideList,
@@ -35,18 +48,7 @@ export async function POST(request: NextRequest) {
       quality,
       repeat,
       thumbnailSize = 'MEDIUM',
-    } = body;
-
-    if (!presentationId) {
-      return NextResponse.json(
-        {error: 'presentationId is required'},
-        {status: 400}
-      );
-    }
-
-    if (!slideList) {
-      return NextResponse.json({error: 'slideList is required'}, {status: 400});
-    }
+    } = parsed.data;
 
     const userId = await getSessionUserId(session);
     if (!userId) {
@@ -253,5 +255,70 @@ export async function POST(request: NextRequest) {
       },
       {status: 500}
     );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await getSession();
+
+  if (!session.googleTokens?.access_token && !session.googleOAuth) {
+    return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+  }
+
+  const userId = await getSessionUserId(session);
+  if (!userId) {
+    return NextResponse.json(
+      {error: 'Could not identify user. Please log out and log in again.'},
+      {status: 401}
+    );
+  }
+
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json({error: 'Invalid JSON body'}, {status: 400});
+  }
+
+  const parsed = gifDeleteBodySchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {error: 'Invalid or missing gifUrl', issues: parsed.error.issues},
+      {status: 400}
+    );
+  }
+  const {gifUrl} = parsed.data;
+
+  if (!gifUrl.startsWith(ALLOWED_PREFIX)) {
+    return NextResponse.json(
+      {error: 'Invalid or disallowed gifUrl'},
+      {status: 400}
+    );
+  }
+
+  const path = gifUrl.slice(ALLOWED_PREFIX.length);
+  const prefix = userPrefix(userId);
+
+  if (!path.startsWith(prefix)) {
+    return NextResponse.json(
+      {error: 'You can only delete your own GIFs'},
+      {status: 403}
+    );
+  }
+
+  try {
+    const storage = new Storage();
+    const bucket = storage.bucket(BUCKET_NAME);
+    const file = bucket.file(path);
+    await file.delete();
+    return NextResponse.json({ok: true});
+  } catch (error: unknown) {
+    const err = error as Error & {code?: number};
+    console.error('[gifs DELETE] Error deleting file:', err);
+    const message =
+      err.code === 403
+        ? 'Permission denied. Check bucket permissions.'
+        : err.message || 'Failed to delete GIF';
+    return NextResponse.json({error: message}, {status: 500});
   }
 }

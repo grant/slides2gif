@@ -1,0 +1,30 @@
+# Ensure OpenAPI spec is generated from lib/api definition and committed
+name: OpenAPI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  openapi:
+    name: OpenAPI spec up-to-date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: |
+          cd www && npm ci
+
+      - name: Generate OpenAPI spec
+        run: cd www && npm run openapi
+
+      - name: Check spec is committed
+        run: cd www && git diff --exit-code openapi.json || (echo "::error::openapi.json is out of date. Run 'cd www && npm run openapi' and commit the result." && exit 1)

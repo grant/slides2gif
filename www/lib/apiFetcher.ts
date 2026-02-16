@@ -94,21 +94,6 @@ export const presentationsSWRConfig: SWRConfiguration = {
   revalidateIfStale: true,
 };
 
-/**
- * Type definitions for API responses
- */
-export interface DashboardStats {
-  gifsCreated: number;
-  presentationsLoaded: number;
-  totalSlidesProcessed: number;
-  gifs: Array<{
-    url: string;
-    createdAt: number;
-    presentationId?: string;
-    presentationTitle?: string;
-  }>;
-}
-
 export interface PresentationMetadata {
   id: string;
   title: string;

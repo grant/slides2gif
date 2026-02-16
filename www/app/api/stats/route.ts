@@ -4,20 +4,9 @@ import {getAuthenticatedClientApp} from '../../../lib/oauthClientApp';
 import {getSessionUserId} from '../../../lib/oauthClient';
 import {userPrefix} from '../../../lib/storage';
 import {Storage} from '@google-cloud/storage';
+import {dashboardStatsSchema} from '../../../lib/api/schemas';
 
 const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
-
-interface DashboardStats {
-  gifsCreated: number;
-  presentationsLoaded: number;
-  totalSlidesProcessed: number;
-  gifs: Array<{
-    url: string;
-    createdAt: number;
-    presentationId?: string;
-    presentationTitle?: string;
-  }>;
-}
 
 export async function GET() {
   const session = await getSession();
@@ -94,24 +83,33 @@ export async function GET() {
       })
       .sort((a, b) => b.createdAt - a.createdAt);
 
-    const stats: DashboardStats = {
+    const stats = {
       gifsCreated: gifs.length,
       presentationsLoaded,
       totalSlidesProcessed,
       gifs: gifs.slice(0, 50),
     };
 
-    const response = NextResponse.json(stats);
+    const parsed = dashboardStatsSchema.safeParse(stats);
+    if (!parsed.success) {
+      console.error('Stats response validation failed:', parsed.error.issues);
+      return NextResponse.json(
+        {error: 'Internal response validation failed'},
+        {status: 500}
+      );
+    }
+
+    const response = NextResponse.json(parsed.data);
     response.headers.set(
       'Cache-Control',
       'private, max-age=300, stale-while-revalidate=600'
     );
     return response;
   } catch (error: unknown) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error('Error fetching stats:', error);
     return NextResponse.json(
       {
-        error: (error as Error).message || 'Failed to fetch dashboard stats',
+        error: (error as Error).message || 'Failed to fetch stats',
       },
       {status: 500}
     );

@@ -1,5 +1,5 @@
-import {getSession} from '../../../lib/sessionApp';
-import {APIResUser} from '../../../types/user';
+import {getSession} from '../../../../lib/sessionApp';
+import {APIResUser} from '../../../../types/user';
 import {NextResponse} from 'next/server';
 
 export async function GET() {

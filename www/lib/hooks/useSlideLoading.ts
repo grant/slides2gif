@@ -85,7 +85,7 @@ export function useSlideLoading(
 
           try {
             const slideResponse = await fetch(
-              `/api/presentation/${fileId}/slides/incremental?objectId=${encodeURIComponent(
+              `/api/presentations/${fileId}/slides/incremental?objectId=${encodeURIComponent(
                 objectId
               )}&index=${i}`
             );
@@ -248,7 +248,7 @@ export function useSlideLoading(
 
           try {
             const slideResponse = await fetch(
-              `/api/presentation/${fileId}/slides/incremental?objectId=${encodeURIComponent(
+              `/api/presentations/${fileId}/slides/incremental?objectId=${encodeURIComponent(
                 objectId
               )}&index=${originalIndex}`
             );

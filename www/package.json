@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Create a GIF from Google Slides",
   "main": "index.js",
-  "engines": {"node": ">=18.0.0"},
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:www": "next dev",
@@ -13,7 +15,12 @@
     "deploy": "RUN_ENV=PROD ./deploy.sh",
     "stage": "./deploy.sh",
     "lint": "prettier --check --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore --max-warnings 0",
-    "fix": "prettier --write --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
+    "fix": "prettier --write --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
+    "openapi": "tsx scripts/generate-openapi.ts",
+    "openapi:types": "openapi-typescript openapi.json -o lib/api/generated/openapi.d.ts",
+    "openapi:all": "npm run openapi && npm run openapi:types",
+    "openapi:check": "npm run openapi && git diff --exit-code openapi.json",
+    "openapi:watch": "npm run openapi:all && chokidar \"lib/api/definition.ts\" \"lib/api/schemas.ts\" -c \"npm run openapi:all\""
   },
   "repository": {
     "type": "git",
@@ -26,6 +33,7 @@
   },
   "homepage": "https://github.com/grant/slides2gif#readme",
   "devDependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@types/cookies": "^0.9.2",
     "@types/express": "^4.17.25",
     "@types/node": "^22.0.0",
@@ -33,7 +41,10 @@
     "autoprefixer": "^10.4.23",
     "eslint-config-next": "^15.5.12",
     "express": "^4.22.1",
-    "postcss": "^8.5.6"
+    "openapi-typescript": "^7.13.0",
+    "chokidar-cli": "^3.0.0",
+    "postcss": "^8.5.6",
+    "tsx": "^4.21.0"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^2.1.1",
@@ -59,11 +70,14 @@
     "next": "^15.5.12",
     "next-auth": "^4.24.13",
     "next-session": "^4.0.5",
+    "openapi-fetch": "^0.17.0",
     "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "swr": "^2.3.0",
     "tailwindcss": "^3.4.19",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "zod": "^3.25.76",
+    "zodios": "^5.1.0"
   }
 }

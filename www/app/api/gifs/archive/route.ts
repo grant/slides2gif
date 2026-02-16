@@ -26,10 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     body = (await request.json()) as {gifUrl?: string; archived?: boolean};
   } catch {
-    return NextResponse.json(
-      {error: 'Invalid JSON body'},
-      {status: 400}
-    );
+    return NextResponse.json({error: 'Invalid JSON body'}, {status: 400});
   }
 
   const {gifUrl, archived} = body;
@@ -49,7 +46,7 @@ export async function POST(request: NextRequest) {
   const path = gifUrl.slice(ALLOWED_PREFIX.length);
   const prefix = userPrefix(userId);
 
-  console.log('[gif/archive] POST', {
+  console.log('[gifs/archive] POST', {
     gifUrl: gifUrl.slice(0, 80) + '...',
     archived,
     path,
@@ -70,17 +67,23 @@ export async function POST(request: NextRequest) {
     const file = bucket.file(path);
 
     const [current] = await file.getMetadata();
-    console.log('[gif/archive] getMetadata() result keys:', Object.keys(current));
-    console.log('[gif/archive] current.metadata:', JSON.stringify(current.metadata));
+    console.log(
+      '[gifs/archive] getMetadata() result keys:',
+      Object.keys(current)
+    );
+    console.log(
+      '[gifs/archive] current.metadata:',
+      JSON.stringify(current.metadata)
+    );
 
     // Custom metadata: can be at current.metadata (GCS API) or current.metadata.metadata (nested)
     const raw = current.metadata;
     const customMetadata: Record<string, string> = {};
     if (raw && typeof raw === 'object') {
       const nested = (raw as Record<string, unknown>).metadata;
-      const src = (typeof nested === 'object' && nested !== null
-        ? nested
-        : raw) as Record<string, unknown>;
+      const src = (
+        typeof nested === 'object' && nested !== null ? nested : raw
+      ) as Record<string, unknown>;
       for (const [k, v] of Object.entries(src)) {
         if (v !== null && v !== undefined && typeof v !== 'object') {
           customMetadata[k] = String(v);
@@ -88,24 +91,21 @@ export async function POST(request: NextRequest) {
       }
     }
     const updated = {...customMetadata, archived: archived ? 'true' : 'false'};
-    console.log('[gif/archive] customMetadata (parsed):', customMetadata);
-    console.log('[gif/archive] updated (to set):', updated);
+    console.log('[gifs/archive] customMetadata (parsed):', customMetadata);
+    console.log('[gifs/archive] updated (to set):', updated);
 
     await file.setMetadata({metadata: updated});
-    console.log('[gif/archive] setMetadata() succeeded');
+    console.log('[gifs/archive] setMetadata() succeeded');
 
     return NextResponse.json({ok: true, archived});
   } catch (error: unknown) {
     const err = error as Error & {code?: number};
-    console.error('[gif/archive] Error updating metadata:', err);
-    console.error('[gif/archive] error.code:', err.code);
+    console.error('[gifs/archive] Error updating metadata:', err);
+    console.error('[gifs/archive] error.code:', err.code);
     const message =
       err.code === 403
         ? 'Permission denied. Check bucket permissions.'
         : err.message || 'Failed to update archive state';
-    return NextResponse.json(
-      {error: message},
-      {status: 500}
-    );
+    return NextResponse.json({error: message}, {status: 500});
   }
 }

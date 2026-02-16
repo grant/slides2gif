@@ -27,14 +27,23 @@ GET /presentations/import
 
 ```
 GET  /api/status
-GET  /api/gif
-GET  /api/gif/list
-GET  /api/frames/list
-GET  /api/presentation/list
-POST /api/presentation/import
+GET  /api/stats
+GET  /api/gifs (list via stats)
+GET  /api/presentations
+GET  /api/presentations/[fileId]/...
+GET  /api/gifs/download?url=...
+POST /api/gifs
+DELETE /api/gifs
 POST /api/oauth2
 POST /api/oauth2callback
 ```
+
+**Typed API** (`lib/api/`):
+
+- Single source: `definition.ts` (PATHS + routes) → Zodios client + OpenAPI spec.
+- Schemas in `schemas.ts`; backend validates with same schemas.
+- In app: `api.get(PATHS.stats)`, `api.post(PATHS.gifs, body)`, `deleteGif(body)` from `lib/api/client`.
+- `npm run openapi` → writes `openapi.json` (commit it). `npm run openapi:types` → regenerates types. CI `openapi-check` fails if spec is stale.
 
 ## Icons
 

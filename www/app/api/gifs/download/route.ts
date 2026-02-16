@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {getSession} from '../../../lib/sessionApp';
-import {getSessionUserId} from '../../../lib/oauthClient';
-import {userPrefix} from '../../../lib/storage';
+import {getSession} from '../../../../lib/sessionApp';
+import {getSessionUserId} from '../../../../lib/oauthClient';
+import {userPrefix} from '../../../../lib/storage';
 
 const ALLOWED_BUCKET = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
 const ALLOWED_PREFIX = `https://storage.googleapis.com/${ALLOWED_BUCKET}/`;
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('[download-gif] Error proxying GIF:', error);
+    console.error('[gifs/download] Error proxying GIF:', error);
     return NextResponse.json({error: 'Failed to download GIF'}, {status: 500});
   }
 }

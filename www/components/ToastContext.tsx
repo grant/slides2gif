@@ -26,7 +26,9 @@ const TOAST_DURATION_MS = 3500;
 
 export function ToastProvider({children}: {children: React.ReactNode}) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map()
+  );
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));

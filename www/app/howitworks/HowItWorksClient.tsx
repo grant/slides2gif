@@ -69,7 +69,7 @@ export default function HowItWorksClient() {
             <div className="mermaid">
               {`graph TB
     User["User Browser"] -->|"1. Select Slides and Generate"| Frontend["Next.js Frontend"]
-    Frontend -->|"2. POST /api/generate-gif"| API["API Route<br/>/api/generate-gif"]
+    Frontend -->|"2. POST /api/gifs"| API["API Route<br/>/api/gifs"]
     
     API -->|"3. Authenticate"| OAuth["Google OAuth<br/>Access Token"]
     OAuth -->|"4. Fetch Thumbnails"| SlidesAPI["Google Slides API<br/>getThumbnail"]
@@ -120,7 +120,7 @@ export default function HowItWorksClient() {
 
               <div>
                 <h3 className="mb-2 text-xl font-semibold text-[rgb(20,30,50)]">
-                  2. API Route (/api/generate-gif)
+                  2. API Route (/api/gifs)
                 </h3>
                 <p className="text-[rgb(20,30,50)]">
                   Next.js API route that handles authentication, fetches slide
@@ -219,9 +219,8 @@ export default function HowItWorksClient() {
                 frontend
               </li>
               <li>
-                Frontend sends POST request to /api/generate-gif with
-                presentationId, slideList (comma-separated objectIds), and GIF
-                options
+                Frontend sends POST request to /api/gifs with presentationId,
+                slideList (comma-separated objectIds), and GIF options
               </li>
               <li>
                 API route authenticates using Google OAuth tokens from session

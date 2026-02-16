@@ -3,6 +3,8 @@ import {useRouter} from 'next/navigation';
 import useSWR from 'swr';
 import {APIResUser} from '../types/user';
 import {Routes} from './routes';
+import {API_BASE} from './api/endpoints';
+import {PATHS} from './api/definition';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -13,17 +15,13 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-/**
- * Hook to check authentication and redirect to login if not logged in
- * @returns {Object} { userData, error, isLoading } - User data, error, and loading state
- */
 export function useAuth() {
   const router = useRouter();
   const {
     data: userData,
     error,
     isValidating: isLoading,
-  } = useSWR<APIResUser>('/api/user', fetcher);
+  } = useSWR<APIResUser>(`${API_BASE}${PATHS.usersMe}`, fetcher);
 
   useEffect(() => {
     // Only redirect if we have data and user is not logged in

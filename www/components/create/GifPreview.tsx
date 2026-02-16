@@ -39,7 +39,7 @@ export function GifPreview({
     if (!gifUrl) return;
     setIsDownloading(true);
     try {
-      const proxyUrl = `/api/download-gif?url=${encodeURIComponent(gifUrl)}`;
+      const proxyUrl = `/api/gifs/download?url=${encodeURIComponent(gifUrl)}`;
       const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();

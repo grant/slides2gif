@@ -4,6 +4,8 @@ import {useRouter} from 'next/navigation';
 import {useEffect} from 'react';
 import useSWR from 'swr';
 import {fetcher} from '../lib/apiFetcher';
+import {API_BASE} from '../lib/api/endpoints';
+import {PATHS} from '../lib/api/definition';
 import {APIResUser} from '../types/user';
 import {Routes} from '../lib/routes';
 import {LoadingScreen} from '../components/LoadingScreen';
@@ -12,7 +14,7 @@ import PageHome from '../components/home';
 export default function HomeClient() {
   const router = useRouter();
   const {data: userData, isValidating: isLoading} = useSWR<APIResUser>(
-    '/api/user',
+    `${API_BASE}${PATHS.usersMe}`,
     fetcher
   );
 
