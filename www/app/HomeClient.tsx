@@ -13,7 +13,7 @@ import PageHome from '../components/home';
 
 export default function HomeClient() {
   const router = useRouter();
-  const {data: userData, isValidating: isLoading} = useSWR<APIResUser>(
+  const {data: userData} = useSWR<APIResUser>(
     `${API_BASE}${PATHS.usersMe}`,
     fetcher
   );
@@ -24,10 +24,8 @@ export default function HomeClient() {
     }
   }, [userData, router]);
 
-  if (isLoading) {
-    return <LoadingScreen fullScreen message="Loading..." />;
-  }
-
+  // Only show loading when we know they're logged in and are redirecting.
+  // Otherwise show home immediately (assume not logged in until we have a response).
   if (userData?.isLoggedIn) {
     return <LoadingScreen fullScreen message="Redirecting..." />;
   }

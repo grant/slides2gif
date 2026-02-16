@@ -45,6 +45,15 @@ export default function HowItWorksClient() {
     <YellowPageLayout>
       <header className="flex items-center justify-between px-6 py-6 sm:px-10">
         <Logo />
+        <a href="/create">
+          <button
+            type="button"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-lg font-bold text-slate-900 shadow-lg shadow-amber-900/20 transition-all duration-200 hover:bg-slate-50 hover:shadow-xl hover:shadow-amber-900/25 active:scale-[0.98]"
+          >
+            <span className="material-icons align-bottom text-xl">add</span>{' '}
+            Create GIF
+          </button>
+        </a>
       </header>
 
       <div className="flex-1 px-6 py-16 sm:px-10">
