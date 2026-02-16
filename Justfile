@@ -36,6 +36,7 @@ install-all:
 
 # Build www service
 build-www:
+    cd www && npm run openapi:types
     cd www && npm run build
 
 # Build png2gif service
