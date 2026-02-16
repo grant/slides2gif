@@ -170,7 +170,10 @@ export default function DashboardLayout({
 
       {/* Main Content */}
       <main className="relative flex-1 overflow-y-auto">
-        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400" aria-hidden />
+        <div
+          className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400"
+          aria-hidden
+        />
         <div className="relative">{children}</div>
       </main>
     </div>

@@ -7,13 +7,23 @@ import YellowPageLayout from '../../components/YellowPageLayout';
 export default function HowItWorksClient() {
   useEffect(() => {
     const runMermaid = () => {
-      const m = (window as unknown as {mermaid?: {initialize: (opts: unknown) => void; run: (opts?: unknown) => Promise<void>}}).mermaid;
+      const m = (
+        window as unknown as {
+          mermaid?: {
+            initialize: (opts: unknown) => void;
+            run: (opts?: unknown) => Promise<void>;
+          };
+        }
+      ).mermaid;
       if (!m) return;
       m.initialize({startOnLoad: false, theme: 'default'});
       void m.run();
     };
 
-    if (typeof window !== 'undefined' && (window as unknown as {mermaid?: unknown}).mermaid) {
+    if (
+      typeof window !== 'undefined' &&
+      (window as unknown as {mermaid?: unknown}).mermaid
+    ) {
       runMermaid();
       return;
     }
@@ -35,18 +45,21 @@ export default function HowItWorksClient() {
 
       <div className="flex-1 px-6 py-16 sm:px-10">
         <div className="mx-auto max-w-6xl">
-            <h1 className="mb-8 text-center text-5xl font-bold text-slate-900 drop-shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.08)]">
-              How It Works
-            </h1>
-            <p className="mb-12 text-center text-xl text-slate-800">
-              Technical architecture and flow for engineers
-            </p>
+          <h1 className="mb-8 text-center text-5xl font-bold text-slate-900 drop-shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.08)]">
+            How It Works
+          </h1>
+          <p className="mb-12 text-center text-xl text-slate-800">
+            Technical architecture and flow for engineers
+          </p>
 
           <div className="mb-12 rounded-2xl border border-amber-800/30 bg-white p-8 shadow-2xl shadow-amber-950/30 sm:p-10">
             <h2 className="mb-6 text-3xl font-bold text-slate-900">
               System Architecture
             </h2>
-            <div className="mermaid min-h-[280px] overflow-x-auto bg-white" id="mermaid-architecture">
+            <div
+              className="mermaid min-h-[280px] overflow-x-auto bg-white"
+              id="mermaid-architecture"
+            >
               {`graph TB
     User["User Browser"] -->|"1. Select Slides and Generate"| Frontend["Next.js Frontend"]
     Frontend -->|"2. POST /api/gifs"| API["API Route<br/>/api/gifs"]
