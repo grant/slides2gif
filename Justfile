@@ -52,6 +52,10 @@ docker-build:
     @echo "Building www (Next.js)..."
     time docker build -t slides2gif-www ./www
 
+# Test www Docker build only (same as CI; run before pushing)
+docker-build-www:
+    docker build -t slides2gif-www ./www
+
 # Build all services
 build-all:
     just build-www
