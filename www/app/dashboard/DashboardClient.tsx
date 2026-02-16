@@ -119,7 +119,7 @@ export default function DashboardClient() {
           </div>
         ) : (
           <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="rounded-lg bg-white p-6 shadow-sm">
+            <div className="rounded-lg bg-white p-6 shadow-sm shadow-amber-900/5">
               <div className="text-sm font-medium text-gray-500">
                 GIFs Created
               </div>
@@ -133,7 +133,7 @@ export default function DashboardClient() {
                 )}
               </div>
             </div>
-            <div className="rounded-lg bg-white p-6 shadow-sm">
+            <div className="rounded-lg bg-white p-6 shadow-sm shadow-amber-900/5">
               <div className="text-sm font-medium text-gray-500">
                 Presentations Loaded
               </div>
@@ -147,7 +147,7 @@ export default function DashboardClient() {
                 )}
               </div>
             </div>
-            <div className="rounded-lg bg-white p-6 shadow-sm">
+            <div className="rounded-lg bg-white p-6 shadow-sm shadow-amber-900/5">
               <div className="text-sm font-medium text-gray-500">
                 Total Slides Processed
               </div>
@@ -179,7 +179,7 @@ export default function DashboardClient() {
                 type="button"
                 onClick={refreshGifList}
                 disabled={refreshing}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
                 title="Refresh list to show newly created GIFs"
                 aria-label="Refresh GIF list"
               >
@@ -267,7 +267,7 @@ export default function DashboardClient() {
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+          <div className="rounded-lg border-2 border-dashed border-amber-200 bg-amber-50/50 p-12 text-center">
             <p className="text-gray-600">No GIFs created yet</p>
             {pickerError && (
               <p className="mt-2 text-sm text-red-600">{pickerError}</p>
@@ -277,7 +277,7 @@ export default function DashboardClient() {
                 type="button"
                 onClick={openPicker}
                 disabled={!pickerReady || openingPicker}
-                className="inline-flex items-center gap-2 rounded bg-blue px-4 py-2 font-medium text-white hover:bg-blue/90 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 font-medium text-slate-900 shadow-sm shadow-amber-900/20 hover:bg-amber-600 disabled:opacity-50"
               >
                 {openingPicker ? (
                   <>

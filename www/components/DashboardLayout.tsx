@@ -120,7 +120,7 @@ export default function DashboardLayout({
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
             } ${
               activeTab === 'dashboard'
-                ? 'bg-gray-100 text-gray-800'
+                ? 'bg-amber-50 text-amber-900'
                 : 'bg-transparent text-gray-700 hover:bg-gray-100'
             }`}
             title="Dashboard"
@@ -135,7 +135,7 @@ export default function DashboardLayout({
               isCollapsed
                 ? 'h-14 justify-center rounded p-2'
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
-            } bg-[rgba(255,186,68,1)] text-[rgb(20,30,50)] disabled:opacity-60 disabled:cursor-not-allowed`}
+            } bg-amber-500 text-slate-900 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm shadow-amber-900/20`}
             title="Create GIF"
           >
             {openingPicker ? (
@@ -169,7 +169,10 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="relative flex-1 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400" aria-hidden />
+        <div className="relative">{children}</div>
+      </main>
     </div>
   );
 }
