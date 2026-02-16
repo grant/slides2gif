@@ -1,12 +1,15 @@
 'use client';
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import Logo from '../../components/Logo';
 import YellowPageLayout from '../../components/YellowPageLayout';
+import {LoadingSpinner} from '../../components/LoadingSpinner';
 
 export default function HowItWorksClient() {
+  const [mermaidRendered, setMermaidRendered] = useState(false);
+
   useEffect(() => {
-    const runMermaid = () => {
+    const runMermaid = async () => {
       const m = (
         window as unknown as {
           mermaid?: {
@@ -17,14 +20,15 @@ export default function HowItWorksClient() {
       ).mermaid;
       if (!m) return;
       m.initialize({startOnLoad: false, theme: 'default'});
-      void m.run();
+      await m.run();
+      setMermaidRendered(true);
     };
 
     if (
       typeof window !== 'undefined' &&
       (window as unknown as {mermaid?: unknown}).mermaid
     ) {
-      runMermaid();
+      void runMermaid();
       return;
     }
 
@@ -32,7 +36,7 @@ export default function HowItWorksClient() {
     script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
     script.async = true;
     script.onload = () => {
-      runMermaid();
+      void runMermaid();
     };
     document.head.appendChild(script);
   }, []);
@@ -56,11 +60,20 @@ export default function HowItWorksClient() {
             <h2 className="mb-6 text-3xl font-bold text-slate-900">
               System Architecture
             </h2>
-            <div
-              className="mermaid min-h-[280px] overflow-x-auto bg-white"
-              id="mermaid-architecture"
-            >
-              {`graph TB
+            <div className="relative min-h-[280px]">
+              {!mermaidRendered && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-white"
+                  aria-hidden
+                >
+                  <LoadingSpinner size="lg" className="border-t-amber-500" />
+                </div>
+              )}
+              <div
+                className={`mermaid min-h-[280px] overflow-x-auto bg-white ${mermaidRendered ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+                id="mermaid-architecture"
+              >
+                {`graph TB
     User["User Browser"] -->|"1. Select Slides and Generate"| Frontend["Next.js Frontend"]
     Frontend -->|"2. POST /api/gifs"| API["API Route<br/>/api/gifs"]
     
@@ -92,6 +105,7 @@ export default function HowItWorksClient() {
     style GCS fill:#fea003,color:#fff
     style PNG2GIF fill:#ff9500,color:#fff
     style GIFLib fill:#ffba44,color:#141e32`}
+              </div>
             </div>
           </div>
 
