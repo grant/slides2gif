@@ -170,55 +170,69 @@ fi
 cd ..
 
 echo ""
-echo -e "${BLUE}3. Verifying secret access...${NC}"
-# Ensure service account has access to secrets (they're granted in setup.sh, but verify)
-WWW_SERVICE_ACCOUNT="${WWW_SERVICE_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
-SECRETS_OK=true
-
-for secret_name in "oauth-client-id" "oauth-client-secret" "secret-cookie-password" "google-cloud-project-number" "google-picker-developer-key"; do
-  if ! gcloud secrets describe ${secret_name} --project ${PROJECT_ID} > /dev/null 2>&1; then
-    continue
-  fi
-  if gcloud secrets get-iam-policy ${secret_name} \
-    --project ${PROJECT_ID} \
-    --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then
-    echo -e "  ${CHECK} ${WWW_SERVICE_ACCOUNT} has access to ${secret_name}"
-  else
-    echo -e "  ${ARROW} Granting ${WWW_SERVICE_ACCOUNT} access to ${secret_name}..."
-    if gcloud secrets add-iam-policy-binding ${secret_name} \
-      --member="serviceAccount:${WWW_SERVICE_ACCOUNT}" \
-      --role="roles/secretmanager.secretAccessor" \
-      --project ${PROJECT_ID} \
-      --quiet 2>/dev/null; then
-      echo -e "    ${CHECK} Access granted"
-    else
-      echo -e "    ${YELLOW}⚠️  Could not grant access (service account may not exist yet)${NC}"
-      SECRETS_OK=false
-    fi
-  fi
-done
-
-echo ""
-echo -e "${BLUE}4. Setting up IAM permissions...${NC}"
-echo -e "  ${ARROW} Granting www service permission to invoke png2gif..."
-
-if gcloud run services add-iam-policy-binding ${PNG2GIF_SERVICE_NAME} \
+echo -e "${BLUE}3. Resolving www service account...${NC}"
+# Use the identity that actually runs the www service (from Cloud Run), not a guessed name.
+WWW_SERVICE_ACCOUNT=$(gcloud run services describe ${WWW_SERVICE_NAME} \
   --region ${REGION} \
-  --member="serviceAccount:${WWW_SERVICE_ACCOUNT}" \
-  --role="roles/run.invoker" \
   --project ${PROJECT_ID} \
-  --quiet 2>/dev/null; then
-  echo -e "  ${CHECK} IAM permissions configured"
+  --format='value(spec.template.spec.serviceAccountName)' 2>/dev/null || echo "")
+if [ -z "$WWW_SERVICE_ACCOUNT" ]; then
+  PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)' 2>/dev/null || echo "")
+  if [ -n "$PROJECT_NUMBER" ]; then
+    WWW_SERVICE_ACCOUNT="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+  fi
+fi
+if [ -z "$WWW_SERVICE_ACCOUNT" ]; then
+  echo -e "  ${YELLOW}⚠️  Could not resolve www service account. Skipping secret and IAM steps.${NC}"
+  echo "    Run ./setup.sh after first deploy to grant secret access and png2gif invoker."
 else
-  # Check if permission already exists
-  if gcloud run services get-iam-policy ${PNG2GIF_SERVICE_NAME} \
+  echo -e "  ${CHECK} www runs as: ${WWW_SERVICE_ACCOUNT}"
+
+  echo ""
+  echo -e "${BLUE}4. Verifying secret access...${NC}"
+  for secret_name in "oauth-client-id" "oauth-client-secret" "secret-cookie-password" "google-cloud-project-number" "google-picker-developer-key"; do
+    if ! gcloud secrets describe ${secret_name} --project ${PROJECT_ID} > /dev/null 2>&1; then
+      continue
+    fi
+    if gcloud secrets get-iam-policy ${secret_name} \
+      --project ${PROJECT_ID} \
+      --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then
+      echo -e "  ${CHECK} ${WWW_SERVICE_ACCOUNT} has access to ${secret_name}"
+    else
+      echo -e "  ${ARROW} Granting ${WWW_SERVICE_ACCOUNT} access to ${secret_name}..."
+      if gcloud secrets add-iam-policy-binding ${secret_name} \
+        --member="serviceAccount:${WWW_SERVICE_ACCOUNT}" \
+        --role="roles/secretmanager.secretAccessor" \
+        --project ${PROJECT_ID} \
+        --quiet 2>/dev/null; then
+        echo -e "    ${CHECK} Access granted"
+      else
+        echo -e "    ${YELLOW}⚠️  Could not grant access${NC}"
+      fi
+    fi
+  done
+
+  echo ""
+  echo -e "${BLUE}5. Setting up IAM permissions...${NC}"
+  echo -e "  ${ARROW} Granting www service permission to invoke png2gif..."
+
+  if gcloud run services add-iam-policy-binding ${PNG2GIF_SERVICE_NAME} \
     --region ${REGION} \
+    --member="serviceAccount:${WWW_SERVICE_ACCOUNT}" \
+    --role="roles/run.invoker" \
     --project ${PROJECT_ID} \
-    --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then
-    echo -e "  ${CHECK} IAM permissions already configured"
+    --quiet 2>/dev/null; then
+    echo -e "  ${CHECK} IAM permissions configured"
   else
-    echo -e "  ${YELLOW}⚠️  Failed to set IAM permissions (service account may not exist yet)${NC}"
-    echo "    Permissions will be set automatically after first deployment"
+    if gcloud run services get-iam-policy ${PNG2GIF_SERVICE_NAME} \
+      --region ${REGION} \
+      --project ${PROJECT_ID} \
+      --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then
+      echo -e "  ${CHECK} IAM permissions already configured"
+    else
+      echo -e "  ${YELLOW}⚠️  Failed to set IAM permissions${NC}"
+      echo "    Run: gcloud run services add-iam-policy-binding ${PNG2GIF_SERVICE_NAME} --region ${REGION} --member=serviceAccount:${WWW_SERVICE_ACCOUNT} --role=roles/run.invoker --project ${PROJECT_ID}"
+    fi
   fi
 fi
 
