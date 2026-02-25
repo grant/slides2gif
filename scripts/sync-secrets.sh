@@ -7,17 +7,11 @@ set -e
 PROJECT_ID="slides2gifcom"
 ENV_FILE="www/.env.local"
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
 echo "Syncing secrets from .env.local to Secret Manager..."
 echo ""
 
 if [ ! -f "$ENV_FILE" ]; then
-  echo -e "${YELLOW}Error: $ENV_FILE not found${NC}"
+  echo "⚠️  Error: $ENV_FILE not found"
   exit 1
 fi
 
@@ -33,24 +27,24 @@ sync_secret() {
   local value="${!env_var_name}"
   
   if [ -z "$value" ]; then
-    echo -e "${YELLOW}⚠️  Skipping ${secret_name}: Not set in .env.local${NC}"
+    echo "⚠️  Skipping ${secret_name}: Not set in .env.local"
     return 1
   fi
-  
+
   # Check if secret exists
   if gcloud secrets describe "${secret_name}" --project="${PROJECT_ID}" > /dev/null 2>&1; then
-    echo -e "${BLUE}→ Updating ${secret_name}...${NC}"
+    echo "→ Updating ${secret_name}..."
     echo -n "$value" | gcloud secrets versions add "${secret_name}" \
       --data-file=- \
       --project="${PROJECT_ID}" > /dev/null 2>&1
-    echo -e "${GREEN}✓ Updated${NC}"
+    echo "✓ Updated"
   else
-    echo -e "${BLUE}→ Creating ${secret_name}...${NC}"
+    echo "→ Creating ${secret_name}..."
     echo -n "$value" | gcloud secrets create "${secret_name}" \
       --data-file=- \
       --replication-policy="automatic" \
       --project="${PROJECT_ID}" > /dev/null 2>&1
-    echo -e "${GREEN}✓ Created${NC}"
+    echo "✓ Created"
   fi
 }
 
@@ -61,4 +55,4 @@ sync_secret "google-cloud-project-number" "GOOGLE_CLOUD_PROJECT_NUMBER"
 sync_secret "google-picker-developer-key" "GOOGLE_PICKER_DEVELOPER_KEY"
 
 echo ""
-echo -e "${GREEN}✅ All secrets synced!${NC}"
+echo "✅ All secrets synced!"

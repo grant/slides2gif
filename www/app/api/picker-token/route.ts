@@ -26,7 +26,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error:
-          'Picker not configured. Add GOOGLE_CLOUD_PROJECT_NUMBER and GOOGLE_PICKER_DEVELOPER_KEY to .env.local (see .env.example).',
+          'Picker not configured. Add GOOGLE_CLOUD_PROJECT_NUMBER and GOOGLE_PICKER_DEVELOPER_KEY to GSM or environment.',
       },
       {status: 503}
     );

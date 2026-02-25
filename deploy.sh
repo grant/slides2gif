@@ -15,18 +15,11 @@ else
   PNG2GIF_SERVICE_NAME="slides2gif-png2gif"
 fi
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+CHECK="✓"
+CROSS="✗"
+ARROW="→"
 
-CHECK="${GREEN}✓${NC}"
-CROSS="${RED}✗${NC}"
-ARROW="${BLUE}→${NC}"
-
-echo -e "${BLUE}🚀 Deploying slides2gif services to Cloud Run${NC}"
+echo "Deploying slides2gif services to Cloud Run"
 echo "Project: ${PROJECT_ID}"
 echo "Region: ${REGION}"
 echo "Environment: ${DEPLOY_ENV}"
@@ -38,12 +31,12 @@ gcloud config set project ${PROJECT_ID} 2>/dev/null || true
 
 # Check if authenticated
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
-  echo -e "${CROSS} Not authenticated. Please run: gcloud auth login${NC}"
+  echo "${CROSS} Not authenticated. Please run: gcloud auth login"
   exit 1
 fi
 
 # Check if secrets exist in Secret Manager
-echo -e "${ARROW} Checking secrets in Secret Manager...${NC}"
+echo "${ARROW} Checking secrets in Secret Manager..."
 SECRETS_EXIST=true
 MISSING_SECRETS=()
 
@@ -55,7 +48,7 @@ for secret_name in "oauth-client-id" "oauth-client-secret" "secret-cookie-passwo
 done
 
 if [ "$SECRETS_EXIST" = false ]; then
-  echo -e "${CROSS} Missing secrets in Secret Manager:"
+  echo "${CROSS} Missing secrets in Secret Manager:"
   for secret in "${MISSING_SECRETS[@]}"; do
     echo "  - ${secret}"
   done
@@ -65,7 +58,7 @@ if [ "$SECRETS_EXIST" = false ]; then
   exit 1
 fi
 
-echo -e "${CHECK} All required secrets found in Secret Manager"
+echo "${CHECK} All required secrets found in Secret Manager"
 
 # Set GCS_CACHE_BUCKET (not a secret, just config)
 if [ -z "$GCS_CACHE_BUCKET" ]; then
@@ -73,14 +66,14 @@ if [ -z "$GCS_CACHE_BUCKET" ]; then
 fi
 
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Deployment Checklist${NC}"
+echo "----------------------------------------"
+echo "Deployment Checklist"
 echo ""
 
-echo -e "${BLUE}1. Deploying png2gif service...${NC}"
+echo "1. Deploying png2gif service..."
 cd png2gif
 
-echo -e "  ${ARROW} Building and deploying..."
+echo "  ${ARROW} Building and deploying..."
 if gcloud run deploy ${PNG2GIF_SERVICE_NAME} \
   --source . \
   --platform managed \
@@ -103,23 +96,23 @@ if gcloud run deploy ${PNG2GIF_SERVICE_NAME} \
     --project ${PROJECT_ID} \
     --format 'value(status.url)')
   
-  echo -e "  ${CHECK} png2gif service deployed: ${PNG2GIF_URL}"
+  echo "  ${CHECK} png2gif service deployed: ${PNG2GIF_URL}"
 else
-  echo -e "  ${CROSS} Failed to deploy png2gif service"
+  echo "  ${CROSS} Failed to deploy png2gif service"
   exit 1
 fi
 
 cd ..
 
 echo ""
-echo -e "${BLUE}2. Deploying www service...${NC}"
+echo "2. Deploying www service..."
 cd www
 
-echo -e "  ${ARROW} Building Next.js app..."
+echo "  ${ARROW} Building Next.js app..."
 if npm run build; then
-  echo -e "  ${CHECK} Build successful"
+  echo "  ${CHECK} Build successful"
 else
-  echo -e "  ${CROSS} Build failed"
+  echo "  ${CROSS} Build failed"
   exit 1
 fi
 
@@ -136,7 +129,7 @@ for picker_secret in "google-cloud-project-number:GOOGLE_CLOUD_PROJECT_NUMBER" "
   fi
 done
 
-echo -e "  ${ARROW} Deploying to Cloud Run..."
+echo "  ${ARROW} Deploying to Cloud Run..."
 if gcloud run deploy ${WWW_SERVICE_NAME} \
   --source . \
   --platform managed \
@@ -161,16 +154,16 @@ if gcloud run deploy ${WWW_SERVICE_NAME} \
     --project ${PROJECT_ID} \
     --format 'value(status.url)')
   
-  echo -e "  ${CHECK} www service deployed: ${WWW_URL}"
+  echo "  ${CHECK} www service deployed: ${WWW_URL}"
 else
-  echo -e "  ${CROSS} Failed to deploy www service"
+  echo "  ${CROSS} Failed to deploy www service"
   exit 1
 fi
 
 cd ..
 
 echo ""
-echo -e "${BLUE}3. Resolving www service account...${NC}"
+echo "3. Resolving www service account..."
 # Use the identity that actually runs the www service (from Cloud Run), not a guessed name.
 WWW_SERVICE_ACCOUNT=$(gcloud run services describe ${WWW_SERVICE_NAME} \
   --region ${REGION} \
@@ -183,13 +176,13 @@ if [ -z "$WWW_SERVICE_ACCOUNT" ]; then
   fi
 fi
 if [ -z "$WWW_SERVICE_ACCOUNT" ]; then
-  echo -e "  ${YELLOW}⚠️  Could not resolve www service account. Skipping secret and IAM steps.${NC}"
+  echo "  ⚠️  Could not resolve www service account. Skipping secret and IAM steps."
   echo "    Run ./setup.sh after first deploy to grant secret access and png2gif invoker."
 else
-  echo -e "  ${CHECK} www runs as: ${WWW_SERVICE_ACCOUNT}"
+  echo "  ${CHECK} www runs as: ${WWW_SERVICE_ACCOUNT}"
 
   echo ""
-  echo -e "${BLUE}4. Verifying secret access...${NC}"
+  echo "4. Verifying secret access..."
   for secret_name in "oauth-client-id" "oauth-client-secret" "secret-cookie-password" "google-cloud-project-number" "google-picker-developer-key"; do
     if ! gcloud secrets describe ${secret_name} --project ${PROJECT_ID} > /dev/null 2>&1; then
       continue
@@ -197,24 +190,24 @@ else
     if gcloud secrets get-iam-policy ${secret_name} \
       --project ${PROJECT_ID} \
       --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then
-      echo -e "  ${CHECK} ${WWW_SERVICE_ACCOUNT} has access to ${secret_name}"
+      echo "  ${CHECK} ${WWW_SERVICE_ACCOUNT} has access to ${secret_name}"
     else
-      echo -e "  ${ARROW} Granting ${WWW_SERVICE_ACCOUNT} access to ${secret_name}..."
+      echo "  ${ARROW} Granting ${WWW_SERVICE_ACCOUNT} access to ${secret_name}..."
       if gcloud secrets add-iam-policy-binding ${secret_name} \
         --member="serviceAccount:${WWW_SERVICE_ACCOUNT}" \
         --role="roles/secretmanager.secretAccessor" \
         --project ${PROJECT_ID} \
         --quiet 2>/dev/null; then
-        echo -e "    ${CHECK} Access granted"
+        echo "    ${CHECK} Access granted"
       else
-        echo -e "    ${YELLOW}⚠️  Could not grant access${NC}"
+        echo "    ⚠️  Could not grant access"
       fi
     fi
   done
 
   echo ""
-  echo -e "${BLUE}5. Setting up IAM permissions...${NC}"
-  echo -e "  ${ARROW} Granting www service permission to invoke png2gif..."
+  echo "5. Setting up IAM permissions..."
+  echo "  ${ARROW} Granting www service permission to invoke png2gif..."
 
   if gcloud run services add-iam-policy-binding ${PNG2GIF_SERVICE_NAME} \
     --region ${REGION} \
@@ -222,25 +215,25 @@ else
     --role="roles/run.invoker" \
     --project ${PROJECT_ID} \
     --quiet 2>/dev/null; then
-    echo -e "  ${CHECK} IAM permissions configured"
+    echo "  ${CHECK} IAM permissions configured"
   else
     if gcloud run services get-iam-policy ${PNG2GIF_SERVICE_NAME} \
       --region ${REGION} \
       --project ${PROJECT_ID} \
       --format='value(bindings[].members)' 2>/dev/null | grep -q "${WWW_SERVICE_ACCOUNT}"; then
-      echo -e "  ${CHECK} IAM permissions already configured"
+      echo "  ${CHECK} IAM permissions already configured"
     else
-      echo -e "  ${YELLOW}⚠️  Failed to set IAM permissions${NC}"
+      echo "  ⚠️  Failed to set IAM permissions"
       echo "    Run: gcloud run services add-iam-policy-binding ${PNG2GIF_SERVICE_NAME} --region ${REGION} --member=serviceAccount:${WWW_SERVICE_ACCOUNT} --role=roles/run.invoker --project ${PROJECT_ID}"
     fi
   fi
 fi
 
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ Deployment complete!${NC}"
+echo "----------------------------------------"
+echo "✅ Deployment complete!"
 echo ""
 echo "Services deployed:"
-echo -e "  ${GREEN}www:${NC}     ${WWW_URL}"
-echo -e "  ${GREEN}png2gif:${NC} ${PNG2GIF_URL}"
+echo "  www:     ${WWW_URL}"
+echo "  png2gif: ${PNG2GIF_URL}"
 echo ""

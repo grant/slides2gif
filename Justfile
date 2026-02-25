@@ -5,13 +5,15 @@
 default:
     just dev
 
-# Run www, png2gif, and OpenAPI watcher in parallel
+# Run www, png2gif, and OpenAPI watcher in parallel (secrets loaded from GSM via with-secrets.sh)
 dev:
-    npx concurrently --names "www,png2gif,openapi" --prefix-colors "blue,green,magenta" "cd www && npm run dev" "cd png2gif && npm run dev" "cd www && npm run openapi:watch"
+    chmod +x scripts/with-secrets.sh
+    ./scripts/with-secrets.sh -- npx concurrently --names "www,png2gif,openapi" --prefix-colors "blue,green,magenta" "cd www && npm run dev" "cd png2gif && npm run dev" "cd www && npm run openapi:watch"
 
-# Run www only
+# Run www only (secrets loaded from GSM)
 dev-www:
-    cd www && npm run dev
+    chmod +x scripts/with-secrets.sh
+    ./scripts/with-secrets.sh -- bash -c "cd www && npm run dev"
 
 # Run png2gif only
 dev-png2gif:
@@ -29,6 +31,11 @@ install-www:
 # Install dependencies for png2gif
 install-png2gif:
     cd png2gif && npm install
+
+# Verify required secrets exist in Google Secret Manager (run before just dev)
+verify-env:
+    chmod +x scripts/verify-env.sh
+    ./scripts/verify-env.sh
 
 # Build www and png2gif
 build:
@@ -105,6 +112,7 @@ openapi-check:
     cd www && npm run openapi:check
 
 # Setup and Deployment Commands
+# One-time: configures GCP project, APIs, buckets. Then create secrets (just create-secret <name>) and just verify-env, just dev.
 setup:
     ./setup.sh
 
@@ -136,9 +144,6 @@ domain-dns-records:
     ./scripts/domain-dns-records.sh
 
 # Secret Management Commands
-verify-secrets:
-    ./scripts/verify-secrets.sh
-
 sync-secrets:
     ./scripts/sync-secrets.sh
 

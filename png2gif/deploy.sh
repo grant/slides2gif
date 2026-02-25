@@ -6,12 +6,7 @@ PROJECT_ID="slides2gifcom"
 REGION="us-central1"
 SERVICE_NAME="slides2gif-png2gif"
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-echo -e "${BLUE}🚀 Deploying png2gif service to Cloud Run${NC}"
+echo "Deploying png2gif service to Cloud Run"
 echo "Project: ${PROJECT_ID}"
 echo "Region: ${REGION}"
 echo ""
@@ -41,8 +36,8 @@ SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} \
   --format 'value(status.url)')
 
 echo ""
-echo -e "${GREEN}✅ Deployment complete!${NC}"
-echo -e "Service URL: ${GREEN}${SERVICE_URL}${NC}"
+echo "✅ Deployment complete!"
+echo "Service URL: ${SERVICE_URL}"
 echo ""
 echo "Note: Make sure the www service has permission to invoke this service."
 echo "Run the following command to grant permissions:"

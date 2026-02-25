@@ -5,18 +5,18 @@ set -e
 PROJECT_ID="slides2gifcom"
 REGION="us-central1"
 
-# Colors
+# Colors (use with echo -e so escapes are interpreted)
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 CHECK="${GREEN}✓${NC}"
 CROSS="${RED}✗${NC}"
 ARROW="${BLUE}→${NC}"
 
-echo -e "${BLUE}🔧 Setting up slides2gif project on Google Cloud${NC}"
+echo -e "${BLUE}Setting up slides2gif project on Google Cloud${NC}"
 echo "Project: ${PROJECT_ID}"
 echo "Region: ${REGION}"
 echo ""
@@ -30,8 +30,8 @@ check_step() {
   local command="$2"
   STEPS_TOTAL=$((STEPS_TOTAL + 1))
   
-  echo -n "  ${ARROW} $description... "
-  
+  echo -en "  ${ARROW} $description... "
+
   if eval "$command" > /dev/null 2>&1; then
     echo -e "${CHECK}"
     STEPS_COMPLETED=$((STEPS_COMPLETED + 1))
@@ -45,7 +45,7 @@ check_step() {
 run_step() {
   local description="$1"
   local command="$2"
-  
+
   echo -e "  ${ARROW} $description..."
   if eval "$command"; then
     echo -e "    ${CHECK} Done"
@@ -57,18 +57,18 @@ run_step() {
 }
 
 # Step 1: Check authentication
-echo -e "${BLUE}1. Authentication${NC}"
+echo "1. Authentication"
 if check_step "Checking gcloud authentication" "gcloud auth list --filter=status:ACTIVE --format='value(account)' | grep -q ."; then
   ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n1)
   echo "    Logged in as: $ACCOUNT"
 else
-  echo -e "    ${YELLOW}⚠️  Not authenticated. Run: gcloud auth login${NC}"
+  echo "    Not authenticated. Run: gcloud auth login"
   exit 1
 fi
 echo ""
 
 # Step 2: Set project
-echo -e "${BLUE}2. Project Configuration${NC}"
+echo "2. Project Configuration"
 if check_step "Checking if project is set" "[ \"\$(gcloud config get-value project 2>/dev/null)\" = \"${PROJECT_ID}\" ]"; then
   echo "    Project already set to ${PROJECT_ID}"
 else
@@ -77,7 +77,7 @@ fi
 echo ""
 
 # Step 3: Enable APIs
-echo -e "${BLUE}3. Enabling Required APIs${NC}"
+echo "3. Enabling Required APIs"
 APIS=(
   "run.googleapis.com:Cloud Run API"
   "cloudbuild.googleapis.com:Cloud Build API"
@@ -97,7 +97,7 @@ done
 echo ""
 
 # Step 4: Create GCS buckets
-echo -e "${BLUE}4. Cloud Storage Buckets${NC}"
+echo "4. Cloud Storage Buckets"
 BUCKETS=(
   "slides2gif-cache:Public read access for cached slide thumbnails"
   "slides2gif-upload-test:Public read access for uploaded GIFs"
@@ -115,7 +115,7 @@ done
 echo ""
 
 # Step 5: Create service account (if needed)
-echo -e "${BLUE}5. Service Account${NC}"
+echo "5. Service Account"
 SERVICE_ACCOUNT_NAME="slides2gif-service-account"
 SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -134,7 +134,7 @@ fi
 echo ""
 
 # Step 6: Google Cloud Secret Manager
-echo -e "${BLUE}6. Google Cloud Secret Manager${NC}"
+echo "6. Google Cloud Secret Manager"
 
 # Enable Secret Manager API
 if check_step "Secret Manager API enabled" "gcloud services list --enabled --filter='name:secretmanager.googleapis.com' --format='value(name)' | grep -q 'secretmanager.googleapis.com'"; then
@@ -217,7 +217,7 @@ for secret_info in "${SECRETS[@]}"; do
         echo -e "      ${CROSS} Failed to create (may already exist or have permission issues)"
       fi
     else
-      echo -e "    ${YELLOW}⚠️  Secret '${secret_name}' not found in .env.local or is a placeholder${NC}"
+      echo "    Secret '${secret_name}' not found in .env.local or is a placeholder"
       echo "      Create it manually:"
       echo "        ./scripts/create-secret.sh ${secret_name}"
       echo "      Or:"
@@ -257,7 +257,7 @@ if [ -z "$STAGING_SA" ]; then
 fi
 
 if [ -z "$WWW_SA" ] && [ -z "$STAGING_SA" ]; then
-  echo -e "  ${YELLOW}Cannot resolve Cloud Run service account (deploy www first). Skipping secret access grants.${NC}"
+  echo "  Cannot resolve Cloud Run service account (deploy www first). Skipping secret access grants."
   echo "    After running 'just deploy', run ./setup.sh again to grant secret access."
 else
   for secret_info in "${SECRETS[@]}"; do
@@ -295,21 +295,21 @@ else
 fi
 
 echo ""
-echo -e "  ${BLUE}Note:${NC} For local development, use www/.env.local (gitignored)"
-echo -e "  For production, secrets are stored in Google Cloud Secret Manager"
+echo "  Note: For local development, secrets are loaded from GSM when you run: just dev"
+echo "  For production, secrets are stored in Google Cloud Secret Manager"
 echo ""
 
 # Step 7: Application Default Credentials
-echo -e "${BLUE}7. Application Default Credentials${NC}"
+echo "7. Application Default Credentials"
 if check_step "ADC configured" "gcloud auth application-default print-access-token > /dev/null 2>&1"; then
   echo "    Application Default Credentials are configured"
 else
-  echo -e "    ${YELLOW}⚠️  ADC not configured. Run: gcloud auth application-default login${NC}"
+  echo "    ADC not configured. Run: gcloud auth application-default login"
 fi
 echo ""
 
 # Step 8: IAM Permissions for Service-to-Service Communication
-echo -e "${BLUE}8. Service-to-Service IAM Permissions${NC}"
+echo "8. Service-to-Service IAM Permissions"
 PNG2GIF_SERVICE_NAME="slides2gif-png2gif"
 # Use same SA as secret grants (from service or default compute)
 INVOKER_SA="${WWW_SA}"
@@ -320,9 +320,9 @@ PNG2GIF_SERVICE_EXISTS=$(gcloud run services describe ${PNG2GIF_SERVICE_NAME} \
   --format 'value(metadata.name)' 2>/dev/null || echo "")
 
 if [ -z "$INVOKER_SA" ]; then
-  echo -e "  ${YELLOW}⚠️  Could not resolve www service account. Deploy first, then run ./setup.sh again.${NC}"
+  echo "  Could not resolve www service account. Deploy first, then run ./setup.sh again."
 elif [ -z "$PNG2GIF_SERVICE_EXISTS" ]; then
-  echo -e "  ${YELLOW}⚠️  ${PNG2GIF_SERVICE_NAME} not deployed yet. Deploy first, then run ./setup.sh again.${NC}"
+  echo "  ${PNG2GIF_SERVICE_NAME} not deployed yet. Deploy first, then run ./setup.sh again."
 else
   if gcloud run services get-iam-policy ${PNG2GIF_SERVICE_NAME} \
     --region ${REGION} \
@@ -339,13 +339,14 @@ else
       --project ${PROJECT_ID}"; then
       :
     else
-      echo -e "    ${YELLOW}⚠️  Failed to set IAM permissions.${NC}"
+      echo "    Failed to set IAM permissions."
     fi
   fi
 fi
 echo ""
 
 # Summary
+echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}Setup Summary${NC}"
 echo "  Completed: ${STEPS_COMPLETED}/${STEPS_TOTAL} checks"
@@ -354,15 +355,15 @@ echo ""
 if [ ${STEPS_COMPLETED} -eq ${STEPS_TOTAL} ]; then
   echo -e "${GREEN}✅ All setup steps completed!${NC}"
 else
-  echo -e "${YELLOW}⚠️  Some steps need attention. Review the output above.${NC}"
+  echo -e "${YELLOW}Some steps need attention. Review the output above.${NC}"
 fi
 echo ""
 echo "Next steps:"
 echo "  1. If secrets are missing, create them:"
 echo "     - Run './setup.sh' again (it will prompt for missing secrets)"
 echo "     - Or create manually: gcloud secrets create <name> --data-file=- --project ${PROJECT_ID}"
-echo "  2. For local development, ensure www/.env.local exists (gitignored)"
-echo "  3. Run: just deploy (or just stage for staging)"
+echo "  2. For local dev: just verify-env then just dev"
+echo "  3. To deploy: just deploy (or just stage for staging)"
 echo ""
 echo "Note: IAM permissions for service-to-service communication will be"
 echo "      automatically configured during deployment if services don't exist yet."

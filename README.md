@@ -8,39 +8,27 @@ Create animated GIFs from Google Slides presentations.
 
 Check it out at [slides2gif.com](https://slides2gif.com)!
 
-## Quick Start
+## Setup to run the app
 
-This project uses [Just](https://github.com/casey/just) to manage development tasks.
+This project uses [Just](https://github.com/casey/just). One-time setup:
 
-### Install Just
+| Step | Command | What it does |
+|------|---------|--------------|
+| 1 | Install Just | `brew install just` (macOS) or `cargo install just` |
+| 2 | `just install` | Install npm dependencies for www and png2gif |
+| 3 | `just setup` | Configure Google Cloud (auth, project, APIs, buckets). Run `gcloud auth login` first if needed. |
+| 4 | Create secrets (first-time only) | `just create-secret secret-cookie-password`, `just create-secret oauth-client-id`, `just create-secret oauth-client-secret`. You’ll be prompted for values. OAuth: [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (web app). |
+| 5 | `just verify-env` | Check that required secrets exist in Google Secret Manager |
+| 6 | `just dev` | Load secrets from GSM and start www (port 3000) + png2gif (port 3001) |
 
-```bash
-# macOS
-brew install just
-
-# Or via cargo
-cargo install just
-```
-
-### Install Dependencies
-
-```bash
-just install
-```
-
-### Run Everything
-
-```bash
-just
-# or
-just dev
-```
-
-This will start:
-- **www service** on `http://localhost:3000` (Next.js)
-- **png2gif service** on `http://localhost:3001` (Express)
+Secrets are **always** loaded from Google Secret Manager (no local .env). `just dev` uses `with-secrets.sh` to fetch them via `gcloud` before starting the app.
 
 ## Available Commands
+
+### Setup and run
+- `just setup` - Configure Google Cloud project (auth, APIs, buckets). Run once.
+- `just verify-env` - Verify required secrets exist in GSM. Run before `just dev`.
+- `just dev` - Run www + png2gif (secrets loaded from GSM).
 
 ### Development
 - `just` or `just dev` - Run both services in parallel
@@ -49,6 +37,7 @@ This will start:
 
 ### Installation
 - `just install` - Install dependencies for www and png2gif
+- `just verify-env` - Verify required secrets exist in Google Secret Manager (run before `just dev` or deploy)
 - `just install-www` - Install dependencies for www only
 - `just install-png2gif` - Install dependencies for png2gif only
 
@@ -94,17 +83,15 @@ The project consists of two main services:
 
 ## Environment Variables
 
-### Local Development (Required)
+### Local Development
 
-Create `www/.env.local` with the following variables:
+All secrets are loaded from **Google Secret Manager** at server start. Required (must exist in GSM):
 
-- `SECRET_COOKIE_PASSWORD` - Secret key for encrypting session cookies (32+ characters)
-- `OAUTH_CLIENT_ID` - Google OAuth 2.0 Client ID
-- `OAUTH_CLIENT_SECRET` - Google OAuth 2.0 Client Secret
-- `GCS_CACHE_BUCKET` - Google Cloud Storage bucket name for caching slide thumbnails (defaults to `slides2gif-cache` if not set)
+- `SECRET_COOKIE_PASSWORD` – session cookies (32+ chars)
+- `OAUTH_CLIENT_ID` – Google OAuth 2.0 Client ID
+- `OAUTH_CLIENT_SECRET` – Google OAuth 2.0 Client Secret
 
-**Optional:**
-- `PNG2GIF_SERVICE_URL` - URL of the png2gif service (defaults to `http://localhost:3001`)
+**Optional / non-secret:** `GCS_CACHE_BUCKET` (defaults to `slides2gif-cache`), `PNG2GIF_SERVICE_URL` (defaults to `http://localhost:3001`). For Drive Picker: `GOOGLE_CLOUD_PROJECT_NUMBER`, `GOOGLE_PICKER_DEVELOPER_KEY` (can be in GSM or env).
 
 ### Cloud Run (Production)
 
@@ -184,43 +171,16 @@ This will:
 
 ### Secret Management
 
-**Production (Cloud Run):** Secrets are stored in Google Cloud Secret Manager.
+**We always use Google Secret Manager** for secrets (local dev and production). No `.env` is needed to run the app once secrets are in GSM.
 
-**Local Development:** Create `www/.env.local` (gitignored) with:
+**Required secrets (must exist in GSM):**
+- `secret-cookie-password` – Session cookie encryption key (32+ chars)
+- `oauth-client-id` – Google OAuth 2.0 Client ID
+- `oauth-client-secret` – Google OAuth 2.0 Client Secret
 
-```bash
-# Session encryption key (32+ characters)
-SECRET_COOKIE_PASSWORD=your-32-plus-character-secret
+**Verify:** `just verify-env` checks that all required secrets exist and are readable.
 
-# Google OAuth 2.0 credentials
-OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
-OAUTH_CLIENT_SECRET=your-client-secret
-
-# Google Cloud Storage bucket
-GCS_CACHE_BUCKET=slides2gif-cache
-```
-
-**Setting up secrets for production:**
-
-1. Run `./setup.sh` - it will create secrets from your `www/.env.local` if available
-2. Or create secrets manually:
-   ```bash
-   # Create a secret
-   echo -n "your-secret-value" | gcloud secrets create oauth-client-id \
-     --data-file=- \
-     --replication-policy="automatic" \
-     --project slides2gifcom
-   
-   # Or use the helper script
-   ./scripts/create-secret.sh oauth-client-id
-   ```
-
-**Required secrets:**
-- `oauth-client-id` - OAuth Client ID
-- `oauth-client-secret` - OAuth Client Secret  
-- `secret-cookie-password` - Session cookie encryption key (32+ chars)
-
-**Get OAuth Credentials:** https://console.cloud.google.com/apis/credentials
+**First-time setup:** Run `./setup.sh`, then `./scripts/create-secret.sh <name>` for each of `secret-cookie-password`, `oauth-client-id`, `oauth-client-secret`. OAuth values: [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (web application).
 
 ### Individual Service Deployment
 
