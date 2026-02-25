@@ -3,16 +3,21 @@ import type {SessionOptions} from 'iron-session';
 import {GoogleOAuthData} from 'lib/oauth';
 import {APIResUser} from 'types/user';
 
-const secret = process.env.SECRET_COOKIE_PASSWORD;
-if (!secret || secret.length < 32) {
-  throw new Error(
-    'SECRET_COOKIE_PASSWORD is missing or too short (32+ chars). ' +
-      'Secrets are loaded from GSM when you run: just dev. Run: just verify-env then just dev. See README.'
-  );
+function getSecret(): string {
+  const secret = process.env.SECRET_COOKIE_PASSWORD;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      'SECRET_COOKIE_PASSWORD is missing or too short (32+ chars). ' +
+        'Secrets are loaded from GSM when you run: just dev. Run: just verify-env then just dev. See README.'
+    );
+  }
+  return secret;
 }
 
 export const sessionOptions: SessionOptions = {
-  password: secret,
+  get password() {
+    return getSecret();
+  },
   cookieName: 'slides2gif-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

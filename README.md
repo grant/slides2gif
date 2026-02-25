@@ -100,31 +100,20 @@ See [limits](https://developers.google.com/slides/limits):
 
 ### Initial Setup
 
-Run the setup script to configure your Google Cloud project:
+Configure your Google Cloud project:
 
 ```bash
-./setup.sh
+just setup
 ```
 
-This will check and configure:
-- ✓ Authentication
-- ✓ Project configuration
-- ✓ Required APIs
-- ✓ Cloud Storage buckets
-- ✓ Service account and permissions
-- ✓ Environment variables
-- ✓ Application Default Credentials
-
-You can run `./setup.sh` multiple times - it's idempotent and will show what's already done vs what needs to be configured.
+This checks and configures authentication, project, APIs, buckets, service account, and Application Default Credentials. Run it multiple times; it's idempotent.
 
 ### Deploy Services
 
-After setup, deploy **both** services so they can connect on Cloud Run:
+After setup, deploy both services so they can connect on Cloud Run:
 
 ```bash
 just deploy
-# or
-./deploy.sh
 ```
 
 This will:
@@ -133,34 +122,22 @@ This will:
 3. **Resolve the www service account** (custom SA or default compute) and grant it **Cloud Run Invoker** on the png2gif service so www can call png2gif with an ID token.
 4. Verify secret access for www.
 
-**Order matters:** png2gif must be deployed before www so the deploy script can discover its URL and pass it to www. Use `just deploy` (root) to do both in one go.
+**Order matters:** png2gif must be deployed before www so the deploy can discover its URL. Use `just deploy` to do both in one go.
 
 ### Secret Management
 
-**We always use Google Secret Manager** for secrets (local dev and production). No `.env` is needed to run the app once secrets are in GSM.
+Secrets live in Google Secret Manager (local dev and production). No `.env` is needed once secrets are in GSM.
 
-**Required secrets (must exist in GSM):**
-- `secret-cookie-password` – Session cookie encryption key (32+ chars)
-- `oauth-client-id` – Google OAuth 2.0 Client ID
-- `oauth-client-secret` – Google OAuth 2.0 Client Secret
-
-**Verify:** `just verify-env` checks that all required secrets exist and are readable.
-
-**First-time setup:** Run `./setup.sh`, then `./scripts/create-secret.sh <name>` for each of `secret-cookie-password`, `oauth-client-id`, `oauth-client-secret`. OAuth values: [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (web application).
+**Required secrets (must exist in GSM):** `secret-cookie-password`, `oauth-client-id`, `oauth-client-secret`. **Verify:** `just verify-env`. **First-time:** `just create-secret <name>` for each; you’ll be prompted for values. OAuth: [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (web application).
 
 ### Individual Service Deployment
 
-If you deploy services separately:
+To deploy services separately:
 
 ```bash
-# 1. Deploy png2gif first
 just deploy-png2gif
-
-# 2. Grant www permission to invoke png2gif (if not already done)
-./setup-iam.sh
-
-# 3. Deploy www (deploy.sh will discover PNG2GIF_SERVICE_URL from step 1)
+just setup-iam
 just deploy-www
 ```
 
-Deploying www alone without png2gif deployed will leave `PNG2GIF_SERVICE_URL` unset and "Create GIF" will fail until you redeploy www after png2gif exists.
+Deploying www without png2gif first will leave `PNG2GIF_SERVICE_URL` unset until you run `just deploy` or redeploy www after png2gif exists.

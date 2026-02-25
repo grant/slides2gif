@@ -130,6 +130,10 @@ deploy-www:
 deploy-png2gif:
     cd png2gif && ./deploy.sh
 
+# Grant www permission to invoke png2gif (also done automatically by just deploy)
+setup-iam:
+    ./setup-iam.sh
+
 # Custom domain (slides2gif.com) — verify, map, then add DNS in Cloudflare
 domain-verify:
     ./scripts/setup-domain.sh verify
