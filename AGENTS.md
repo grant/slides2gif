@@ -32,5 +32,6 @@ See `README.md` and `Justfile` for the full list. Key commands:
 - **Do not run `just build-www` while the dev server is running.** The production build writes to `.next/` and corrupts the dev server's cache, causing 500 errors. If this happens, stop the dev server, run `rm -rf www/.next`, and restart with `npm run dev` from `www/`.
 - The `openapi:types` build step generates `www/lib/api/generated/openapi.d.ts` which is not git-tracked. After generation, run `npx prettier --write --single-quote www/lib/api/generated/openapi.d.ts` to pass lint.
 - **No authentication needed for local dev.** Both services skip auth when `NODE_ENV !== 'production'`. The `www/.env.local` file needs placeholder values for `SECRET_COOKIE_PASSWORD`, `OAUTH_CLIENT_ID`, and `OAUTH_CLIENT_SECRET` (any dummy values work for dev).
+- The root `.gitignore` has `*.js` — config files in the www service must use `.ts` or `.mjs` extensions (e.g. `tailwind.config.ts`, `postcss.config.mjs`).
 - The `png2gif` service health check is at `GET /health` (not `/`).
 - The `www` service API status check is at `GET /api/status`.
