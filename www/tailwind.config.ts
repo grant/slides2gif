@@ -31,9 +31,11 @@ const config: Config = {
       boxShadow: {
         /** Card with amber tint (dashboard, home, login). */
         card: '0 1px 2px 0 rgb(0 0 0 / 0.05), 0 0 0 1px rgb(251 191 36 / 0.08)',
-        'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 0 0 1px rgb(251 191 36 / 0.1)',
+        'card-hover':
+          '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 0 0 1px rgb(251 191 36 / 0.1)',
         /** Stronger amber shadow for primary surfaces. */
-        brand: '0 10px 15px -3px rgb(180 83 9 / 0.15), 0 4px 6px -4px rgb(180 83 9 / 0.1)',
+        brand:
+          '0 10px 15px -3px rgb(180 83 9 / 0.15), 0 4px 6px -4px rgb(180 83 9 / 0.1)',
       },
     },
   },

@@ -61,8 +61,14 @@ export async function GET() {
 
     // Sort by list metadata timeCreated (we only need order for top 50).
     const sorted = [...gifList].sort((a, b) => {
-      const tA = (a.metadata?.timeCreated && new Date(String(a.metadata.timeCreated)).getTime()) || 0;
-      const tB = (b.metadata?.timeCreated && new Date(String(b.metadata.timeCreated)).getTime()) || 0;
+      const tA =
+        (a.metadata?.timeCreated &&
+          new Date(String(a.metadata.timeCreated)).getTime()) ||
+        0;
+      const tB =
+        (b.metadata?.timeCreated &&
+          new Date(String(b.metadata.timeCreated)).getTime()) ||
+        0;
       return tB - tA;
     });
     const top50 = sorted.slice(0, 50);
@@ -73,7 +79,9 @@ export async function GET() {
       top50.map(async file => {
         const [meta] = await file.getMetadata();
         const custom = parseCustomMetadata(
-          meta && typeof meta === 'object' ? (meta as {metadata?: unknown}).metadata : undefined
+          meta && typeof meta === 'object'
+            ? (meta as {metadata?: unknown}).metadata
+            : undefined
         );
         const createdAt =
           meta && typeof meta === 'object' && meta.timeCreated
