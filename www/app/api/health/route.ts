@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 
-/** Alias for GET /api/health. Returns same body for backward compatibility. */
+/** Standard health check: GET /api/health → { status: "ok" }. */
 export async function GET() {
   return NextResponse.json({status: 'ok'});
 }

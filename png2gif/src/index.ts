@@ -70,10 +70,8 @@ const authenticateRequest = async (
   next();
 };
 
-/**
- * Health check endpoint
- */
-app.get('/health', (req: Request, res: Response) => {
+/** Standard health check: GET /health → { status: "ok" }. */
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({status: 'ok'});
 });
 

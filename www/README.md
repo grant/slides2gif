@@ -26,7 +26,7 @@ GET /presentations/import
 ### API
 
 ```
-GET  /api/status
+GET  /api/health   (health check; /api/status is an alias)
 GET  /api/stats
 GET  /api/gifs (list via stats)
 GET  /api/presentations
