@@ -8,54 +8,20 @@ Create animated GIFs from Google Slides presentations.
 
 Check it out at [slides2gif.com](https://slides2gif.com)!
 
-## Setup to run the app
+## Commands
 
-This project uses [Just](https://github.com/casey/just). One-time setup:
+Requires [Just](https://github.com/casey/just): `brew install just` or `cargo install just`.
 
-| Step | Command | What it does |
-|------|---------|--------------|
-| 1 | Install Just | `brew install just` (macOS) or `cargo install just` |
-| 2 | `just install` | Install npm dependencies for www and png2gif |
-| 3 | `just setup` | Configure Google Cloud (auth, project, APIs, buckets). Run `gcloud auth login` first if needed. |
-| 4 | Create secrets (first-time only) | `just create-secret secret-cookie-password`, `just create-secret oauth-client-id`, `just create-secret oauth-client-secret`. You’ll be prompted for values. OAuth: [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (web app). |
-| 5 | `just verify-env` | Check that required secrets exist in Google Secret Manager |
-| 6 | `just dev` | Load secrets from GSM and start www (port 3000) + png2gif (port 3001) |
+- **`just setup`** — Configure Google Cloud (auth, APIs, buckets). Run once.
+- **`just verify-env`** — Check required secrets exist in GSM. Run before `just dev`.
+- **`just install`** — Install dependencies for www and png2gif.
+- **`just dev`** — Run www + png2gif (secrets from GSM).
+- **`just build`** — Build www and png2gif.
+- **`just lint`** — Lint www and png2gif.
 
-Secrets are **always** loaded from Google Secret Manager (no local .env). `just dev` uses `with-secrets.sh` to fetch them via `gcloud` before starting the app.
+Each of `dev`, `install`, `build`, and `lint` has a `-www` or `-png2gif` variant (e.g. `just dev-www`). Also: `just ci` (full CI locally), `just clean` (remove build artifacts).
 
-## Available Commands
-
-### Setup and run
-- `just setup` - Configure Google Cloud project (auth, APIs, buckets). Run once.
-- `just verify-env` - Verify required secrets exist in GSM. Run before `just dev`.
-- `just dev` - Run www + png2gif (secrets loaded from GSM).
-
-### Development
-- `just` or `just dev` - Run both services in parallel
-- `just dev-www` - Run only the www service
-- `just dev-png2gif` - Run only the png2gif service
-
-### Installation
-- `just install` - Install dependencies for www and png2gif
-- `just verify-env` - Verify required secrets exist in Google Secret Manager (run before `just dev` or deploy)
-- `just install-www` - Install dependencies for www only
-- `just install-png2gif` - Install dependencies for png2gif only
-
-### Building
-- `just build` - Build www and png2gif
-- `just build-www` - Build www only
-- `just build-png2gif` - Build png2gif only
-
-### Linting
-- `just lint` - Lint all services
-- `just lint-www` - Lint www service
-- `just lint-png2gif` - Lint png2gif service
-
-### CI (local)
-- `just ci` - Run full CI locally (lint + build + Docker build)
-
-### Cleanup
-- `just clean` - Remove build artifacts
+Secrets live in Google Secret Manager (no local .env). First time: `just create-secret <name>` for `secret-cookie-password`, `oauth-client-id`, `oauth-client-secret` — you’ll be prompted for values. OAuth credentials: [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create OAuth 2.0 Client ID (web app).
 
 ## Architecture
 
