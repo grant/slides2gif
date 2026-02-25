@@ -39,7 +39,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.ico" />
       </head>
-      <body className="h-full w-full overflow-x-hidden">
+      <body className="h-full w-full overflow-x-hidden font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
