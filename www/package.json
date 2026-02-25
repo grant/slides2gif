@@ -16,11 +16,11 @@
     "stage": "./deploy.sh",
     "lint": "prettier --check --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore --max-warnings 0",
     "fix": "prettier --write --single-quote \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore && eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
-    "openapi": "tsx scripts/generate-openapi.ts",
+    "openapi": "npm run openapi:spec && npm run openapi:types",
+    "openapi:spec": "tsx scripts/generate-openapi.ts",
     "openapi:types": "openapi-typescript openapi.json -o lib/api/generated/openapi.d.ts",
-    "openapi:all": "npm run openapi && npm run openapi:types",
-    "openapi:check": "npm run openapi && git diff --exit-code openapi.json",
-    "openapi:watch": "npm run openapi:all && chokidar \"lib/api/definition.ts\" \"lib/api/schemas.ts\" -c \"npm run openapi:all\""
+    "openapi:check": "npm run openapi:spec && git diff --exit-code openapi.json",
+    "openapi:watch": "npm run openapi && chokidar \"lib/api/definition.ts\" \"lib/api/schemas.ts\" -c \"npm run openapi\""
   },
   "repository": {
     "type": "git",

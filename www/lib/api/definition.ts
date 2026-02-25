@@ -5,12 +5,15 @@ import {
   gifDeleteResponseSchema,
   generateGifBodySchema,
   generateGifResponseSchema,
+  gifRenameBodySchema,
+  gifRenameResponseSchema,
   userResponseSchema,
 } from './schemas';
 
 export const PATHS = {
   stats: '/stats',
   gifs: '/gifs',
+  gifsRename: '/gifs/rename',
   usersMe: '/users/me',
 } as const;
 
@@ -41,6 +44,16 @@ export const apiDefinition = [
     ],
     response: gifDeleteResponseSchema,
     summary: 'Delete a GIF',
+    tags: ['gifs'] as const,
+  },
+  {
+    method: 'post' as const,
+    path: PATHS.gifsRename,
+    parameters: [
+      {name: 'body', type: 'Body' as const, schema: gifRenameBodySchema},
+    ],
+    response: gifRenameResponseSchema,
+    summary: 'Rename a GIF (update presentation title)',
     tags: ['gifs'] as const,
   },
   {

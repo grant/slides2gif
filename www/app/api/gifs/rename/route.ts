@@ -11,17 +11,20 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const {userId} = auth;
 
-  let body: {gifUrl?: string; archived?: boolean};
+  let body: {gifUrl?: string; presentationTitle?: string};
   try {
-    body = (await request.json()) as {gifUrl?: string; archived?: boolean};
+    body = (await request.json()) as {
+      gifUrl?: string;
+      presentationTitle?: string;
+    };
   } catch {
     return NextResponse.json({error: 'Invalid JSON body'}, {status: 400});
   }
 
-  const {gifUrl, archived} = body;
-  if (typeof archived !== 'boolean') {
+  const {gifUrl, presentationTitle} = body;
+  if (typeof presentationTitle !== 'string') {
     return NextResponse.json(
-      {error: 'archived must be a boolean'},
+      {error: 'presentationTitle must be a string'},
       {status: 400}
     );
   }
@@ -33,17 +36,15 @@ export async function POST(request: NextRequest) {
   try {
     const {bucket} = getGifBucket();
     const file = bucket.file(path);
-    await updateFileCustomMetadata(file, {
-      archived: archived ? 'true' : 'false',
-    });
-    return NextResponse.json({ok: true, archived});
+    await updateFileCustomMetadata(file, {presentationTitle});
+    return NextResponse.json({ok: true, presentationTitle});
   } catch (error: unknown) {
     const err = error as Error & {code?: number};
-    console.error('[gifs/archive] Error updating metadata:', err);
+    console.error('[gifs/rename] Error updating metadata:', err);
     const message =
       err.code === 403
         ? 'Permission denied. Check bucket permissions.'
-        : err.message || 'Failed to update archive state';
+        : err.message || 'Failed to update title';
     return NextResponse.json({error: message}, {status: 500});
   }
 }

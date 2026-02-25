@@ -9,11 +9,13 @@ import {useGooglePicker} from '../../lib/hooks/useGooglePicker';
 import {useToast} from '../../components/ToastContext';
 import useSWR from 'swr';
 import {dashboardSWRConfig} from '../../lib/apiFetcher';
-import {api, deleteGif} from '../../lib/api/client';
+import {api, deleteGif, renameGif} from '../../lib/api/client';
 import {PATHS} from '../../lib/api/definition';
 import {API_BASE} from '../../lib/api/endpoints';
 import type {DashboardStats} from '../../lib/api/schemas';
 import {dashboardStatsSchema} from '../../lib/api/schemas';
+
+const UNTITLED_LABEL = 'Untitled GIF';
 
 type GifToDelete = {url: string; title: string};
 
@@ -35,6 +37,50 @@ export default function DashboardClient() {
   const [gifToDelete, setGifToDelete] = useState<GifToDelete | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [editingUrl, setEditingUrl] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  function displayTitle(gif: DashboardStats['gifs'][number]) {
+    return gif.presentationTitle || UNTITLED_LABEL;
+  }
+
+  async function saveTitle(gifUrl: string, newTitle: string) {
+    setSavingTitle(true);
+    try {
+      await renameGif({gifUrl, presentationTitle: newTitle});
+      setEditingUrl(null);
+      setEditingValue('');
+      mutate(
+        (prev: DashboardStats | undefined) =>
+          prev
+            ? {
+                ...prev,
+                gifs: prev.gifs.map(g =>
+                  g.url === gifUrl
+                    ? {...g, presentationTitle: newTitle || undefined}
+                    : g
+                ),
+              }
+            : undefined,
+        {revalidate: false}
+      );
+      toast('Title updated', 'success');
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : 'Failed to update title',
+        'default'
+      );
+    } finally {
+      setSavingTitle(false);
+    }
+  }
+
+  function handleTitleBlur(gifUrl: string, currentValue: string) {
+    if (editingUrl !== gifUrl) return;
+    const trimmed = currentValue.trim();
+    saveTitle(gifUrl, trimmed);
+  }
 
   /** Force refetch with cache bypass so newly created GIFs are shown */
   async function refreshGifList() {
@@ -201,14 +247,60 @@ export default function DashboardClient() {
                     {/* eslint-disable-next-line @next/next/no-img-element -- dynamic GIF URL */}
                     <img
                       src={gif.url}
-                      alt={gif.presentationTitle || `GIF ${index + 1}`}
+                      alt={displayTitle(gif)}
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
                   <div className="flex flex-1 flex-col p-3">
-                    <h3 className="mb-2 line-clamp-2 text-sm font-medium text-gray-900">
-                      {gif.presentationTitle || `GIF ${index + 1}`}
-                    </h3>
+                    {editingUrl === gif.url ? (
+                      <div className="mb-2 flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={editingValue}
+                          onChange={e => setEditingValue(e.target.value)}
+                          onBlur={() => handleTitleBlur(gif.url, editingValue)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleTitleBlur(gif.url, editingValue);
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingUrl(null);
+                              setEditingValue('');
+                            }
+                          }}
+                          autoFocus
+                          disabled={savingTitle}
+                          className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-1 text-sm font-medium text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-50"
+                          aria-label="Edit GIF title"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleTitleBlur(gif.url, editingValue)}
+                          disabled={savingTitle}
+                          className="shrink-0 rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+                          aria-label="Save title"
+                          title="Save title"
+                        >
+                          <span className="material-icons text-lg">check</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setEditingUrl(gif.url);
+                          setEditingValue(
+                            gif.presentationTitle ?? UNTITLED_LABEL
+                          );
+                        }}
+                        className="mb-2 line-clamp-2 w-full rounded text-left text-sm font-medium text-gray-900 hover:bg-gray-50 hover:underline focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1"
+                        title="Click to edit title"
+                      >
+                        {displayTitle(gif)}
+                      </button>
+                    )}
                     <div className="mt-auto flex items-center justify-between gap-2">
                       <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-gray-500">
                         <a
@@ -251,7 +343,7 @@ export default function DashboardClient() {
                           e.stopPropagation();
                           setGifToDelete({
                             url: gif.url,
-                            title: gif.presentationTitle || `GIF ${index + 1}`,
+                            title: displayTitle(gif),
                           });
                         }}
                         className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"

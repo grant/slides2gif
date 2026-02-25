@@ -194,6 +194,63 @@
         }
       }
     },
+    "/gifs/rename": {
+      "post": {
+        "summary": "Rename a GIF (update presentation title)",
+        "tags": [
+          "gifs"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gifUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "presentationTitle": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "gifUrl",
+                  "presentationTitle"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "presentationTitle": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "presentationTitle"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users/me": {
       "get": {
         "summary": "Get current user / auth state",

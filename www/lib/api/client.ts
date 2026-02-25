@@ -6,7 +6,12 @@
 import {Zodios} from 'zodios';
 import {API_BASE} from './endpoints';
 import {apiDefinition, PATHS} from './definition';
-import type {GifDeleteBody, GifDeleteResponse} from './schemas';
+import type {
+  GifDeleteBody,
+  GifDeleteResponse,
+  GifRenameBody,
+  GifRenameResponse,
+} from './schemas';
 
 export const api = new Zodios(API_BASE, apiDefinition, {
   validateResponse: true,
@@ -18,4 +23,12 @@ export type Api = typeof api;
 /** DELETE /api/gifs. Wrapper only because Zodios types delete body as patch. */
 export function deleteGif(body: GifDeleteBody): Promise<GifDeleteResponse> {
   return api.delete(PATHS.gifs, body as never) as Promise<GifDeleteResponse>;
+}
+
+/** POST /api/gifs/rename. Update a GIF's presentation title. */
+export function renameGif(body: GifRenameBody): Promise<GifRenameResponse> {
+  return api.post(
+    PATHS.gifsRename,
+    body as never
+  ) as Promise<GifRenameResponse>;
 }

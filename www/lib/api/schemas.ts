@@ -32,6 +32,18 @@ export const gifDeleteBodySchema = z.object({
 export const gifDeleteResponseSchema = z.object({
   ok: z.literal(true),
 });
+/** POST /api/gifs/rename body */
+export const gifRenameBodySchema = z.object({
+  gifUrl: z.string().url(),
+  presentationTitle: z.string(),
+});
+/** POST /api/gifs/rename success response */
+export const gifRenameResponseSchema = z.object({
+  ok: z.literal(true),
+  presentationTitle: z.string(),
+});
+export type GifRenameBody = z.infer<typeof gifRenameBodySchema>;
+export type GifRenameResponse = z.infer<typeof gifRenameResponseSchema>;
 export const thumbnailSizeSchema = z.enum(['SMALL', 'MEDIUM', 'LARGE']);
 /** POST /api/gifs body */
 export const generateGifBodySchema = z.object({

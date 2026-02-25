@@ -100,19 +100,11 @@ fix:
     just fix-www || true
     just fix-png2gif || true
 
-# Generate OpenAPI spec from www/lib/api definition
+# Regenerate OpenAPI spec and types (run after changing definition.ts or schemas.ts)
 openapi:
     cd www && npm run openapi
 
-# Generate TypeScript types from openapi.json (for fetch client)
-openapi-types:
-    cd www && npm run openapi:types
-
-# Generate OpenAPI spec and types (spec + openapi.d.ts)
-openapi-all:
-    cd www && npm run openapi:all
-
-# Generate OpenAPI spec and fail if openapi.json has uncommitted changes (for CI)
+# Fail if openapi.json has uncommitted changes (for CI)
 openapi-check:
     cd www && npm run openapi:check
 
