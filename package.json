@@ -22,7 +22,6 @@
   "devDependencies": {
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "express": "^4.22.1",
     "gts": "^5.0.0"
   }
 }

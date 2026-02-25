@@ -22,6 +22,12 @@ brew install just
 cargo install just
 ```
 
+### Install Dependencies
+
+```bash
+just install
+```
+
 ### Run Everything
 
 ```bash
@@ -42,14 +48,14 @@ This will start:
 - `just dev-png2gif` - Run only the png2gif service
 
 ### Installation
-- `just install-all` - Install dependencies for all services
-- `just install-www` - Install dependencies for www service
-- `just install-png2gif` - Install dependencies for png2gif service
+- `just install` - Install dependencies for www and png2gif
+- `just install-www` - Install dependencies for www only
+- `just install-png2gif` - Install dependencies for png2gif only
 
 ### Building
-- `just build-all` - Build all services
-- `just build-www` - Build www service
-- `just build-png2gif` - Build png2gif service
+- `just build` - Build www and png2gif
+- `just build-www` - Build www only
+- `just build-png2gif` - Build png2gif only
 
 ### Linting
 - `just lint` - Lint all services

@@ -5,21 +5,22 @@
 default:
     just dev
 
-# Run both services in parallel
+# Run www, png2gif, and OpenAPI watcher in parallel
 dev:
-    just dev-all
+    npx concurrently --names "www,png2gif,openapi" --prefix-colors "blue,green,magenta" "cd www && npm run dev" "cd png2gif && npm run dev" "cd www && npm run openapi:watch"
 
-# Run www service only
+# Run www only
 dev-www:
     cd www && npm run dev
 
-# Run png2gif service only
+# Run png2gif only
 dev-png2gif:
     cd png2gif && npm run dev
 
-# Run www, png2gif, and OpenAPI/types watcher in parallel
-dev-all:
-    npx concurrently --names "www,png2gif,openapi" --prefix-colors "blue,green,magenta" "cd www && npm run dev" "cd png2gif && npm run dev" "cd www && npm run openapi:watch"
+# Install dependencies (www + png2gif)
+install:
+    just install-www
+    just install-png2gif
 
 # Install dependencies for www
 install-www:
@@ -29,17 +30,17 @@ install-www:
 install-png2gif:
     cd png2gif && npm install
 
-# Install all dependencies
-install-all:
-    just install-www
-    just install-png2gif
+# Build www and png2gif
+build:
+    just build-www
+    just build-png2gif
 
-# Build www service
+# Build www only
 build-www:
     cd www && npm run openapi:types
     cd www && npm run build
 
-# Build png2gif service
+# Build png2gif only
 build-png2gif:
     cd png2gif && npm run compile
 
@@ -55,11 +56,6 @@ docker-build:
 # Test www Docker build only (same as CI; run before pushing)
 docker-build-www:
     docker build -t slides2gif-www ./www
-
-# Build all services
-build-all:
-    just build-www
-    just build-png2gif
 
 # Clean build artifacts
 clean:
@@ -84,7 +80,7 @@ lint:
 # Run full CI locally (lint + build + docker)
 ci:
     just lint
-    just build-all
+    just build
     just docker-build
 
 # Fix lint errors for www service
