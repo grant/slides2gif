@@ -65,6 +65,8 @@ export default function DashboardClient() {
             : undefined,
         {revalidate: false}
       );
+      // Refetch stats so UI shows persisted metadata (and cache matches server)
+      await mutate(undefined, {revalidate: true});
       toast('Title updated', 'success');
     } catch (err) {
       toast(

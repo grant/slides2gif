@@ -3,6 +3,7 @@ import {getSession} from '../../../lib/sessionApp';
 import {getAuthenticatedClientApp} from '../../../lib/oauthClientApp';
 import {getSessionUserId} from '../../../lib/oauthClient';
 import {userPrefix} from '../../../lib/storage';
+import {parseCustomMetadata} from '../../../lib/gcsGifMetadata';
 import {Storage} from '@google-cloud/storage';
 import {dashboardStatsSchema} from '../../../lib/api/schemas';
 
@@ -54,25 +55,37 @@ export async function GET() {
 
     const [gifFiles] = await bucket.getFiles({prefix});
 
-    const gifs = gifFiles
-      .filter(
-        file => file.name.endsWith('.gif') && file.name.startsWith(prefix)
-      )
-      .map(file => {
-        const createdAt = file.metadata.timeCreated
-          ? new Date(String(file.metadata.timeCreated)).getTime()
-          : Date.now();
-        const customMetadata = (file.metadata.metadata || {}) as Record<
-          string,
-          string
-        >;
+    const gifList = gifFiles.filter(
+      file => file.name.endsWith('.gif') && file.name.startsWith(prefix)
+    );
+
+    // Sort by list metadata timeCreated (we only need order for top 50).
+    const sorted = [...gifList].sort((a, b) => {
+      const tA = (a.metadata?.timeCreated && new Date(String(a.metadata.timeCreated)).getTime()) || 0;
+      const tB = (b.metadata?.timeCreated && new Date(String(b.metadata.timeCreated)).getTime()) || 0;
+      return tB - tA;
+    });
+    const top50 = sorted.slice(0, 50);
+
+    // Fetch full metadata for displayed GIFs so custom metadata (e.g. presentationTitle
+    // after rename) is current. List response may omit or cache custom metadata.
+    const gifsWithMeta = await Promise.all(
+      top50.map(async file => {
+        const [meta] = await file.getMetadata();
+        const custom = parseCustomMetadata(
+          meta && typeof meta === 'object' ? (meta as {metadata?: unknown}).metadata : undefined
+        );
+        const createdAt =
+          meta && typeof meta === 'object' && meta.timeCreated
+            ? new Date(String(meta.timeCreated)).getTime()
+            : Date.now();
         const presentationId =
-          typeof customMetadata.presentationId === 'string'
-            ? customMetadata.presentationId
+          typeof custom.presentationId === 'string'
+            ? custom.presentationId
             : undefined;
         const presentationTitle =
-          typeof customMetadata.presentationTitle === 'string'
-            ? customMetadata.presentationTitle
+          typeof custom.presentationTitle === 'string'
+            ? custom.presentationTitle
             : undefined;
         return {
           url: `https://storage.googleapis.com/${BUCKET_NAME}/${file.name}`,
@@ -81,13 +94,15 @@ export async function GET() {
           presentationTitle,
         };
       })
-      .sort((a, b) => b.createdAt - a.createdAt);
+    );
+
+    const gifs = gifsWithMeta.sort((a, b) => b.createdAt - a.createdAt);
 
     const stats = {
-      gifsCreated: gifs.length,
+      gifsCreated: gifList.length,
       presentationsLoaded,
       totalSlidesProcessed,
-      gifs: gifs.slice(0, 50),
+      gifs,
     };
 
     const parsed = dashboardStatsSchema.safeParse(stats);
@@ -100,10 +115,8 @@ export async function GET() {
     }
 
     const response = NextResponse.json(parsed.data);
-    response.headers.set(
-      'Cache-Control',
-      'private, max-age=300, stale-while-revalidate=600'
-    );
+    // Don't cache so renames and other metadata changes show after refresh
+    response.headers.set('Cache-Control', 'private, no-store');
     return response;
   } catch (error: unknown) {
     console.error('Error fetching stats:', error);
