@@ -1,6 +1,33 @@
+import crypto from 'crypto';
 import {Storage} from '@google-cloud/storage';
 
 const BUCKET_NAME = process.env.GCS_CACHE_BUCKET || 'slides2gif-cache';
+
+/** Theme shape used for cache key (markdown slide cache varies by theme). */
+export type MarkdownSlideThemeForCache = {
+  accentColor: string | null;
+  backgroundColor: string | null;
+  titleFontColor: string | null;
+  bodyFontColor: string | null;
+};
+
+/** Deterministic short hash for theme so cache paths differ per theme. */
+export function themeCacheKey(
+  theme: MarkdownSlideThemeForCache | null | undefined
+): string {
+  if (!theme) return 'default';
+  const canonical = JSON.stringify({
+    accentColor: theme.accentColor ?? null,
+    backgroundColor: theme.backgroundColor ?? null,
+    titleFontColor: theme.titleFontColor ?? null,
+    bodyFontColor: theme.bodyFontColor ?? null,
+  });
+  return crypto
+    .createHash('sha256')
+    .update(canonical)
+    .digest('hex')
+    .slice(0, 16);
+}
 
 /**
  * Gets or creates the cache bucket
@@ -22,6 +49,51 @@ export function userPrefix(userId: string): string {
 
 const PRESENTATION_META_PATH = (presentationId: string, prefix = '') =>
   `${prefix}presentations/${presentationId}/meta.json`;
+
+const MARKDOWN_PRESENTATION_ID_PATH = (prefix: string) =>
+  `${prefix}markdown-presentation-id.json`;
+
+/**
+ * Path for markdown slide thumbnails cached by content hash + theme (reused when only order changes).
+ * Format: [prefix]markdown-slides/{contentHash}_{themeKey}_{size}.png
+ */
+export function getMarkdownSlideCachePath(
+  contentHash: string,
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
+  prefix = '',
+  themeKey: string = 'default'
+): string {
+  const sizeSuffix = size.toLowerCase();
+  return `${prefix}markdown-slides/${contentHash}_${themeKey}_${sizeSuffix}.png`;
+}
+
+/** Get or set the single markdown presentation ID per user (GCS). */
+export async function getMarkdownPresentationId(
+  prefix: string
+): Promise<string | null> {
+  try {
+    const bucket = getBucket();
+    const file = bucket.file(MARKDOWN_PRESENTATION_ID_PATH(prefix));
+    const [exists] = await file.exists();
+    if (!exists) return null;
+    const [contents] = await file.download();
+    const meta = JSON.parse(contents.toString()) as {presentationId?: string};
+    return meta.presentationId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setMarkdownPresentationId(
+  prefix: string,
+  presentationId: string
+): Promise<void> {
+  const bucket = getBucket();
+  const file = bucket.file(MARKDOWN_PRESENTATION_ID_PATH(prefix));
+  await file.save(JSON.stringify({presentationId}), {
+    contentType: 'application/json',
+  });
+}
 
 /**
  * Gets the cache path for a slide thumbnail
@@ -155,14 +227,19 @@ export async function getCachedPresentationPreviewUrl(
 }
 
 /**
- * Caches a slide thumbnail by downloading from URL and uploading to GCS
+ * Caches a slide thumbnail by downloading from URL and uploading to GCS.
+ * When contentHash is provided (markdown flow), caches under markdown-slides/ for reuse
+ * and also under presentations/{id}/slides/{objectId} so png2gif finds it.
+ * themeKey must be passed when contentHash is set so cache differs per theme.
  */
 export async function cacheSlideThumbnail(
   presentationId: string,
   objectId: string,
   thumbnailUrl: string,
   size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
-  prefix = ''
+  prefix = '',
+  contentHash?: string,
+  themeKey: string = 'default'
 ): Promise<boolean> {
   try {
     const response = await fetch(thumbnailUrl);
@@ -171,24 +248,103 @@ export async function cacheSlideThumbnail(
     }
 
     const imageBuffer = Buffer.from(await response.arrayBuffer());
-
     const bucket = getBucket();
-    const filePath = getSlideCachePath(presentationId, objectId, size, prefix);
-    const file = bucket.file(filePath);
 
-    await file.save(imageBuffer, {
-      metadata: {
-        contentType: 'image/png',
-        cacheControl: 'public, max-age=31536000',
-      },
-    });
+    const paths = contentHash
+      ? [
+          getMarkdownSlideCachePath(contentHash, size, prefix, themeKey),
+          getSlideCachePath(presentationId, objectId, size, prefix),
+        ]
+      : [getSlideCachePath(presentationId, objectId, size, prefix)];
 
-    await file.makePublic();
-
-    console.log(`Cached slide thumbnail: ${filePath}`);
+    for (const filePath of paths) {
+      const file = bucket.file(filePath);
+      await file.save(imageBuffer, {
+        metadata: {
+          contentType: 'image/png',
+          cacheControl: 'public, max-age=31536000',
+        },
+      });
+      await file.makePublic();
+      console.log(`Cached slide thumbnail: ${filePath}`);
+    }
     return true;
   } catch (error) {
     console.error('Error caching slide thumbnail:', error);
+    return false;
+  }
+}
+
+/**
+ * Gets a public URL for a cached markdown slide thumbnail (by content hash + theme).
+ */
+export async function getCachedMarkdownSlideUrl(
+  contentHash: string,
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'SMALL',
+  prefix = '',
+  themeKey: string = 'default'
+): Promise<string | null> {
+  try {
+    const bucket = getBucket();
+    const filePath = getMarkdownSlideCachePath(
+      contentHash,
+      size,
+      prefix,
+      themeKey
+    );
+    const file = bucket.file(filePath);
+    const [exists] = await file.exists();
+    if (!exists) return null;
+    return `https://storage.googleapis.com/${BUCKET_NAME}/${filePath}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Delete all cached markdown slide thumbnails for a user (prefix/markdown-slides/*).
+ * Returns the number of files deleted.
+ */
+export async function deleteMarkdownSlideCache(
+  prefix: string
+): Promise<number> {
+  const bucket = getBucket();
+  const slidesPrefix = `${prefix}markdown-slides/`;
+  const [files] = await bucket.getFiles({prefix: slidesPrefix});
+  await Promise.all(files.map(file => file.delete()));
+  return files.length;
+}
+
+/**
+ * Copy cached markdown slide (by contentHash + theme) to presentation slide path
+ * so png2gif can find it when generating GIF from markdown deck.
+ */
+export async function copyMarkdownSlideToPresentationPath(
+  prefix: string,
+  contentHash: string,
+  presentationId: string,
+  objectId: string,
+  size: 'SMALL' | 'MEDIUM' | 'LARGE' = 'MEDIUM',
+  themeKey: string = 'default'
+): Promise<boolean> {
+  try {
+    const bucket = getBucket();
+    const srcPath = getMarkdownSlideCachePath(
+      contentHash,
+      size,
+      prefix,
+      themeKey
+    );
+    const destPath = getSlideCachePath(presentationId, objectId, size, prefix);
+    const srcFile = bucket.file(srcPath);
+    const [exists] = await srcFile.exists();
+    if (!exists) return false;
+    await srcFile.copy(bucket.file(destPath));
+    const destFile = bucket.file(destPath);
+    await destFile.makePublic();
+    return true;
+  } catch (error) {
+    console.error('Error copying markdown slide to presentation path:', error);
     return false;
   }
 }

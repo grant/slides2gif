@@ -5,6 +5,9 @@ import {google} from 'googleapis';
 import {
   cacheSlideThumbnail,
   getCachedSlideUrl,
+  getCachedMarkdownSlideUrl,
+  copyMarkdownSlideToPresentationPath,
+  themeCacheKey,
   userPrefix,
 } from '../../../lib/storage';
 import {getAuthenticatedClientApp} from '../../../lib/oauthClientApp';
@@ -44,11 +47,14 @@ export async function POST(request: NextRequest) {
     const {
       presentationId,
       slideList,
+      contentHashList,
+      theme: themeBody,
       delay,
       quality,
       repeat,
       thumbnailSize = 'MEDIUM',
     } = parsed.data;
+    const themeKey = themeCacheKey(themeBody ?? null);
 
     const userId = await getSessionUserId(session);
     if (!userId) {
@@ -86,7 +92,29 @@ export async function POST(request: NextRequest) {
         // Continue without title
       }
 
-      const thumbnailPromises = slideObjectIds.map(async objectId => {
+      const thumbnailPromises = slideObjectIds.map(async (objectId, index) => {
+        const contentHash = contentHashList?.[index];
+
+        if (contentHash) {
+          const markdownCachedUrl = await getCachedMarkdownSlideUrl(
+            contentHash,
+            thumbnailSize,
+            prefix,
+            themeKey
+          );
+          if (markdownCachedUrl) {
+            await copyMarkdownSlideToPresentationPath(
+              prefix,
+              contentHash,
+              presentationId,
+              objectId,
+              thumbnailSize,
+              themeKey
+            );
+            return {objectId, cached: true};
+          }
+        }
+
         const cachedUrl = await getCachedSlideUrl(
           presentationId,
           objectId,
@@ -112,7 +140,9 @@ export async function POST(request: NextRequest) {
               objectId,
               thumbnailUrl,
               thumbnailSize,
-              prefix
+              prefix,
+              contentHash,
+              themeKey
             );
             return {objectId, cached: false};
           }

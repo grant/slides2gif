@@ -31,9 +31,19 @@ export interface UseGifGenerationReturn {
     React.SetStateAction<{width: number; height: number} | null>
   >;
   currentGifConfig: GifConfig | null;
+  clearGif: () => void;
   handleGenerateGif: (
     fileId: string | string[] | undefined,
-    selectedSlides: SelectedSlide[]
+    selectedSlides: SelectedSlide[],
+    options?: {
+      contentHashList?: string[];
+      theme?: {
+        accentColor: string | null;
+        backgroundColor: string | null;
+        titleFontColor: string | null;
+        bodyFontColor: string | null;
+      } | null;
+    }
   ) => Promise<void>;
 }
 
@@ -56,9 +66,24 @@ export function useGifGeneration(): UseGifGenerationReturn {
     null
   );
 
+  const clearGif = () => {
+    setGifUrl(null);
+    setGifDimensions(null);
+    setCurrentGifConfig(null);
+  };
+
   const handleGenerateGif = async (
     fileId: string | string[] | undefined,
-    selectedSlides: SelectedSlide[]
+    selectedSlides: SelectedSlide[],
+    options?: {
+      contentHashList?: string[];
+      theme?: {
+        accentColor: string | null;
+        backgroundColor: string | null;
+        titleFontColor: string | null;
+        bodyFontColor: string | null;
+      } | null;
+    }
   ) => {
     if (!fileId || selectedSlides.length === 0) {
       alert('Please select at least one slide to generate a GIF');
@@ -85,13 +110,20 @@ export function useGifGeneration(): UseGifGenerationReturn {
       }
 
       const presentationId = typeof fileId === 'string' ? fileId : fileId[0];
-      const result = await api.post(PATHS.gifs, {
+      const body: Record<string, unknown> = {
         presentationId,
         slideList,
         delay: gifDelay,
         quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,
         thumbnailSize,
-      });
+      };
+      if (options?.contentHashList?.length === selectedSlides.length) {
+        body.contentHashList = options.contentHashList;
+      }
+      if (options?.theme != null) {
+        body.theme = options.theme;
+      }
+      const result = await api.post(PATHS.gifs, body);
 
       const newGifUrl = result.gifUrl;
 
@@ -124,6 +156,7 @@ export function useGifGeneration(): UseGifGenerationReturn {
     gifDimensions,
     setGifDimensions,
     currentGifConfig,
+    clearGif,
     handleGenerateGif,
   };
 }

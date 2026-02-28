@@ -10,6 +10,11 @@ interface GifControlsProps {
   isGeneratingGif: boolean;
   selectedSlidesCount: number;
   onGenerate: () => void;
+  /** When true, show a RESET button (clear markdown cache) to the left of Generate; only visible on hover, slightly transparent */
+  showReset?: boolean;
+  onReset?: () => void | Promise<void>;
+  /** When true, RESET button is disabled (e.g. clear in progress) */
+  resetDisabled?: boolean;
 }
 
 export function GifControls({
@@ -22,9 +27,12 @@ export function GifControls({
   isGeneratingGif,
   selectedSlidesCount,
   onGenerate,
+  showReset = false,
+  onReset,
+  resetDisabled = false,
 }: GifControlsProps) {
   return (
-    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+    <div className="group/controls flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
       <div className="flex items-center gap-4">
         <div>
           <label className="text-xs text-gray-600">Delay</label>
@@ -70,20 +78,34 @@ export function GifControls({
           </select>
         </div>
       </div>
-      <button
-        onClick={onGenerate}
-        disabled={isGeneratingGif || selectedSlidesCount === 0}
-        className="flex items-center gap-2 rounded-lg bg-[rgba(255,186,68,1)] px-6 py-2.5 text-base font-bold text-[rgb(20,30,50)] shadow-md transition-colors hover:bg-[rgba(255,186,68,0.9)] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:text-gray-600"
-      >
-        <span
-          className={`material-icons text-lg text-[rgb(20,30,50)] ${
-            isGeneratingGif ? 'animate-spin' : ''
-          }`}
+      <div className="flex items-center gap-3">
+        {showReset && onReset && (
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={isGeneratingGif || resetDisabled}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-400 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-600 opacity-25 transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed group-hover/controls:opacity-60"
+            title="Clear cached slide thumbnails"
+          >
+            <span className="material-icons text-sm">delete_sweep</span>
+            CLEAR CACHE
+          </button>
+        )}
+        <button
+          onClick={onGenerate}
+          disabled={isGeneratingGif || selectedSlidesCount === 0}
+          className="flex items-center gap-2 rounded-lg bg-[rgba(255,186,68,1)] px-6 py-2.5 text-base font-bold text-[rgb(20,30,50)] shadow-md transition-colors hover:bg-[rgba(255,186,68,0.9)] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:text-gray-600"
         >
-          {isGeneratingGif ? 'sync' : 'auto_awesome'}
-        </span>
-        <span>{isGeneratingGif ? 'Generating...' : 'GENERATE GIF'}</span>
-      </button>
+          <span
+            className={`material-icons text-lg text-[rgb(20,30,50)] ${
+              isGeneratingGif ? 'animate-spin' : ''
+            }`}
+          >
+            {isGeneratingGif ? 'sync' : 'auto_awesome'}
+          </span>
+          <span>{isGeneratingGif ? 'Generating...' : 'GENERATE GIF'}</span>
+        </button>
+      </div>
     </div>
   );
 }

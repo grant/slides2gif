@@ -45,10 +45,23 @@ export const gifRenameResponseSchema = z.object({
 export type GifRenameBody = z.infer<typeof gifRenameBodySchema>;
 export type GifRenameResponse = z.infer<typeof gifRenameResponseSchema>;
 export const thumbnailSizeSchema = z.enum(['SMALL', 'MEDIUM', 'LARGE']);
+const markdownThemeSchema = z
+  .object({
+    accentColor: z.string().nullable(),
+    backgroundColor: z.string().nullable(),
+    titleFontColor: z.string().nullable(),
+    bodyFontColor: z.string().nullable(),
+  })
+  .optional();
+
 /** POST /api/gifs body */
 export const generateGifBodySchema = z.object({
   presentationId: z.string().min(1),
   slideList: z.string().min(1),
+  /** When generating from markdown: content hashes in same order as slideList for cache reuse */
+  contentHashList: z.array(z.string()).optional(),
+  /** When generating from markdown: theme so cache key includes customization */
+  theme: markdownThemeSchema,
   delay: z.number().optional(),
   quality: z.number().optional(),
   repeat: z.number().optional(),

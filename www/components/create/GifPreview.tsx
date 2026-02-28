@@ -3,6 +3,7 @@ import {GifConfig} from '../../lib/hooks/useGifGeneration';
 import {Timeline} from './Timeline';
 import {SelectedSlide} from '../../lib/hooks/useSelectedSlides';
 import {LoadingSpinner} from '../LoadingSpinner';
+import type {MarkdownSlideTheme} from '../../lib/markdownTheme';
 
 interface GifPreviewProps {
   gifUrl: string | null;
@@ -17,6 +18,29 @@ interface GifPreviewProps {
   onDrop: (index: number) => void;
   onDragEnd: () => void;
   onRemove: (index: number) => void;
+  /** Label for the timeline section header */
+  timelineTitle?: string;
+  /** When true, timeline only allows reorder (e.g. markdown flow) */
+  reorderOnly?: boolean;
+  /** When true, timeline is display-only: not draggable or clickable (e.g. markdown flow) */
+  disabled?: boolean;
+  /** If set, show "Open in Google Slides" link on the same line as "Generated GIF", right-aligned */
+  openInSlidesUrl?: string | null;
+  /** When set (e.g. hover over theme), show a mock slide preview instead of GIF content */
+  themePreview?: MarkdownSlideTheme | null;
+  themePreviewName?: string | null;
+  /** When no GIF, show this theme in the preview slide (title "Example Title", body = emptyStateBodyMessage) */
+  defaultPreviewTheme?: MarkdownSlideTheme | null;
+  defaultPreviewName?: string | null;
+  /** Body text when showing default preview (no GIF). e.g. "Write markdown and click \"GENERATE GIF\"." */
+  emptyStateBodyMessage?: string;
+  /** In md mode: when no slides yet, show placeholder cards in timeline based on these blocks */
+  placeholderSlides?: string[];
+  /** Theme for placeholder cards (background, accent bar) */
+  placeholderTheme?: {
+    backgroundColor?: string | null;
+    accentColor?: string | null;
+  };
 }
 
 export function GifPreview({
@@ -32,6 +56,17 @@ export function GifPreview({
   onDrop,
   onDragEnd,
   onRemove,
+  timelineTitle = 'Timeline',
+  reorderOnly = false,
+  disabled = false,
+  openInSlidesUrl = null,
+  themePreview = null,
+  themePreviewName = null,
+  defaultPreviewTheme = null,
+  defaultPreviewName = null,
+  emptyStateBodyMessage,
+  placeholderSlides = [],
+  placeholderTheme,
 }: GifPreviewProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -61,17 +96,45 @@ export function GifPreview({
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <div className="mb-4">
-        <h4 className="mb-2 text-sm font-medium text-gray-700">
-          Generated GIF
-        </h4>
-        <div className="rounded-lg border border-gray-300 bg-white p-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h4 className="text-sm font-medium text-gray-700">
+            {themePreview != null
+              ? 'Customization Preview'
+              : gifUrl && !isGenerating
+                ? 'Generated GIF'
+                : 'Customization Preview'}
+          </h4>
+          {openInSlidesUrl && (
+            <a
+              href={openInSlidesUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+            >
+              <span className="material-icons text-sm">open_in_new</span>
+              Open in Google Slides
+            </a>
+          )}
+        </div>
+        <div
+          className="rounded-lg border border-gray-300 bg-white p-4"
+          style={
+            themePreview != null || !gifUrl || isGenerating
+              ? {minHeight: 400}
+              : undefined
+          }
+        >
           {isGenerating ? (
-            <div className="flex min-h-[400px] items-center justify-center">
-              <div className="flex flex-col items-center gap-2">
-                <LoadingSpinner size="lg" />
-                <span className="text-xs text-gray-600">Generating GIF...</span>
-              </div>
-            </div>
+            <GeneratingSlide
+              theme={
+                defaultPreviewTheme ?? {
+                  accentColor: null,
+                  backgroundColor: null,
+                  titleFontColor: null,
+                  bodyFontColor: null,
+                }
+              }
+            />
           ) : gifUrl && gifConfig ? (
             <div>
               <div className="mb-2 flex items-center justify-between text-xs text-gray-600">
@@ -145,23 +208,30 @@ export function GifPreview({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[400px] items-center justify-center text-sm text-gray-500 gap-2">
-              No GIF generated yet. Select slides and click &quot;GENERATE
-              GIF&quot;.
-              <span
-                className="material-icons text-base text-gray-400"
-                aria-hidden="true"
-              >
-                north_east
-              </span>
-            </div>
+            <ThemePreviewSlide
+              theme={
+                themePreview ??
+                defaultPreviewTheme ?? {
+                  accentColor: null,
+                  backgroundColor: null,
+                  titleFontColor: null,
+                  bodyFontColor: null,
+                }
+              }
+              themeName={themePreviewName ?? defaultPreviewName ?? 'Preview'}
+              bodyText={
+                themePreview != null ? undefined : emptyStateBodyMessage
+              }
+            />
           )}
         </div>
       </div>
 
       {/* Timeline */}
       <div>
-        <h4 className="mb-2 text-sm font-medium text-gray-700">Timeline</h4>
+        <h4 className="mb-2 text-sm font-medium text-gray-700">
+          {timelineTitle}
+        </h4>
         <Timeline
           selectedSlides={selectedSlides}
           draggedIndex={draggedIndex}
@@ -170,7 +240,91 @@ export function GifPreview({
           onDrop={onDrop}
           onDragEnd={onDragEnd}
           onRemove={onRemove}
+          reorderOnly={reorderOnly}
+          disabled={disabled}
+          placeholderSlides={placeholderSlides}
+          placeholderTheme={placeholderTheme}
         />
+      </div>
+    </div>
+  );
+}
+
+const DEFAULT_TITLE_COLOR = '#0f172a';
+const DEFAULT_BODY_COLOR = '#475569';
+
+function GeneratingSlide({theme}: {theme: MarkdownSlideTheme}) {
+  const bg = theme.backgroundColor ?? '#ffffff';
+  const accent = theme.accentColor ?? null;
+  const textColor = theme.bodyFontColor ?? DEFAULT_BODY_COLOR;
+  return (
+    <div
+      className="relative flex w-full flex-col rounded-lg overflow-hidden border border-gray-200"
+      style={{
+        minHeight: 400,
+        backgroundColor: bg,
+        backgroundImage: accent
+          ? `linear-gradient(to bottom, ${accent} 0%, ${accent} 8%, transparent 8%)`
+          : undefined,
+      }}
+    >
+      {accent && (
+        <div
+          className="absolute left-0 right-0 top-0 h-2"
+          style={{backgroundColor: accent}}
+        />
+      )}
+      <div className="flex min-h-[400px] flex-1 flex-col items-center justify-center gap-2">
+        <LoadingSpinner size="lg" />
+        <span className="text-sm" style={{color: textColor}}>
+          Generating GIF...
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ThemePreviewSlide({
+  theme,
+  themeName,
+  bodyText,
+}: {
+  theme: MarkdownSlideTheme;
+  themeName: string;
+  bodyText?: string;
+}) {
+  const bg = theme.backgroundColor ?? '#ffffff';
+  const accent = theme.accentColor ?? null;
+  const titleColor = theme.titleFontColor ?? accent ?? DEFAULT_TITLE_COLOR;
+  const bodyColor = theme.bodyFontColor ?? DEFAULT_BODY_COLOR;
+  const body =
+    bodyText ??
+    `Some body text here. This is how your slide will look with the ${themeName} theme.`;
+
+  return (
+    <div
+      className="relative flex w-full flex-col rounded-lg overflow-hidden border border-gray-200"
+      style={{
+        minHeight: 400,
+        backgroundColor: bg,
+        backgroundImage: accent
+          ? `linear-gradient(to bottom, ${accent} 0%, ${accent} 8%, transparent 8%)`
+          : undefined,
+      }}
+    >
+      {accent && (
+        <div
+          className="absolute left-0 right-0 top-0 h-2"
+          style={{backgroundColor: accent}}
+        />
+      )}
+      <div className="flex flex-col gap-2 px-5 pt-12">
+        <div className="font-bold text-2xl" style={{color: titleColor}}>
+          Example Title
+        </div>
+        <p className="text-sm leading-relaxed" style={{color: bodyColor}}>
+          {body}
+        </p>
       </div>
     </div>
   );

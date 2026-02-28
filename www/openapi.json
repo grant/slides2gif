@@ -98,6 +98,39 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "contentHashList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "theme": {
+                    "type": "object",
+                    "properties": {
+                      "accentColor": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "backgroundColor": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "titleFontColor": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "bodyFontColor": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "accentColor",
+                      "backgroundColor",
+                      "titleFontColor",
+                      "bodyFontColor"
+                    ]
+                  },
                   "delay": {
                     "type": "number"
                   },

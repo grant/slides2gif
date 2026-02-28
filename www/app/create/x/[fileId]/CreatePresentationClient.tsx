@@ -244,6 +244,14 @@ export default function CreatePresentationClient() {
                 onDrop={handleDrop}
                 onDragEnd={onTimelineDragEnd}
                 onRemove={onTimelineRemove}
+                defaultPreviewTheme={{
+                  accentColor: null,
+                  backgroundColor: null,
+                  titleFontColor: null,
+                  bodyFontColor: null,
+                }}
+                defaultPreviewName="Default"
+                emptyStateBodyMessage='No GIF generated yet. Select slides and click "GENERATE GIF".'
               />
             </div>
           </>

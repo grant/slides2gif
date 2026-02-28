@@ -7,6 +7,7 @@ export const Routes = {
   DASHBOARD: '/dashboard',
   CREATE: '/create',
   CREATE_PRESENTATION: (fileId: string) => `/create/x/${fileId}`,
+  CREATE_MARKDOWN: '/create/markdown',
   LOGIN: '/login',
   HOW_IT_WORKS: '/howitworks',
 } as const;
