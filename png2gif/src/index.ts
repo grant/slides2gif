@@ -124,7 +124,7 @@ app.get(
         console.log('[png2gif] userPrefix for GCS:', userPrefixParam);
       }
       // In production, require user prefix so we never write to bucket root
-      const isProd = !!process.env.GOOGLE_CLOUD_PROJECT;
+      const isProd = process.env.NODE_ENV === 'production';
       if (isProd && !userPrefixParam) {
         res.status(400).json({
           result: 'FAILURE',

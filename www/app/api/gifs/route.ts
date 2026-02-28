@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       console.error('[www] Error fetching high-res thumbnails:', error);
     }
 
-    const isProd = !!process.env.GOOGLE_CLOUD_PROJECT;
+    const isProd = process.env.NODE_ENV === 'production';
     const png2gifServiceUrl =
       process.env.PNG2GIF_SERVICE_URL ||
       process.env.NEXT_PUBLIC_PNG2GIF_SERVICE_URL ||

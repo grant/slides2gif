@@ -10,7 +10,7 @@ if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "undefined" ]; then
   PROJECT_ID="slides2gifcom"
 fi
 
-REQUIRED=(secret-cookie-password oauth-client-id oauth-client-secret)
+REQUIRED=(secret-cookie-password oauth-client-id oauth-client-secret google-cloud-project-number google-picker-developer-key)
 
 echo "Verifying secrets in Google Secret Manager (project: $PROJECT_ID)"
 echo ""
@@ -40,6 +40,7 @@ if [ $missing -eq 0 ]; then
   echo "✅ All required secrets present. Run: just dev"
   exit 0
 else
-  echo "Create missing secrets: ./scripts/create-secret.sh <secret-name>  (e.g. secret-cookie-password, oauth-client-id, oauth-client-secret)"
+  echo "Create missing secrets: just create-secret <secret-name>"
+  echo "  Required: secret-cookie-password, oauth-client-id, oauth-client-secret, google-cloud-project-number, google-picker-developer-key"
   exit 1
 fi

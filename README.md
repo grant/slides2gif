@@ -51,13 +51,15 @@ The project consists of two main services:
 
 ### Local Development
 
-All secrets are loaded from **Google Secret Manager** at server start. Required (must exist in GSM):
+All secrets are loaded from **Google Secret Manager** when you run `just dev`. Before starting, the dev command checks that all required env vars are set (from GSM); if any are missing, it exits with a clear error. Required (must exist in GSM):
 
-- `SECRET_COOKIE_PASSWORD` – session cookies (32+ chars)
-- `OAUTH_CLIENT_ID` – Google OAuth 2.0 Client ID
-- `OAUTH_CLIENT_SECRET` – Google OAuth 2.0 Client Secret
+- `secret-cookie-password` → `SECRET_COOKIE_PASSWORD` (32+ chars)
+- `oauth-client-id` → `OAUTH_CLIENT_ID`
+- `oauth-client-secret` → `OAUTH_CLIENT_SECRET`
+- `google-cloud-project-number` → `GOOGLE_CLOUD_PROJECT_NUMBER` (Drive Picker)
+- `google-picker-developer-key` → `GOOGLE_PICKER_DEVELOPER_KEY` (Drive Picker)
 
-**Optional / non-secret:** `GCS_CACHE_BUCKET` (defaults to `slides2gif-cache`), `PNG2GIF_SERVICE_URL` (defaults to `http://localhost:3001`). For Drive Picker: `GOOGLE_CLOUD_PROJECT_NUMBER`, `GOOGLE_PICKER_DEVELOPER_KEY` (can be in GSM or env).
+**Optional / non-secret:** `GCS_CACHE_BUCKET` (defaults to `slides2gif-cache`), `PNG2GIF_SERVICE_URL` (defaults to `http://localhost:3001`).
 
 ### Cloud Run (Production)
 
