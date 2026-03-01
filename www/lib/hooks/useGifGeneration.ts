@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {api} from '../api/client';
 import {PATHS} from '../api/definition';
+import type {GenerateGifBody} from '../api/schemas';
 
 export interface GifConfig {
   thumbnailSize: 'SMALL' | 'MEDIUM' | 'LARGE';
@@ -110,19 +111,17 @@ export function useGifGeneration(): UseGifGenerationReturn {
       }
 
       const presentationId = typeof fileId === 'string' ? fileId : fileId[0];
-      const body: Record<string, unknown> = {
+      const body: GenerateGifBody = {
         presentationId,
         slideList,
         delay: gifDelay,
         quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,
         thumbnailSize,
+        ...(options?.contentHashList?.length === selectedSlides.length && {
+          contentHashList: options.contentHashList,
+        }),
+        ...(options?.theme != null && {theme: options.theme}),
       };
-      if (options?.contentHashList?.length === selectedSlides.length) {
-        body.contentHashList = options.contentHashList;
-      }
-      if (options?.theme != null) {
-        body.theme = options.theme;
-      }
       const result = await api.post(PATHS.gifs, body);
 
       const newGifUrl = result.gifUrl;
