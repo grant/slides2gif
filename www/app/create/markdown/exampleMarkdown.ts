@@ -4,7 +4,7 @@
  */
 export const EXAMPLE_MARKDOWN = `# 🚀 Acme Corp 2026 Summit
 
-**Austin, TX**
+## Austin, TX
 
 **Date:** April 12–15, 2026
 
@@ -16,7 +16,14 @@ export const EXAMPLE_MARKDOWN = `# 🚀 Acme Corp 2026 Summit
 
 ## 📅 Agenda
 
-### Monday, April 12th
+- Monday – Arrivals & welcome
+- Tuesday – Keynotes & workshops
+- Wednesday – Activities & closing dinner
+- Thursday – See you next year
+
+---
+
+## Monday, April 12th
 
 Welcome!
 
@@ -26,7 +33,7 @@ Welcome!
 
 ---
 
-### Tuesday, April 13th
+## Tuesday, April 13th
 
 - 8:00 am - 9:30 am CT - Breakfast @ hotel
 - 9:30 am - 12:00 pm CT - Keynotes & roadmap
@@ -38,7 +45,7 @@ Welcome!
 
 ---
 
-### Wednesday, April 14th
+## Wednesday, April 14th
 
 - 8:00 am - 9:30 am CT - Breakfast
 - 9:30 am - 3:00 pm CT - Activities
@@ -50,7 +57,7 @@ Welcome!
 
 ---
 
-### Thursday, April 15th
+## Thursday, April 15th
 
 See you next year 🎉
 
