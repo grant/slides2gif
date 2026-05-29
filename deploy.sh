@@ -109,7 +109,7 @@ echo "2. Deploying www service..."
 cd www
 
 echo "  ${ARROW} Building Next.js app..."
-if npm run build; then
+if npm run openapi:types && npm run build; then
   echo "  ${CHECK} Build successful"
 else
   echo "  ${CROSS} Build failed"

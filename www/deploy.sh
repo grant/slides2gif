@@ -47,7 +47,7 @@ fi
 
 # Build the Next.js app
 echo "Building Next.js app..."
-npm run build
+npm run openapi:types && npm run build
 
 if [ $? -ne 0 ]; then
   echo "❌ Build failed!"
