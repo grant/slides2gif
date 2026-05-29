@@ -30,7 +30,8 @@ install-www:
 
 # Install dependencies for png2gif
 install-png2gif:
-    cd png2gif && npm install
+    chmod +x scripts/install-png2gif-deps.sh
+    ./scripts/install-png2gif-deps.sh
 
 # Verify required secrets exist in Google Secret Manager (run before just dev)
 verify-env:

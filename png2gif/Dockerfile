@@ -1,34 +1,46 @@
+# Cloud Run image for png2gif (node-canvas compiles at build time).
+FROM node:24-slim AS builder
+WORKDIR /usr/app
+
+ENV PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    pkg-config \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    libpixman-1-dev \
+    libpng-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+COPY tsconfig.json ./
+RUN npm ci
+
+COPY src ./src
+RUN npm run compile
+RUN npm prune --production
+
 FROM node:24-slim
 WORKDIR /usr/app
 
-# Install a ton of dependencies needed for image manipulation (canvas)
-# https://www.npmjs.com/package/canvas
-# https://github.com/Automattic/node-canvas/wiki/Installation%3A-Ubuntu-and-other-Debian-based-systems
-ENV PYTHONUNBUFFERED=1
-RUN \
-  apt-get update && \
-  apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev pkg-config curl ruby python3 ffmpeg graphicsmagick && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/*
+# Runtime libraries required by canvas.node (dev packages stay in builder stage only).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcairo2 \
+    libpango-1.0-0 \
+    libjpeg62-turbo \
+    libgif7 \
+    librsvg2-2 \
+    libpixman-1-0 \
+    libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
 
-# https://github.com/goodspb/pdlib/issues/17
-ENV PKG_CONFIG_PATH=/dlib-install/usr/local/lib64/pkgconfig/
-
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
-
-# Install all dependencies (including dev dependencies for TypeScript compilation)
-RUN npm ci
-
-# Copy source filesgs
-COPY src ./src
-
-# Compile TypeScript (needs devDependencies)
-RUN npm run compile
-
-# Remove dev dependencies to reduce image size
-RUN npm prune --production
+COPY --from=builder /usr/app/dist ./dist
+COPY --from=builder /usr/app/node_modules ./node_modules
+COPY --from=builder /usr/app/package.json ./package.json
 
 ENV NODE_ENV=production
 CMD ["node", "dist/index.js"]

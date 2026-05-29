@@ -14,7 +14,7 @@ Requires [Just](https://github.com/casey/just): `brew install just` or `cargo in
 
 - **`just setup`** — Configure Google Cloud (auth, APIs, buckets). Run once.
 - **`just verify-env`** — Check required secrets exist in GSM. Run before `just dev`.
-- **`just install`** — Install dependencies for www and png2gif.
+- **`just install`** — Install dependencies for www and png2gif (png2gif installs native canvas libs via Homebrew on macOS).
 - **`just dev`** — Run www + png2gif (secrets from GSM).
 - **`just build`** — Build www and png2gif.
 - **`just lint`** — Lint www and png2gif.
@@ -119,7 +119,7 @@ just deploy
 ```
 
 This will:
-1. **Deploy `png2gif`** first (Cloud Run service that converts slides to GIF).
+1. **Deploy `png2gif`** first (Cloud Run service that converts slides to GIF; `png2gif/Dockerfile` installs canvas build deps in the image).
 2. **Deploy `www`** with `PNG2GIF_SERVICE_URL` set to the png2gif URL (so the "Create GIF" flow works).
 3. **Resolve the www service account** (custom SA or default compute) and grant it **Cloud Run Invoker** on the png2gif service so www can call png2gif with an ID token.
 4. Verify secret access for www.

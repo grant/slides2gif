@@ -20,12 +20,20 @@ export interface CreateGIFRequestOptions {
 
 ## Local Development Requirements
 
-To start this service, you need to install some dependencies.
+`canvas` is a native module. On macOS, install system libraries before `npm install`:
 
+```bash
+just install-png2gif
 ```
-brew install ffmpeg graphicsmagick
-npm i gify fluent-ffmpeg
+
+Or manually:
+
+```bash
+brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman ffmpeg graphicsmagick
+cd png2gif && npm install
 ```
+
+Cloud Run builds include these dependencies in the Docker image (`png2gif/Dockerfile`). For local Linux dev, install the same apt packages listed in that Dockerfile's builder stage.
 
 ## Test
 
