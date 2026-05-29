@@ -1,5 +1,5 @@
 /**
- * Create/import-related UI. Import flow uses useGooglePicker (sidebar/dashboard).
+ * Create/import-related UI. Import flow uses PasteSlidesUrlDialog (sidebar/dashboard).
  */
 import React, {JSX} from 'react';
 

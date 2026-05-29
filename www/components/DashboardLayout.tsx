@@ -4,8 +4,10 @@ import React, {useState, useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import Logo from './Logo';
 import {Routes} from '../lib/routes';
-import {useGooglePicker} from '../lib/hooks/useGooglePicker';
-import {LoadingSpinner} from './LoadingSpinner';
+import {
+  PasteSlidesUrlProvider,
+  useOpenPasteSlidesUrl,
+} from './PasteSlidesUrlDialog';
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
 
@@ -27,8 +29,25 @@ export default function DashboardLayout({
   activeTab = 'dashboard',
   initialCollapsed = false,
 }: DashboardLayoutProps) {
+  return (
+    <PasteSlidesUrlProvider>
+      <DashboardLayoutInner
+        activeTab={activeTab}
+        initialCollapsed={initialCollapsed}
+      >
+        {children}
+      </DashboardLayoutInner>
+    </PasteSlidesUrlProvider>
+  );
+}
+
+function DashboardLayoutInner({
+  children,
+  activeTab = 'dashboard',
+  initialCollapsed = false,
+}: DashboardLayoutProps) {
   const router = useRouter();
-  const {openPicker, pickerReady, openingPicker} = useGooglePicker();
+  const openPasteSlides = useOpenPasteSlidesUrl();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [transitionEnabled, setTransitionEnabled] = useState(false);
 
@@ -131,20 +150,15 @@ export default function DashboardLayout({
             {!isCollapsed && <span>Dashboard</span>}
           </button>
           <button
-            onClick={openPicker}
-            disabled={!pickerReady || openingPicker}
+            onClick={openPasteSlides}
             className={`flex w-full items-center transition-colors ${
               isCollapsed
                 ? 'h-14 justify-center rounded p-2'
                 : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
-            } bg-amber-500 text-slate-900 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm shadow-amber-900/20`}
-            title="Create GIF from Drive"
+            } bg-amber-500 text-slate-900 hover:bg-amber-600 shadow-sm shadow-amber-900/20`}
+            title="Create GIF from Google Slides URL"
           >
-            {openingPicker ? (
-              <LoadingSpinner size="sm" />
-            ) : (
-              <span className="material-icons text-2xl">add</span>
-            )}
+            <span className="material-icons text-2xl">add</span>
             {!isCollapsed && <span>Create GIF</span>}
           </button>
           <button

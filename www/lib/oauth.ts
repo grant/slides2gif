@@ -68,8 +68,7 @@ export class Auth {
   public static getAuthURL(): string {
     const SCOPES = [
       'https://www.googleapis.com/auth/userinfo.profile', // User info for storing tokens
-      // drive.file removed for OAuth verification (restricted scope). Re-enable if Picker or Drive file metadata is required.
-      // 'https://www.googleapis.com/auth/drive.file',
+      // drive.file not used; users paste a Slides URL instead of Google Picker.
       'https://www.googleapis.com/auth/presentations', // Create/update the one markdown slide deck per user
     ];
     return this.getOAuthClient().generateAuthUrl({

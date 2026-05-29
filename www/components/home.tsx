@@ -52,9 +52,9 @@ export default function PageHome() {
                 How it works
               </h2>
               <p className="text-lg leading-relaxed text-slate-700">
-                Simply connect your Google account, select your presentation,
-                and customize your GIF settings. We handle the rest and provide
-                you with a private download link.
+                Simply connect your Google account, paste your Google Slides
+                link, and customize your GIF settings. We handle the rest and
+                provide you with a private download link.
               </p>
               <p className="text-lg leading-relaxed">
                 <a

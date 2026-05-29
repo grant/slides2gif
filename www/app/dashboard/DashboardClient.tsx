@@ -5,7 +5,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import {useAuth} from '../../lib/useAuth';
 import {LoadingScreen} from '../../components/LoadingScreen';
 import {LoadingSpinner} from '../../components/LoadingSpinner';
-import {useGooglePicker} from '../../lib/hooks/useGooglePicker';
+import {useOpenPasteSlidesUrl} from '../../components/PasteSlidesUrlDialog';
 import {useToast} from '../../components/ToastContext';
 import useSWR from 'swr';
 import {dashboardSWRConfig} from '../../lib/apiFetcher';
@@ -19,10 +19,47 @@ const UNTITLED_LABEL = 'Untitled GIF';
 
 type GifToDelete = {url: string; title: string};
 
+function EmptyGifsSection({
+  onRefresh,
+  refreshing,
+}: {
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  const openPasteSlides = useOpenPasteSlidesUrl();
+
+  return (
+    <div className="rounded-lg border-2 border-dashed border-amber-200 bg-amber-50/50 p-12 text-center">
+      <p className="text-gray-600">No GIFs created yet</p>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={openPasteSlides}
+          className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 font-medium text-slate-900 shadow-sm shadow-amber-900/20 hover:bg-amber-600"
+        >
+          Create your first GIF
+        </button>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          title="Refresh list to show newly created GIFs"
+        >
+          {refreshing ? (
+            <LoadingSpinner size="sm" />
+          ) : (
+            <span className="material-icons text-lg">refresh</span>
+          )}
+          Refresh
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardClient() {
   const {userData: data, error: authError, isLoading: authLoading} = useAuth();
-  const {openPicker, pickerReady, pickerError, openingPicker} =
-    useGooglePicker();
   const {toast} = useToast();
   const {
     data: stats,
@@ -361,43 +398,10 @@ export default function DashboardClient() {
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border-2 border-dashed border-amber-200 bg-amber-50/50 p-12 text-center">
-            <p className="text-gray-600">No GIFs created yet</p>
-            {pickerError && (
-              <p className="mt-2 text-sm text-red-600">{pickerError}</p>
-            )}
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={openPicker}
-                disabled={!pickerReady || openingPicker}
-                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 font-medium text-slate-900 shadow-sm shadow-amber-900/20 hover:bg-amber-600 disabled:opacity-50"
-              >
-                {openingPicker ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    Opening…
-                  </>
-                ) : (
-                  'Create your first GIF'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={refreshGifList}
-                disabled={refreshing}
-                className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                title="Refresh list to show newly created GIFs"
-              >
-                {refreshing ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  <span className="material-icons text-lg">refresh</span>
-                )}
-                Refresh
-              </button>
-            </div>
-          </div>
+          <EmptyGifsSection
+            onRefresh={refreshGifList}
+            refreshing={refreshing}
+          />
         )}
 
         {gifToDelete ? (
