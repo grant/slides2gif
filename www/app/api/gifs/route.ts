@@ -5,9 +5,6 @@ import {google} from 'googleapis';
 import {
   cacheSlideThumbnail,
   getCachedSlideUrl,
-  getCachedMarkdownSlideUrl,
-  copyMarkdownSlideToPresentationPath,
-  themeCacheKey,
   userPrefix,
 } from '../../../lib/storage';
 import {getAuthenticatedClientApp} from '../../../lib/oauthClientApp';
@@ -47,14 +44,11 @@ export async function POST(request: NextRequest) {
     const {
       presentationId,
       slideList,
-      contentHashList,
-      theme: themeBody,
       delay,
       quality,
       repeat,
       thumbnailSize = 'MEDIUM',
     } = parsed.data;
-    const themeKey = themeCacheKey(themeBody ?? null);
 
     const userId = await getSessionUserId(session);
     if (!userId) {
@@ -68,7 +62,6 @@ export async function POST(request: NextRequest) {
     const prefix = userPrefix(userId);
 
     const slideObjectIds = slideList.split(',').map(id => id.trim());
-    let presentationTitle: string | undefined;
 
     const authResult = await getAuthenticatedClientApp(session);
     if ('error' in authResult) {
@@ -79,42 +72,9 @@ export async function POST(request: NextRequest) {
       const {client: auth} = authResult;
       /* eslint-disable @typescript-eslint/no-explicit-any -- @google-cloud/storage bundles different google-auth-library */
       const slides = google.slides({version: 'v1', auth: auth as any});
-      try {
-        const drive = google.drive({version: 'v3', auth: auth as any});
-        /* eslint-enable @typescript-eslint/no-explicit-any */
-        const fileData = await drive.files.get({
-          fileId: presentationId,
-          fields: 'name',
-        });
-        presentationTitle =
-          (fileData.data as {name?: string}).name || undefined;
-      } catch {
-        // Continue without title
-      }
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
-      const thumbnailPromises = slideObjectIds.map(async (objectId, index) => {
-        const contentHash = contentHashList?.[index];
-
-        if (contentHash) {
-          const markdownCachedUrl = await getCachedMarkdownSlideUrl(
-            contentHash,
-            thumbnailSize,
-            prefix,
-            themeKey
-          );
-          if (markdownCachedUrl) {
-            await copyMarkdownSlideToPresentationPath(
-              prefix,
-              contentHash,
-              presentationId,
-              objectId,
-              thumbnailSize,
-              themeKey
-            );
-            return {objectId, cached: true};
-          }
-        }
-
+      const thumbnailPromises = slideObjectIds.map(async objectId => {
         const cachedUrl = await getCachedSlideUrl(
           presentationId,
           objectId,
@@ -140,9 +100,7 @@ export async function POST(request: NextRequest) {
               objectId,
               thumbnailUrl,
               thumbnailSize,
-              prefix,
-              contentHash,
-              themeKey
+              prefix
             );
             return {objectId, cached: false};
           }
@@ -192,9 +150,6 @@ export async function POST(request: NextRequest) {
     url.searchParams.set('slideList', slideList);
     url.searchParams.set('thumbnailSize', thumbnailSize);
     url.searchParams.set('userPrefix', prefix);
-    if (presentationTitle) {
-      url.searchParams.set('presentationTitle', presentationTitle);
-    }
     if (delay !== undefined) {
       url.searchParams.set('delay', delay.toString());
     }

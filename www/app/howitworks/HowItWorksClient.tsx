@@ -318,7 +318,7 @@ export default function HowItWorksClient() {
                 <ul className="ml-6 list-disc text-slate-700">
                   <li>Google OAuth2 for user authentication</li>
                   <li>Service-to-service auth (ID tokens) for Cloud Run</li>
-                  <li>Scopes: Slides API, Drive metadata, User profile</li>
+                  <li>Scopes: Google Slides (read-only), User profile</li>
                 </ul>
               </div>
             </div>

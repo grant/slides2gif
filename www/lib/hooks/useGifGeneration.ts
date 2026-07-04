@@ -35,16 +35,7 @@ export interface UseGifGenerationReturn {
   clearGif: () => void;
   handleGenerateGif: (
     fileId: string | string[] | undefined,
-    selectedSlides: SelectedSlide[],
-    options?: {
-      contentHashList?: string[];
-      theme?: {
-        accentColor: string | null;
-        backgroundColor: string | null;
-        titleFontColor: string | null;
-        bodyFontColor: string | null;
-      } | null;
-    }
+    selectedSlides: SelectedSlide[]
   ) => Promise<void>;
 }
 
@@ -75,16 +66,7 @@ export function useGifGeneration(): UseGifGenerationReturn {
 
   const handleGenerateGif = async (
     fileId: string | string[] | undefined,
-    selectedSlides: SelectedSlide[],
-    options?: {
-      contentHashList?: string[];
-      theme?: {
-        accentColor: string | null;
-        backgroundColor: string | null;
-        titleFontColor: string | null;
-        bodyFontColor: string | null;
-      } | null;
-    }
+    selectedSlides: SelectedSlide[]
   ) => {
     if (!fileId || selectedSlides.length === 0) {
       alert('Please select at least one slide to generate a GIF');
@@ -117,10 +99,6 @@ export function useGifGeneration(): UseGifGenerationReturn {
         delay: gifDelay,
         quality: gifQuality === 'Best' ? 1 : gifQuality === 'HQ' ? 5 : 10,
         thumbnailSize,
-        ...(options?.contentHashList?.length === selectedSlides.length && {
-          contentHashList: options.contentHashList,
-        }),
-        ...(options?.theme != null && {theme: options.theme}),
       };
       const result = await api.post(PATHS.gifs, body);
 

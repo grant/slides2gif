@@ -161,22 +161,6 @@ function DashboardLayoutInner({
             <span className="material-icons text-2xl">add</span>
             {!isCollapsed && <span>Create GIF</span>}
           </button>
-          <button
-            onClick={() => router.push(Routes.CREATE_MARKDOWN)}
-            className={`flex w-full items-center transition-colors ${
-              isCollapsed
-                ? 'h-14 justify-center rounded p-2'
-                : 'gap-2 rounded-lg px-6 py-4 text-left text-lg font-bold'
-            } ${
-              activeTab === 'create'
-                ? 'bg-amber-50 text-amber-900'
-                : 'bg-transparent text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Create GIF from Markdown"
-          >
-            <span className="material-icons text-2xl">description</span>
-            {!isCollapsed && <span>From Markdown</span>}
-          </button>
         </nav>
 
         {/* Logout */}

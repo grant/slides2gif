@@ -68,8 +68,7 @@ export class Auth {
   public static getAuthURL(): string {
     const SCOPES = [
       'https://www.googleapis.com/auth/userinfo.profile', // User info for storing tokens
-      // drive.file not used; users paste a Slides URL instead of Google Picker.
-      'https://www.googleapis.com/auth/presentations', // Create/update the one markdown slide deck per user
+      'https://www.googleapis.com/auth/presentations.readonly', // Read slides/thumbnails for pasted Slides URLs
     ];
     return this.getOAuthClient().generateAuthUrl({
       access_type: 'offline',
