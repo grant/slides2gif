@@ -8,21 +8,26 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {useRouter} from 'next/navigation';
-import {Routes} from '../lib/routes';
 import {parseGoogleSlidesPresentationId} from '../lib/utils/googleSlidesUrl';
+import {useGooglePicker} from '../lib/hooks/useGooglePicker';
 
 const PasteSlidesUrlContext = createContext<(() => void) | null>(null);
 
 export function useOpenPasteSlidesUrl(): () => void {
   const open = useContext(PasteSlidesUrlContext);
   if (!open) {
-    throw new Error('useOpenPasteSlidesUrl must be used within PasteSlidesUrlProvider');
+    throw new Error(
+      'useOpenPasteSlidesUrl must be used within PasteSlidesUrlProvider'
+    );
   }
   return open;
 }
 
-export function PasteSlidesUrlProvider({children}: {children: React.ReactNode}) {
+export function PasteSlidesUrlProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const openDialog = useCallback(() => setOpen(true), []);
 
@@ -40,10 +45,10 @@ interface PasteSlidesUrlDialogProps {
 }
 
 function PasteSlidesUrlDialog({open, onClose}: PasteSlidesUrlDialogProps) {
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const {openPicker, pickerError, openingPicker} = useGooglePicker();
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +67,7 @@ function PasteSlidesUrlDialog({open, onClose}: PasteSlidesUrlDialogProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const presentationId = parseGoogleSlidesPresentationId(value);
     if (!presentationId) {
@@ -71,8 +76,17 @@ function PasteSlidesUrlDialog({open, onClose}: PasteSlidesUrlDialogProps) {
       );
       return;
     }
-    onClose();
-    router.push(Routes.CREATE_PRESENTATION(presentationId));
+    // With the drive.file scope the app only has access to files the user
+    // picks in the Google Picker, so a pasted link opens the Picker
+    // pre-navigated to that file — the user just confirms it, and picking
+    // it navigates to the create page.
+    const opened = await openPicker({fileIds: [presentationId]});
+    if (opened) onClose();
+  }
+
+  async function handleChooseFromDrive() {
+    const opened = await openPicker();
+    if (opened) onClose();
   }
 
   if (!open) return null;
@@ -122,6 +136,21 @@ function PasteSlidesUrlDialog({open, onClose}: PasteSlidesUrlDialogProps) {
               {error}
             </p>
           ) : null}
+          {pickerError ? (
+            <p className="mt-2 text-sm text-red-600" role="alert">
+              {pickerError}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleChooseFromDrive}
+            disabled={openingPicker}
+            className="mt-4 w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          >
+            {openingPicker
+              ? 'Opening Google Drive…'
+              : 'Choose from Google Drive'}
+          </button>
           <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
@@ -132,7 +161,8 @@ function PasteSlidesUrlDialog({open, onClose}: PasteSlidesUrlDialogProps) {
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 shadow-sm hover:bg-amber-600"
+              disabled={openingPicker}
+              className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 shadow-sm hover:bg-amber-600 disabled:opacity-50"
             >
               Continue
             </button>
