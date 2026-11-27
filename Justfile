@@ -135,18 +135,21 @@ deploy-png2gif:
 setup-iam:
     ./setup-iam.sh
 
-# Custom domain (slides2gif.com) — verify, map, then add DNS in Cloudflare
+# Custom domain — verify, map, then add DNS in Cloudflare.
+# Default slides2gif.com; override per invocation, e.g. just DOMAIN=slides2gif.grant.cm domain-map
+DOMAIN := env("DOMAIN", "slides2gif.com")
+
 domain-verify:
-    ./scripts/setup-domain.sh verify
+    DOMAIN={{DOMAIN}} ./scripts/setup-domain.sh verify
 
 domain-map:
-    ./scripts/setup-domain.sh map
+    DOMAIN={{DOMAIN}} ./scripts/setup-domain.sh map
 
 domain-dns:
-    ./scripts/setup-domain.sh dns
+    DOMAIN={{DOMAIN}} ./scripts/setup-domain.sh dns
 
 domain-dns-records:
-    ./scripts/domain-dns-records.sh
+    DOMAIN={{DOMAIN}} ./scripts/domain-dns-records.sh
 
 # Secret Management Commands
 sync-secrets:
@@ -245,3 +248,4 @@ oauth-consent:
 oauth-copy-id client_id:
     @echo "{{client_id}}" | pbcopy && echo "✅ Client ID copied to clipboard: {{client_id}}" || \
     echo "{{client_id}}" && echo "⚠️  Could not copy to clipboard. Client ID shown above."
+
