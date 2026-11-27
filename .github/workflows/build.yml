@@ -24,7 +24,9 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Install Just
-        run: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v4
+        with:
+          just-version: '1.59.0'
 
       - name: Install dependencies
         run: |
